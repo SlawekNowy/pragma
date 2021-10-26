@@ -89,43 +89,62 @@ runs:
     #    cmake_definitions_tmp: ' -DWGUI_INCLUDE_DEPENDENCIES=OFF'
     
     
-    
-    
-    
-    
-    
-    - name: Download submodule - GLM 0.9.9.8
-      uses: Silverlan/common_actions/curl_download@main
-      with:
-        download_url: 'https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.zip'
-        file_name: 'boost_1_76_0.zip'
-    
-    - name: Build zlip
-      uses: Silverlan/common_actions/build_zlib@main
-    
-    #- name: Shell Test
-    #  shell: cmd
-    #  run: |
-    #    echo "SHELL TEST OUTPUT"
-        
-    - name: Install boost
-      id: install-boost
-      shell: pwsh
+
+    - name: Create file
+      id: test-create
+      shell: bash
       run: |
-        echo "cd..."
-        cd "./third_party_libs/boost_1_76_0"
-        echo "Running boost bootstrap..."
-        .\bootstrap.bat
-        echo "Running b2..."
-        .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=shared runtime-link=shared -j3
-        .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=static runtime-link=shared -j3
-        set ZLIB_SOURCE="$PWD/third_party_libs/zlib"
-        set ZLIB_INCLUDE="$PWD/third_party_libs/zlib"
-        set ZLIB_LIBPATH="$PWD/third_party_libs/zlib/build/RelWithDebInfo"
-        echo "Running b2 for zlib..."
-        .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=shared runtime-link=shared --with-iostreams -sZLIB_SOURCE=%ZLIB_SOURCE% -sZLIB_INCLUDE=%ZLIB_INCLUDE% -sZLIB_LIBPATH=%ZLIB_LIBPATH%
-        .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=static runtime-link=shared --with-iostreams -sZLIB_SOURCE=%ZLIB_SOURCE% -sZLIB_INCLUDE=%ZLIB_INCLUDE% -sZLIB_LIBPATH=%ZLIB_LIBPATH%
-        echo "Done!"
+        printf '%s' " Some test text" >> test_file.txt
+    
+    - name: Cache NPM dependencies
+      uses: actions/cache@v1
+      with:
+        path: ~/.npm
+        key: test-key-${{ hashFiles('./test_file.txt') }}
+        restore-keys: |
+          test-key-
+        #key: ${{ runner.OS }}-npm-cache-${{ hashFiles('**/package-lock.json') }}
+        #restore-keys: |
+        #  ${{ runner.OS }}-npm-cache-
+        
+    - name: Create file
+      id: test-read
+      shell: bash
+      run: |
+        value="$(cat cmake_vars.txt)"
+        echo "File contents: $value"
+    
+    
+    
+    # Works!
+    #- name: Download submodule - GLM 0.9.9.8
+    #  uses: Silverlan/common_actions/curl_download@main
+    #  with:
+    #    download_url: 'https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.zip'
+    #    file_name: 'boost_1_76_0.zip'
+    
+    #- name: Build zlip
+    #  uses: Silverlan/common_actions/build_zlib@main
+    
+    #- name: Install boost
+    #  id: install-boost
+    #  shell: pwsh
+    #  run: |
+    #    echo "cd..."
+    #    cd "./third_party_libs/boost_1_76_0"
+    #    echo "Running boost bootstrap..."
+    #    .\bootstrap.bat
+    #    echo "Running b2..."
+    #    .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=shared runtime-link=shared -j3
+    #    .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=static runtime-link=shared -j3
+    #    set ZLIB_SOURCE="$PWD/third_party_libs/zlib"
+    #    set ZLIB_INCLUDE="$PWD/third_party_libs/zlib"
+    #    set ZLIB_LIBPATH="$PWD/third_party_libs/zlib/build/RelWithDebInfo"
+    #    echo "Running b2 for zlib..."
+    #    .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=shared runtime-link=shared --with-iostreams -sZLIB_SOURCE=%ZLIB_SOURCE% -sZLIB_INCLUDE=%ZLIB_INCLUDE% -sZLIB_LIBPATH=%ZLIB_LIBPATH%
+    #    .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=static runtime-link=shared --with-iostreams -sZLIB_SOURCE=%ZLIB_SOURCE% -sZLIB_INCLUDE=%ZLIB_INCLUDE% -sZLIB_LIBPATH=%ZLIB_LIBPATH%
+    #    echo "Done!"
+    # end
     
     #- name: Install xorg-dev
     #  shell: bash
