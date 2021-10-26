@@ -88,29 +88,57 @@ runs:
     #    cmake_var_lib: 'DEPENDENCY_WGUI_LIBRARY'
     #    cmake_definitions_tmp: ' -DWGUI_INCLUDE_DEPENDENCIES=OFF'
     
+    
+    
+    
+    
+    
+    
+    - name: Download submodule - GLM 0.9.9.8
+      uses: Silverlan/common_actions/curl_download@main
+      with:
+        download_url: 'https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.zip'
+        file_name: 'boost_1_76_0.zip'
+    
     - name: Install xorg-dev
       id: setup-vtflib-build
       shell: bash
       run: |
-        if [ "$RUNNER_OS" == "Linux" ]; then
-          # Required for glfw
-          sudo apt install xorg-dev
-        fi
+        cd "boost_1_76_0"
+        bootstrap.bat
+        cmd bootstrap.bat
+        cmd b2 toolset=msvc-14.2 address-model=64 stage variant=release link=shared runtime-link=shared -j3 > build.log
+        cmd b2 toolset=msvc-14.2 address-model=64 stage variant=release link=static runtime-link=shared -j3 > build.log
+        #set ZLIB_SOURCE="E:/zlib-1.2.8"
+        #set ZLIB_INCLUDE="E:/zlib-1.2.8"
+        #set ZLIB_LIBPATH="E:/zlib-1.2.8/build/RelWithDebInfo"
+        #b2 toolset=msvc-14.2 address-model=64 stage variant=release link=shared runtime-link=shared --with-iostreams -sZLIB_SOURCE=%ZLIB_SOURCE% -sZLIB_INCLUDE=%ZLIB_INCLUDE% -sZLIB_LIBPATH=%ZLIB_LIBPATH%
+        #b2 toolset=msvc-14.2 address-model=64 stage variant=release link=static runtime-link=shared --with-iostreams -sZLIB_SOURCE=%ZLIB_SOURCE% -sZLIB_INCLUDE=%ZLIB_INCLUDE% -sZLIB_LIBPATH=%ZLIB_LIBPATH%
     
-    - name: Remove modules
-      id: rem-mod
-      shell: bash
-      run: |
-        # rm -rf ./modules/pr_curl
-        rm -rf ./modules/pr_prosper_opengl
-        rm -rf ./modules/pr_prosper_vulkan
+    
+    #- name: Install xorg-dev
+    #  id: setup-vtflib-build
+    #  shell: bash
+    #  run: |
+    #    if [ "$RUNNER_OS" == "Linux" ]; then
+    #      # Required for glfw
+    #      sudo apt install xorg-dev
+    #    fi
+    
+    #- name: Remove modules
+    #  id: rem-mod
+    #  shell: bash
+    #  run: |
+    #    # rm -rf ./modules/pr_curl
+    #    rm -rf ./modules/pr_prosper_opengl
+    #    rm -rf ./modules/pr_prosper_vulkan
             
-    - uses: Silverlan/common_actions/build_cmake@main
-      name: CMake Build
-      with:
-        build_type: ${{ matrix.config.build_type }}
-        build_generator: ${{ matrix.config.generators }}
-        cmake_var: 'DEPENDENCY_SHARED_LIBRARY'
-        build_target: shared
-        build_dir: '${{ matrix.config.build_dir }}/${{ inputs.dir }}'
-        cmake_script_location: '${{ inputs.dir }}'
+    #- uses: Silverlan/common_actions/build_cmake@main
+    #  name: CMake Build
+    #  with:
+    #    build_type: ${{ matrix.config.build_type }}
+    #    build_generator: ${{ matrix.config.generators }}
+    #    cmake_var: 'DEPENDENCY_SHARED_LIBRARY'
+    #    build_target: shared
+    #    build_dir: '${{ matrix.config.build_dir }}/${{ inputs.dir }}'
+    #    cmake_script_location: '${{ inputs.dir }}'
