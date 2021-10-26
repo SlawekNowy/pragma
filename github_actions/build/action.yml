@@ -137,7 +137,7 @@ runs:
     - name: TP
       shell: bash
       run: |
-        echo "Cache hit: ${{steps.get-boost-cache.outputs.cache-hit == true}}"
+        echo "Cache hit: ${{steps.get-boost-cache.outputs.cache-hit}}"
         cd "./third_party_libs/boost"
         ls -R
     
