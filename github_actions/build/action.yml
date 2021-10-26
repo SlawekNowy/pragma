@@ -133,6 +133,13 @@ runs:
           shell: bash
           run: |
             echo "GOT CACHE HIT!"
+            
+    - name: TP
+      shell: bash
+      run: |
+        echo "Cache hit: ${{steps.get-boost-cache.outputs.cache-hit == true}}"
+        cd "./third_party_libs/boost"
+        ls -R
     
     #- name: Download boost
     #  uses: Silverlan/common_actions/curl_download@main
