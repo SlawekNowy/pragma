@@ -90,11 +90,11 @@ runs:
     
     
 
-    - name: Create file
-      id: test-create
-      shell: bash
-      run: |
-        printf '%s' " Some test text" >> test_file.txt
+    #- name: Create file
+    #  id: test-create
+    #  shell: bash
+    #  run: |
+    #    printf '%s' " Some test text" >> test_file.txt
     
     - name: Cache NPM dependencies
       uses: actions/cache@v1
@@ -107,12 +107,12 @@ runs:
         #restore-keys: |
         #  ${{ runner.OS }}-npm-cache-
         
-    #- name: Create file
-    #  id: test-read
-    #  shell: bash
-    #  run: |
-    #    value="$(cat test_file.txt)"
-    #    echo "File contents: $value"
+    - name: Create file
+      id: test-read
+      shell: bash
+      run: |
+        value="$(cat test_file.txt)"
+        echo "File contents: $value"
     
     
     
