@@ -120,7 +120,7 @@ runs:
     - name: Install xorg-dev
       shell: bash
       run: |
-        cd "./third_party_libs/boost_1_76_0/stage/lib"
+        cd "./third_party_libs/boost_1_76_0"
         ls -R
     
     
