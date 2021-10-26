@@ -117,6 +117,12 @@ runs:
         b2 toolset=msvc-14.2 address-model=64 stage variant=release link=shared runtime-link=shared --with-iostreams -sZLIB_SOURCE=%ZLIB_SOURCE% -sZLIB_INCLUDE=%ZLIB_INCLUDE% -sZLIB_LIBPATH=%ZLIB_LIBPATH%
         b2 toolset=msvc-14.2 address-model=64 stage variant=release link=static runtime-link=shared --with-iostreams -sZLIB_SOURCE=%ZLIB_SOURCE% -sZLIB_INCLUDE=%ZLIB_INCLUDE% -sZLIB_LIBPATH=%ZLIB_LIBPATH%
     
+    - name: Install xorg-dev
+      shell: bash
+      run: |
+        cd "./third_party_libs/boost_1_76_0/stage/lib"
+        ls -R
+    
     
     #- name: Install xorg-dev
     #  id: setup-vtflib-build
