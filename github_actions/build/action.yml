@@ -87,6 +87,23 @@ runs:
     #    cmake_var: 'DEPENDENCY_WGUI_INCLUDE'
     #    cmake_var_lib: 'DEPENDENCY_WGUI_LIBRARY'
     #    cmake_definitions_tmp: ' -DWGUI_INCLUDE_DEPENDENCIES=OFF'
+    
+    - name: Install xorg-dev
+      id: setup-vtflib-build
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          # Required for glfw
+          sudo apt install xorg-dev
+        fi
+    
+    - name: Remove modules
+      id: rem-mod
+      shell: bash
+      run: |
+        rm -rf ./modules/pr_curl
+        rm -rf ./modules/pr_prosper_opengl
+        rm -rf ./modules/pr_prosper_vulkan
             
     - uses: Silverlan/common_actions/build_cmake@main
       name: CMake Build
