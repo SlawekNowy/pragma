@@ -88,12 +88,12 @@ runs:
         cmake_var_lib: 'DEPENDENCY_WGUI_LIBRARY'
         cmake_definitions_tmp: ' -DWGUI_INCLUDE_DEPENDENCIES=OFF'
             
- #   - uses: Silverlan/common_actions/build_cmake@main
- #     name: CMake Build
- #     with:
- #       build_type: ${{ matrix.config.build_type }}
- #       build_generator: ${{ matrix.config.generators }}
- #       cmake_var: 'DEPENDENCY_SHARED_LIBRARY'
- #       build_target: shared
- #       build_dir: '${{ matrix.config.build_dir }}/${{ inputs.dir }}'
- #       cmake_script_location: '${{ inputs.dir }}'
+    - uses: Silverlan/common_actions/build_cmake@main
+      name: CMake Build
+      with:
+        build_type: ${{ matrix.config.build_type }}
+        build_generator: ${{ matrix.config.generators }}
+        cmake_var: 'DEPENDENCY_SHARED_LIBRARY'
+        build_target: shared
+        build_dir: '${{ matrix.config.build_dir }}/${{ inputs.dir }}'
+        cmake_script_location: '${{ inputs.dir }}'
