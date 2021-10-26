@@ -111,7 +111,7 @@ runs:
       id: test-read
       shell: bash
       run: |
-        value="$(cat cmake_vars.txt)"
+        value="$(cat test_file.txt)"
         echo "File contents: $value"
     
     
