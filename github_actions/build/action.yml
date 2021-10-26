@@ -115,7 +115,7 @@ runs:
         echo "cd..."
         cd "./third_party_libs/boost_1_76_0"
         echo "Running boost bootstrap..."
-        bootstrap.bat
+        .\bootstrap.bat
         echo "Running b2..."
         b2 toolset=msvc-14.2 address-model=64 stage variant=release link=shared runtime-link=shared -j3
         b2 toolset=msvc-14.2 address-model=64 stage variant=release link=static runtime-link=shared -j3
