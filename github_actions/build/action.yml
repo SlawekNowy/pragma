@@ -110,7 +110,7 @@ runs:
         
     - name: Install boost
       id: install-boost
-      shell: cmd
+      shell: pwsh
       run: |
         echo "cd..."
         cd "./third_party_libs/boost_1_76_0"
