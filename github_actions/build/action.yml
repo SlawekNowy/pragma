@@ -104,7 +104,7 @@ runs:
       id: setup-vtflib-build
       shell: bash
       run: |
-        cd "boost_1_76_0"
+        cd "./boost_1_76_0"
         bootstrap.bat
         cmd bootstrap.bat
         cmd b2 toolset=msvc-14.2 address-model=64 stage variant=release link=shared runtime-link=shared -j3 > build.log
