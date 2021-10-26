@@ -108,10 +108,11 @@ runs:
       run: |
         echo "SHELL TEST OUTPUT"
         
-    - name: Install xorg-dev
-      id: setup-vtflib-build
+    - name: Install boost
+      id: install-boost
       shell: cmd
       run: |
+        echo "cd..."
         cd "./third_party_libs/boost_1_76_0"
         echo "Running boost bootstrap..."
         bootstrap.bat
