@@ -101,7 +101,7 @@ runs:
       id: rem-mod
       shell: bash
       run: |
-        rm -rf ./modules/pr_curl
+        # rm -rf ./modules/pr_curl
         rm -rf ./modules/pr_prosper_opengl
         rm -rf ./modules/pr_prosper_vulkan
             
