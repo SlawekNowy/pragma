@@ -96,18 +96,24 @@ runs:
     #  run: |
     #    printf '%s' " Some test text" >> test_file.txt
     
-    - name: Cache NPM dependencies
-      uses: actions/cache@v1
-      with:
-        path: ~/.npm
-        key: test-key-${{ hashFiles('./test_file.txt') }}
-        restore-keys: |
-          test-key-
+    #- name: Cache NPM dependencies
+    #  uses: actions/cache@v1
+    #  with:
+    #    path: ~/.npm
+    #    key: test-key-${{ hashFiles('./test_file.txt') }}
+    #    restore-keys: |
+    #      test-key-
         #key: ${{ runner.OS }}-npm-cache-${{ hashFiles('**/package-lock.json') }}
         #restore-keys: |
         #  ${{ runner.OS }}-npm-cache-
         
-    - name: Create file
+    - name: Cache NPM dependencies
+      uses: actions/cache@v1
+      with:
+        path: ~/.npm
+        key: test-key-
+        
+    - name: Read file
       id: test-read
       shell: bash
       run: |
