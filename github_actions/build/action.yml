@@ -103,10 +103,10 @@ runs:
     - name: Build zlip
       uses: Silverlan/common_actions/build_zlib@main
     
-    - name: Shell Test
-      shell: cmd
-      run: |
-        echo "SHELL TEST OUTPUT"
+    #- name: Shell Test
+    #  shell: cmd
+    #  run: |
+    #    echo "SHELL TEST OUTPUT"
         
     - name: Install boost
       id: install-boost
