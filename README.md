@@ -1,3 +1,5 @@
+[![Build Windows](https://github.com/Silverlan/pragma/actions/workflows/pragma-windows-ci.yml/badge.svg)](https://github.com/Silverlan/pragma/actions/workflows/pragma-windows-ci.yml) [![Build Linux](https://github.com/Silverlan/pragma/actions/workflows/pragma-linux-ci.yml/badge.svg)](https://github.com/Silverlan/pragma/actions/workflows/pragma-linux-ci.yml)
+
 What is this?
 ------
 This is the repository for the Pragma Game Engine. For more information, visit the official website: https://pragma-engine.com/
