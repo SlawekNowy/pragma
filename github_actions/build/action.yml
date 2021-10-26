@@ -117,14 +117,14 @@ runs:
         echo "Running boost bootstrap..."
         .\bootstrap.bat
         echo "Running b2..."
-        b2 toolset=msvc-14.2 address-model=64 stage variant=release link=shared runtime-link=shared -j3
-        b2 toolset=msvc-14.2 address-model=64 stage variant=release link=static runtime-link=shared -j3
+        .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=shared runtime-link=shared -j3
+        .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=static runtime-link=shared -j3
         set ZLIB_SOURCE="$PWD/third_party_libs/zlib"
         set ZLIB_INCLUDE="$PWD/third_party_libs/zlib"
         set ZLIB_LIBPATH="$PWD/third_party_libs/zlib/build/RelWithDebInfo"
         echo "Running b2 for zlib..."
-        b2 toolset=msvc-14.2 address-model=64 stage variant=release link=shared runtime-link=shared --with-iostreams -sZLIB_SOURCE=%ZLIB_SOURCE% -sZLIB_INCLUDE=%ZLIB_INCLUDE% -sZLIB_LIBPATH=%ZLIB_LIBPATH%
-        b2 toolset=msvc-14.2 address-model=64 stage variant=release link=static runtime-link=shared --with-iostreams -sZLIB_SOURCE=%ZLIB_SOURCE% -sZLIB_INCLUDE=%ZLIB_INCLUDE% -sZLIB_LIBPATH=%ZLIB_LIBPATH%
+        .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=shared runtime-link=shared --with-iostreams -sZLIB_SOURCE=%ZLIB_SOURCE% -sZLIB_INCLUDE=%ZLIB_INCLUDE% -sZLIB_LIBPATH=%ZLIB_LIBPATH%
+        .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=static runtime-link=shared --with-iostreams -sZLIB_SOURCE=%ZLIB_SOURCE% -sZLIB_INCLUDE=%ZLIB_INCLUDE% -sZLIB_LIBPATH=%ZLIB_LIBPATH%
         echo "Done!"
     
     #- name: Install xorg-dev
