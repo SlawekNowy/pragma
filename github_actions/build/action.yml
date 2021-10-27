@@ -138,56 +138,56 @@ runs:
       shell: bash
       run: |
         echo "Cache hit: ${{steps.get-boost-cache.outputs.cache-hit}}"
-        #cd "./third_party_libs/boost"
-        #ls -R
-    
-    - name: Download boost
-      uses: Silverlan/common_actions/curl_download@main
-      with:
-        download_url: 'https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.zip'
-        file_name: 'boost_1_76_0.zip'
-    
-    - name: Build zlib
-      uses: Silverlan/common_actions/build_zlib@main
-    
-    - name: Install boost
-      id: install-boost
-      shell: pwsh
-      run: |
-        echo "cd..."
-        mv "./third_party_libs/boost_1_76_0" "./third_party_libs/boost" 
         cd "./third_party_libs/boost"
-        echo "Running boost bootstrap..."
-        .\bootstrap.bat
-        echo "Running b2..."
-        .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=shared runtime-link=shared -j3
-        .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=static runtime-link=shared -j3
-        set ZLIB_SOURCE="$PWD/third_party_libs/zlib"
-        set ZLIB_INCLUDE="$PWD/third_party_libs/zlib"
-        set ZLIB_LIBPATH="$PWD/third_party_libs/zlib/build/RelWithDebInfo"
-        echo "Running b2 for zlib..."
-        .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=shared runtime-link=shared --with-iostreams -sZLIB_SOURCE=%ZLIB_SOURCE% -sZLIB_INCLUDE=%ZLIB_INCLUDE% -sZLIB_LIBPATH=%ZLIB_LIBPATH%
-        .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=static runtime-link=shared --with-iostreams -sZLIB_SOURCE=%ZLIB_SOURCE% -sZLIB_INCLUDE=%ZLIB_INCLUDE% -sZLIB_LIBPATH=%ZLIB_LIBPATH%
-        echo "Done!"
+        ls -R
+    
+    #- name: Download boost
+    #  uses: Silverlan/common_actions/curl_download@main
+    #  with:
+    #    download_url: 'https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.zip'
+    #    file_name: 'boost_1_76_0.zip'
+    
+    #- name: Build zlib
+    #  uses: Silverlan/common_actions/build_zlib@main
+    
+    #- name: Install boost
+    #  id: install-boost
+    #  shell: pwsh
+    #  run: |
+    #    echo "cd..."
+    #    mv "./third_party_libs/boost_1_76_0" "./third_party_libs/boost" 
+    #    cd "./third_party_libs/boost"
+    #    echo "Running boost bootstrap..."
+    #    .\bootstrap.bat
+    #    echo "Running b2..."
+    #    .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=shared runtime-link=shared -j3
+    #    .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=static runtime-link=shared -j3
+    #    set ZLIB_SOURCE="$PWD/third_party_libs/zlib"
+    #    set ZLIB_INCLUDE="$PWD/third_party_libs/zlib"
+    #    set ZLIB_LIBPATH="$PWD/third_party_libs/zlib/build/RelWithDebInfo"
+    #    echo "Running b2 for zlib..."
+    #    .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=shared runtime-link=shared --with-iostreams -sZLIB_SOURCE=%ZLIB_SOURCE% -sZLIB_INCLUDE=%ZLIB_INCLUDE% -sZLIB_LIBPATH=%ZLIB_LIBPATH%
+    #    .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=static runtime-link=shared --with-iostreams -sZLIB_SOURCE=%ZLIB_SOURCE% -sZLIB_INCLUDE=%ZLIB_INCLUDE% -sZLIB_LIBPATH=%ZLIB_LIBPATH%
+    #    echo "Done!"
         
     #- name: pr
     #  shell: bash
     #  run: |
     #    ls -R
         
-    - name: Write boost cache
-      uses: actions/cache@v2
-      id: write-boost-cache
-      with:
-        path: | 
-          "D:/a/pragma/pragma/third_party_libs/boost/boost/**"
-          "D:/a/pragma/pragma/third_party_libs/boost/stage/**.lib"
-          "D:/a/pragma/pragma/third_party_libs/boost/stage/**.dll"
-        ##path: | 
-        ##  "./third_party_libs/boost/boost/**"
-        ##  "./third_party_libs/boost/stage/**/*.lib"
-        ##  "./third_party_libs/boost/stage/**/*.dll"
-        key: boost-cache-1-76-test-4
+    #- name: Write boost cache
+    #  uses: actions/cache@v2
+    #  id: write-boost-cache
+    #  with:
+    #    path: | 
+    #      "D:/a/pragma/pragma/third_party_libs/boost/boost/**"
+    #      "D:/a/pragma/pragma/third_party_libs/boost/stage/**.lib"
+    #      "D:/a/pragma/pragma/third_party_libs/boost/stage/**.dll"
+    #    ##path: | 
+    #    ##  "./third_party_libs/boost/boost/**"
+    #    ##  "./third_party_libs/boost/stage/**/*.lib"
+    #    ##  "./third_party_libs/boost/stage/**/*.dll"
+    #    key: boost-cache-1-76-test-4
         
         
     # end
