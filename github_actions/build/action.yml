@@ -138,7 +138,8 @@ runs:
       shell: bash
       run: |
         echo "Cache hit: ${{steps.get-boost-cache.outputs.cache-hit}}"
-        cd "./third_party_libs/boost"
+        # cd "./third_party_libs/boost"
+        cd "./lib"
         ls -R
     
     #- name: Download boost
