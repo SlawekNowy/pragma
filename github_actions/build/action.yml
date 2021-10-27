@@ -119,11 +119,10 @@ runs:
       uses: actions/cache@v2
       id: get-boost-cache
       with:
-        path: "D:/a/pragma/pragma/"
-        #path: | 
-        #  "D:/a/pragma/pragma/third_party_libs/boost/boost/**"
-        #  "D:/a/pragma/pragma/third_party_libs/boost/stage/**.lib"
-        #  "D:/a/pragma/pragma/third_party_libs/boost/stage/**.dll"
+        path: | 
+          "D:/a/pragma/pragma/third_party_libs/boost/boost/**"
+          "D:/a/pragma/pragma/third_party_libs/boost/stage/**.lib"
+          "D:/a/pragma/pragma/third_party_libs/boost/stage/**.dll"
         key: boost-cache-1-76-test-4
     
     - uses: ChristopherHX/conditional@b4a9649204f81002ec9a4ef7d4bf7d6b2ab7fa55
