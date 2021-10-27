@@ -38,7 +38,7 @@ jobs:
           
       - name: Build
         id: build
-        uses: Silverlan/pragma/github_actions/build@actions
+        uses: Silverlan/pragma/github_actions/write_cache@actions
         with:
           root_dir: "${{ env.GA_ROOT_DIR }}"
           should_checkout: "0"
