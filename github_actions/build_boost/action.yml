@@ -20,6 +20,11 @@ runs:
           "./third_party_libs/boost/stage/**/*${{ env.GA_SHARED_BINARY_LIBRARY_EXT }}"
         key: boost-cache-1-76
         
+    - name: Print
+      shell: bash
+      run: |
+        echo "Got a cache hit?: ${{steps.get-boost-cache.outputs.cache-hit}}"
+        
     - uses: ChristopherHX/conditional@b4a9649204f81002ec9a4ef7d4bf7d6b2ab7fa55
       name: CMake Build
       with:
