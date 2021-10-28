@@ -1,0 +1,19 @@
+name: Read cached files
+description: 'Read cached files'
+runs:
+  using: "composite"
+  steps:
+    - name: Get cached file
+      uses: actions/cache@v2
+      id: get-cached-file
+      with:
+        path: "D:/a/pragma/pragma/*.txt"
+        key: test-cache-file
+            
+    - name: Print files
+      shell: bash
+      run: |
+        echo "Cache hit: ${{steps.get-boost-cache.outputs.cache-hit}}"
+        cd "D:/a/pragma/pragma"
+        ls -R
+    
