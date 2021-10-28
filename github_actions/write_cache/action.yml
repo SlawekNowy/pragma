@@ -90,11 +90,11 @@ runs:
     
     
 
-    #- name: Create file
-    #  id: test-create
-    #  shell: bash
-    #  run: |
-    #    printf '%s' " Some test text" >> test_file.txt
+    - name: Create file
+      id: test-create
+      shell: bash
+      run: |
+        printf '%s' " Some test text" >> test_filexyz.txt
     
     #- name: Cache NPM dependencies
     #  uses: actions/cache@v2
@@ -119,12 +119,12 @@ runs:
       uses: actions/cache@v2
       id: get-boost-cache
       with:
-        path: "D:/a/pragma/pragma/third_party_libs/boost/stage/lib/*.dll"
+        path: "D:/a/pragma/pragma/*.txt"
         #path: | 
         #  "D:/a/pragma/pragma/third_party_libs/boost/boost/**"
         #  "D:/a/pragma/pragma/third_party_libs/boost/stage/**.lib"
         #  "D:/a/pragma/pragma/third_party_libs/boost/stage/**.dll"
-        key: boost-cache-1-76-test-5
+        key: boost-cache-1-76-test-6
     
     - uses: ChristopherHX/conditional@b4a9649204f81002ec9a4ef7d4bf7d6b2ab7fa55
       name: CMake Build
