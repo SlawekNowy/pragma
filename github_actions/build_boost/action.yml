@@ -18,7 +18,7 @@ runs:
           "./third_party_libs/boost/stage/*${{ env.GA_SHARED_BINARY_LIBRARY_EXT }}"
           "./third_party_libs/boost/stage/**/*${{ env.GA_STATIC_LINK_LIBRARY_EXT }}"
           "./third_party_libs/boost/stage/**/*${{ env.GA_SHARED_BINARY_LIBRARY_EXT }}"
-        key: boost-cache-1-76-v1
+        key: boost-cache-1-76-v2
         
     - name: Print
       shell: bash
@@ -28,7 +28,7 @@ runs:
     - uses: ChristopherHX/conditional@b4a9649204f81002ec9a4ef7d4bf7d6b2ab7fa55
       name: CMake Build
       with:
-        if: "${{steps.get-boost-cache.outputs.cache-hit=='false'}}"
+        if: "${{steps.get-boost-cache.outputs.cache-hit!='true'}}"
         step: |
           name: Rebuild boost
           uses: Silverlan/pragma/github_actions/rebuild_boost@actions
