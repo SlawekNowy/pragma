@@ -121,6 +121,20 @@ runs:
     - name: Build boost
       uses: Silverlan/pragma/github_actions/build_boost@actions
     
+    - name: Create file
+      id: def-boost
+      shell: bash
+      run: |
+        boostDir="${{ env.GA_ROOT_DIR }}/third_party_libs/boost"
+        boostLibDir="$boostDir/stage/lib"
+        echo '::set-output name=boost-dir::$boostDir'
+        echo '::set-output name=boost-lib-dir::$boostLibDir'
+    
+    - name: Define CMake Variables
+      uses: Silverlan/common_actions/define_cmake_var@main
+      with:
+        cmake_var: ' -DDEPENDENCY_BOOST_INCLUDE=${{ steps.def-boost.outputs.boost-dir }} -DDEPENDENCY_BOOST_CHRONO_LIBRARY=${{ steps.def-boost.outputs.boost-lib-dir }}/boost_chrono-vc142-mt-x64-1_76.lib -DDEPENDENCY_BOOST_FILESYSTEM_LIBRARY=${{ steps.def-boost.outputs.boost-lib-dir }}/boost_filesystem-vc142-mt-x64-1_76.lib -DDEPENDENCY_BOOST_IOSTREAMS_LIBRARY=${{ steps.def-boost.outputs.boost-lib-dir }}/boost_iostreams-vc142-mt-x64-1_76.lib -DDEPENDENCY_BOOST_LOCALE_LIBRARY=${{ steps.def-boost.outputs.boost-lib-dir }}/boost_locale-vc142-mt-x64-1_76.lib -DDEPENDENCY_BOOST_REGEX_LIBRARY=${{ steps.def-boost.outputs.boost-lib-dir }}/boost_regex-vc142-mt-x64-1_76.lib -DDEPENDENCY_BOOST_SERIALIZATION_LIBRARY=${{ steps.def-boost.outputs.boost-lib-dir }}/boost_serialization-vc142-mt-x64-1_76.lib -DDEPENDENCY_BOOST_SYSTEM_LIBRARY=${{ steps.def-boost.outputs.boost-lib-dir }}/boost_system-vc142-mt-x64-1_76.lib -DDEPENDENCY_BOOST_THREAD_LIBRARY=${{ steps.def-boost.outputs.boost-lib-dir }}/boost_thread-vc142-mt-x64-1_76.lib -DDEPENDENCY_BOOST_ZLIB_LIBRARY=${{ steps.def-boost.outputs.boost-lib-dir }}/boost_zlib-vc142-mt-x64-1_76.lib -DEPENDENCY_LIBBOOST_FILESYSTEM_LIBRARY=${{ steps.def-boost.outputs.boost-lib-dir }}/libboost_filesystem-vc142-mt-x64-1_76.lib -DDEPENDENCY_LIBBOOST_IOSTREAMS_LIBRARY=${{ steps.def-boost.outputs.boost-lib-dir }}/libboost_iostreams-vc142-mt-x64-1_76.lib -DDEPENDENCY_LIBBOOST_REGEX_LIBRARY=${{ steps.def-boost.outputs.boost-lib-dir }}/libboost_regex-vc142-mt-x64-1_76.lib -DDEPENDENCY_LIBBOOST_SERIALIZATION_LIBRARY=${{ steps.def-boost.outputs.boost-lib-dir }}/libboost_serialization-vc142-mt-x64-1_76.lib -DDEPENDENCY_LIBBOOST_THREAD_LIBRARY=${{ steps.def-boost.outputs.boost-lib-dir }}/libboost_thread-vc142-mt-x64-1_76.lib -DDEPENDENCY_LIBBOOST_ZLIB_LIBRARY=${{ steps.def-boost.outputs.boost-lib-dir }}/libboost_zlib-vc142-mt-x64-1_76.lib'
+
         
     # end
     
@@ -140,20 +154,20 @@ runs:
     #      sudo apt install xorg-dev
     #    fi
     
-    #- name: Remove modules
-    #  id: rem-mod
-    #  shell: bash
-    #  run: |
-    #    # rm -rf ./modules/pr_curl
-    #    rm -rf ./modules/pr_prosper_opengl
-    #    rm -rf ./modules/pr_prosper_vulkan
+    - name: Remove modules
+      id: rem-mod
+      shell: bash
+      run: |
+        # rm -rf ./modules/pr_curl
+        rm -rf ./modules/pr_prosper_opengl
+        rm -rf ./modules/pr_prosper_vulkan
             
-    #- uses: Silverlan/common_actions/build_cmake@main
-    #  name: CMake Build
-    #  with:
-    #    build_type: ${{ matrix.config.build_type }}
-    #    build_generator: ${{ matrix.config.generators }}
-    #    cmake_var: 'DEPENDENCY_SHARED_LIBRARY'
-    #    build_target: shared
-    #    build_dir: '${{ matrix.config.build_dir }}/${{ inputs.dir }}'
-    #    cmake_script_location: '${{ inputs.dir }}'
+    - uses: Silverlan/common_actions/build_cmake@main
+      name: CMake Build
+      with:
+        build_type: ${{ matrix.config.build_type }}
+        build_generator: ${{ matrix.config.generators }}
+        cmake_var: 'DEPENDENCY_SHARED_LIBRARY'
+        build_target: shared
+        build_dir: '${{ matrix.config.build_dir }}/${{ inputs.dir }}'
+        cmake_script_location: '${{ inputs.dir }}'
