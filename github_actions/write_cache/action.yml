@@ -13,6 +13,6 @@ runs:
     - name: Write cache
       uses: actions/cache@v2
       with:
-        path: "D:/a/pragma/pragma/**.txt"
-        key: test-cache-file2
+        path: "D:/a/pragma/pragma/**/*.txt"
+        key: test-cache-file3
     
