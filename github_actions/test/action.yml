@@ -1,0 +1,36 @@
+name: Build
+description: 'Build library'
+inputs:
+  root_dir:
+    description: 'Root directory'
+    required: true
+  should_checkout:
+    description: 'Checkout the core library?'
+    required: true
+    default: '1'
+  dir:
+    description: 'Library directory'
+    required: true
+    default: 'core/shared'
+runs:
+  using: "composite"
+  steps:
+    - name: Initialize Env
+      id: init-env
+      uses: Silverlan/common_actions/set_common_env_vars@main
+
+    - shell: bash
+      run: |
+        echo "Building submodule..."
+
+    - name: Build submodule
+      uses: Silverlan/common_actions/build_submodule@actions
+      with:
+        repo: 'https://github.com/Silverlan/test_shared_library'
+        repo_name: 'test_shared_library'
+        repo_branch: 'main'
+        build_target: test_shared_library
+        
+    - shell: bash
+      run: |
+        echo "Done!"
