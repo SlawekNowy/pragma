@@ -7,8 +7,8 @@ runs:
       uses: actions/cache@v2
       id: get-cached-file
       with:
-        path: "D:/a/pragma/pragma/*.txt"
-        key: test-cache-file
+        path: "D:/a/pragma/pragma/**.txt"
+        key: test-cache-file2
             
     - name: Print files
       shell: bash
