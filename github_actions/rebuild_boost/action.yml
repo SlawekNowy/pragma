@@ -43,5 +43,5 @@ runs:
           "./third_party_libs/boost/stage/*${{ env.GA_SHARED_BINARY_LIBRARY_EXT }}"
           "./third_party_libs/boost/stage/**/*${{ env.GA_STATIC_LINK_LIBRARY_EXT }}"
           "./third_party_libs/boost/stage/**/*${{ env.GA_SHARED_BINARY_LIBRARY_EXT }}"
-        key: boost-cache-1-76
+        key: boost-cache-1-76-v1
         
