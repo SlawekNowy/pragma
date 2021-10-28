@@ -24,9 +24,9 @@ jobs:
             generators: "Visual Studio 16 2019"
             build_dir: 'build'
     steps:
-      #- uses: actions/checkout@v2
-      #  with:
-      #    submodules: recursive
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
 
       - name: Setup
         id: setup
