@@ -31,6 +31,14 @@ runs:
         repo_branch: 'main'
         build_target: test_shared_library
         
+    - name: Write cache
+      uses: actions/cache@v2
+      with:
+        path: |
+          "/d/a/pragma/pragma/build/third_party_libs/test_shared_library/RelWithDebInfo/test_shared_library.lib"
+          "/d/a/pragma/pragma/build/third_party_libs/test_shared_library/RelWithDebInfo/test_shared_library.dll"
+        key: test-cache-file7
+        
     - shell: bash
       run: |
         echo "Done!"
