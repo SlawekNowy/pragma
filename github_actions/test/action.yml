@@ -23,28 +23,26 @@ runs:
       run: |
         echo "Building submodule..."
 
-    - name: Build submodule
-      uses: Silverlan/common_actions/build_submodule@actions
-      with:
-        repo: 'https://github.com/Silverlan/test_shared_library'
-        repo_name: 'test_shared_library'
-        repo_branch: 'main'
-        build_target: test_shared_library
+    #- name: Build submodule
+    #  uses: Silverlan/common_actions/build_submodule@actions
+    #  with:
+    #    repo: 'https://github.com/Silverlan/test_shared_library'
+    #    repo_name: 'test_shared_library'
+    #    repo_branch: 'main'
+    #    build_target: test_shared_library
         
-    - name: Write cache
+    #- name: Write cache
+    #  uses: actions/cache@v2
+    #  with:
+    #    path: "D:/a/pragma/pragma/**/*.dll"
+    #    key: test-cache-file13
+    
+    - name: Get cached file
       uses: actions/cache@v2
+      id: get-cached-file
       with:
         path: "D:/a/pragma/pragma/**/*.dll"
         key: test-cache-file13
-    
-    #- name: Get cached file
-    #  uses: actions/cache@v2
-    #  id: get-cached-file
-    #  with:
-    #    path: |
-    #      "D:/a/pragma/pragma/**/*.lib"
-    #      "D:/a/pragma/pragma/**/*.dll"
-    #    key: test-cache-file7
             
     - name: Print files
       shell: bash
