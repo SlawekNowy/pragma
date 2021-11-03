@@ -23,6 +23,8 @@ runs:
       run: |
         echo "Building submodule..."
 
+    ############################## WORKS ##############################
+    # Write cache test
     #- name: Build submodule
     #  uses: Silverlan/common_actions/build_submodule@actions
     #  with:
@@ -37,12 +39,39 @@ runs:
     #    path: "D:/a/pragma/pragma/**/*.dll"
     #    key: test-cache-file13
     
-    - name: Get cached file
-      uses: actions/cache@v2
-      id: get-cached-file
+    # Read cache test
+    #- name: Get cached file
+    #  uses: actions/cache@v2
+    #  id: get-cached-file
+    #  with:
+    #    path: "D:/a/pragma/pragma/**/*.dll"
+    #    key: test-cache-file13
+    ############################## WORKS ##############################
+    
+     Write cache test
+    - name: Build submodule
+      uses: Silverlan/common_actions/build_submodule@actions
       with:
-        path: "D:/a/pragma/pragma/**/*.dll"
-        key: test-cache-file13
+        repo: 'https://github.com/Silverlan/test_shared_library'
+        repo_name: 'test_shared_library'
+        repo_branch: 'main'
+        build_target: test_shared_library
+        
+    - name: Write cache
+      uses: actions/cache@v2
+      with:
+        path: |
+          "D:/a/pragma/pragma/**/*.dll"
+          "D:/a/pragma/pragma/**/*.lib"
+        key: test-cache-file14
+    
+    # Read cache test
+    #- name: Get cached file
+    #  uses: actions/cache@v2
+    #  id: get-cached-file
+    #  with:
+    #    path: "D:/a/pragma/pragma/**/*.dll"
+    #    key: test-cache-file13
             
     - name: Print files
       shell: bash
