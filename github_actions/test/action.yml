@@ -49,21 +49,35 @@ runs:
     ############################## WORKS ##############################
     
     # Test with single path
-    - name: Create files
-      shell: bash
-      run: |
-        mkdir subdir
-        cd subdir
-        printf '%s' "Lorem ipsum" >> a.txt
-        printf '%s' "dolor sit amet" >> b.md
+    #- name: Create files
+    #  shell: bash
+    #  run: |
+    #    mkdir subdir
+    #    cd subdir
+    #    printf '%s' "Lorem ipsum" >> a.txt
+    #    printf '%s' "dolor sit amet" >> b.md
         
-    - name: Write cache (Single path)
+    #- name: Write cache (Single path)
+    #  uses: actions/cache@v2
+    #  with:
+    #    path: "D:/a/pragma/pragma/**/*.txt"
+    #    key: test-cache-single-path
+    
+    # Read cache
+    - name: Get cached file
       uses: actions/cache@v2
+      id: get-cache
       with:
         path: "D:/a/pragma/pragma/**/*.txt"
         key: test-cache-single-path
     
-    
+    - name: Print files
+      shell: bash
+      run: |
+        echo "Cache hit: ${{steps.get-cache.outputs.cache-hit}}"
+        cd "D:/a/pragma/pragma"
+        ls -R
+        cat "D:/a/pragma/pragma/subdir/a.txt"
     
     
     
@@ -95,12 +109,12 @@ runs:
     #      "D:/a/pragma/pragma/**/*.lib"
     #    key: test-cache-file14
             
-    - name: Print files
-      shell: bash
-      run: |
-        echo "Cache hit: ${{steps.get-cached-file.outputs.cache-hit}}"
-        cd "D:/a/pragma/pragma"
-        ls -R
+    #- name: Print files
+    #  shell: bash
+    #  run: |
+    #    echo "Cache hit: ${{steps.get-cached-file.outputs.cache-hit}}"
+    #    cd "D:/a/pragma/pragma"
+    #    ls -R
         
     - shell: bash
       run: |
