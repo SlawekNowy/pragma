@@ -8,7 +8,7 @@ runs:
       id: get-cached-file
       with:
         path: "D:/a/pragma/pragma/**/*.txt"
-        key: test-cache-file3
+        key: test-cache-file4
             
     - name: Print files
       shell: bash
