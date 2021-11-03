@@ -14,5 +14,5 @@ runs:
       uses: actions/cache@v2
       with:
         path: "D:/a/pragma/pragma/**/*.txt"
-        key: test-cache-file3
+        key: test-cache-file4
     
