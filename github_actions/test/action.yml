@@ -48,6 +48,26 @@ runs:
     #    key: test-cache-file13
     ############################## WORKS ##############################
     
+    # Test with single path
+    - name: Create files
+      shell: bash
+      run: |
+        mkdir subdir
+        cd subdir
+        printf '%s' "Lorem ipsum" >> a.txt
+        printf '%s' "dolor sit amet" >> b.md
+        
+    - name: Write cache (Single path)
+      uses: actions/cache@v2
+      with:
+        path: "D:/a/pragma/pragma/**/*.txt"
+        key: test-cache-single-path
+    
+    
+    
+    
+    
+    
     # Write cache test
     #- name: Build submodule
     #  uses: Silverlan/common_actions/build_submodule@actions
@@ -66,14 +86,14 @@ runs:
     #    key: test-cache-file14
     
     # Read cache test
-    - name: Get cached file
-      uses: actions/cache@v2
-      id: get-cached-file
-      with:
-        path: |
-          "D:/a/pragma/pragma/**/*.dll"
-          "D:/a/pragma/pragma/**/*.lib"
-        key: test-cache-file14
+    #- name: Get cached file
+    #  uses: actions/cache@v2
+    #  id: get-cached-file
+    #  with:
+    #    path: |
+    #      "D:/a/pragma/pragma/**/*.dll"
+    #      "D:/a/pragma/pragma/**/*.lib"
+    #    key: test-cache-file14
             
     - name: Print files
       shell: bash
