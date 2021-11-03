@@ -32,9 +32,9 @@ jobs:
         id: setup
         uses: Silverlan/common_actions/setup@main
           
-      - name: Download binaries
-        uses: Silverlan/common_actions/download_build_binaries@main
-        continue-on-error: true
+      #- name: Download binaries
+      #  uses: Silverlan/common_actions/download_build_binaries@main
+      #  continue-on-error: true
           
       - name: Build
         id: build
@@ -44,5 +44,5 @@ jobs:
           should_checkout: "0"
           dir: '.'
           
-      - name: Upload binaries
-        uses: Silverlan/common_actions/upload_build_binaries@main
+      #- name: Upload binaries
+      #  uses: Silverlan/common_actions/upload_build_binaries@main
