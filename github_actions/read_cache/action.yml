@@ -14,11 +14,11 @@ runs:
       uses: actions/cache@v2
       with:
         path: |
-          ${{ inputs.cache_dir }}/cache_test/**/*.txt
-          ${{ inputs.cache_dir }}/cache_test/**/*.md
-        key: ${{ inputs.cache_id }}-${{ hashFiles('${{ inputs.cache_dir }}/cache_test/**') }}
+          ${{ inputs.cache_dir }}/**/*.txt
+          ${{ inputs.cache_dir }}/**/*.md
+        key: ${{ inputs.cache_id }}-${{ hashFiles('${{ inputs.cache_dir }}/**') }}
         restore-keys: |
-          ${{ inputs.cache_id }}-${{ hashFiles('${{ inputs.cache_dir }}/cache_test/**') }}
+          ${{ inputs.cache_id }}-${{ hashFiles('${{ inputs.cache_dir }}/**') }}
           ${{ inputs.cache_id }}-
     - name: Print files (B)
       shell: bash
