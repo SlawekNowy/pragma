@@ -112,41 +112,24 @@ runs:
     #    find cache_test2 -type f | xargs -t grep -e.
     
     # Write cache test
-    #- name: Create files
-    #  shell: bash
-    #  id: store
-    #  run: |
-    #    mkdir -p '${{ inputs.cache_dir }}/subdir'
-    #    cd '${{ inputs.cache_dir }}/subdir'
-    #    echo pwd $(pwd)
-    #    printf '%s' "Lorem ipsum" >> a.txt
-    #    printf '%s' "dolor sit amet" >> b.md
-    #    cat a.txt b.md
-    #- name: Write cache
-    #  uses: Silverlan/pragma/github_actions/write_cache@actions
+    - name: Write cache
+      uses: Silverlan/pragma/github_actions/write_cache@actions
+      with:
+        cache_dir: 'cache_test'
+        cache_id: 'test-cache-u'
+    
+    # Read cache test
+    #- name: Read cache
+    #  uses: Silverlan/pragma/github_actions/read_cache@actions
     #  with:
     #    cache_dir: 'cache_test'
     #    cache_id: 'test-cache-y'
-    #- name: Print files (A)
+    #- name: Print files (B)
     #  shell: bash
     #  run: |
-    #    # echo "Cache hit: ${{steps.store.outputs.cache-hit}}"
-    #    find ${{ inputs.cache_dir }}/subdir
-    #    cat ${{ inputs.cache_dir }}/subdir/a.txt
-    #    cat ${{ inputs.cache_dir }}/subdir/b.md
-    
-    # Read cache test
-    - name: Read cache
-      uses: Silverlan/pragma/github_actions/read_cache@actions
-      with:
-        cache_dir: 'cache_test'
-        cache_id: 'test-cache-y'
-    - name: Print files (B)
-      shell: bash
-      run: |
-        ls -R
-        # find ./ -type f | xargs -t grep -e.
-        # find ${{ inputs.cache_dir }} -type f | xargs -t grep -e.
+    #    ls -R
+    #    # find ./ -type f | xargs -t grep -e.
+    #    # find ${{ inputs.cache_dir }} -type f | xargs -t grep -e.
     
     #- name: Create files
     #  shell: bash
