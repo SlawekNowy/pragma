@@ -11,7 +11,7 @@ runs:
   using: "composite"
   steps:
     - name: Restore
-      uses: actions/cache@v2
+      uses: actions/cache@v2.1.6
       with:
         path: |
           ${{ inputs.cache_dir }}/**/*.txt
