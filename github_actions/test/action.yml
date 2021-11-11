@@ -78,7 +78,22 @@ runs:
     #    ls -R
     #    cat "D:/a/pragma/pragma/subdir/a.txt"
     
-    
+    - name: Create files
+      shell: bash
+      id: store
+      run: |
+        mkdir -p 'cache_test2/subdir'
+        cd 'cache_test2/subdir'
+        echo pwd $(pwd)
+        printf '%s' "Lorem ipsum" >> a.txt
+        printf '%s' "dolor sit amet" >> b.md
+        cat a.txt b.md
+    # Write cache test
+    - name: Write cache
+      uses: Silverlan/common_actions/write_cache@actions
+      with:
+        cache_dir: 'cache_test2'
+        cache_id: 'test-cache-q'
     
     #- name: Create files
     #  shell: bash
@@ -105,20 +120,20 @@ runs:
     #    cat cache_test/subdir/a.txt
     #    cat cache_test/subdir/b.md
 
-    - name: Restore
-      uses: actions/cache@v2
-      with:
-        path: |
-          cache_test/**/*.txt
-          cache_test/**/*.md
-        key: multiple-filesX-${{ hashFiles('cache_test/**') }}
-        restore-keys: |
-          multiple-filesX-${{ hashFiles('cache_test/**') }}
-          multiple-files-
-    - name: Print files (B)
-      shell: bash
-      run: |
-        find cache_test -type f | xargs -t grep -e.
+    #- name: Restore
+    #  uses: actions/cache@v2
+    #  with:
+    #    path: |
+    #      cache_test/**/*.txt
+    #      cache_test/**/*.md
+    #    key: multiple-filesX-${{ hashFiles('cache_test/**') }}
+    #    restore-keys: |
+    #      multiple-filesX-${{ hashFiles('cache_test/**') }}
+    #      multiple-files-
+    #- name: Print files (B)
+    #  shell: bash
+    #  run: |
+    #    find cache_test -type f | xargs -t grep -e.
     
     
     
