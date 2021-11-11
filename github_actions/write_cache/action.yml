@@ -1,18 +1,19 @@
 name: Write cached file
 description: 'Write cached file'
+inputs:
+  cache_dir:
+    description: 'Root path which contains the files that should be cached'
+    required: true
+  cache_id:
+    description: 'The id of the cache'
+    required: true
 runs:
   using: "composite"
   steps:
-    - name: Create file
-      shell: bash
-      run: |
-        mkdir subdir
-        cd subdir
-        printf '%s' "Lorem ipsum" >> test_file.txt
-    
-    - name: Write cache
+    - name: Store in cache
       uses: actions/cache@v2
       with:
-        path: "D:/a/pragma/pragma/**/*.txt"
-        key: test-cache-file4
-    
+        path: |
+          '${{ inputs.cache_dir }}/**/*.txt'
+          '${{ inputs.cache_dir }}/**/*.md'
+        key: ${{ inputs.cache_id }}-${{ hashFiles('${{ inputs.cache_dir }}/**') }}
