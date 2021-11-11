@@ -124,6 +124,10 @@ runs:
       with:
         cache_dir: 'cache_test'
         cache_id: 'test-cache-u'
+    - name: Print files (B)
+      shell: bash
+      run: |
+        find ${{ inputs.cache_dir }} -type f | xargs -t grep -e.
     #- name: Print files (B)
     #  shell: bash
     #  run: |
