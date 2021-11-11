@@ -80,45 +80,45 @@ runs:
     
     
     
-    #- name: Create files
-    #  shell: bash
-    #  id: store
-    #  run: |
-    #    mkdir -p 'cache_test/cache_test/subdir'
-    #    cd 'cache_test/cache_test/subdir'
-    #    echo pwd $(pwd)
-    #    printf '%s' "Lorem ipsum" >> a.txt
-    #    printf '%s' "dolor sit amet" >> b.md
-    #    cat a.txt b.md
-    #- name: Store in cache
+    - name: Create files
+      shell: bash
+      id: store
+      run: |
+        mkdir -p 'cache_test/subdir'
+        cd 'cache_test/subdir'
+        echo pwd $(pwd)
+        printf '%s' "Lorem ipsum" >> a.txt
+        printf '%s' "dolor sit amet" >> b.md
+        cat a.txt b.md
+    - name: Store in cache
+      uses: actions/cache@v2
+      with:
+        path: |
+          cache_test/**/*.txt
+          cache_test/**/*.md
+        key: multiple-filesX-${{ hashFiles('cache_test/**') }}
+    - name: Print files (A)
+      shell: bash
+      run: |
+        echo "Cache hit: ${{steps.store.outputs.cache-hit}}"
+        find cache_test/subdir
+        cat cache_test/subdir/a.txt
+        cat cache_test/subdir/b.md
+
+    #- name: Restore
     #  uses: actions/cache@v2
     #  with:
     #    path: |
     #      cache_test/cache_test/**/*.txt
     #      cache_test/cache_test/**/*.md
-    #    key: multiple-files-${{ hashFiles('cache_test/cache_test/**') }}
-    #- name: Print files (A)
+    #    key: multiple-filesX-${{ hashFiles('cache_test/cache_test/**') }}
+    #    restore-keys: |
+    #      multiple-filesX-${{ hashFiles('cache_test/cache_test/**') }}
+    #      multiple-files-
+    #- name: Print files (B)
     #  shell: bash
     #  run: |
-    #    echo "Cache hit: ${{steps.store.outputs.cache-hit}}"
-    #    find cache_test/cache_test/subdir
-    #    cat cache_test/cache_test/subdir/a.txt
-    #    cat cache_test/cache_test/subdir/b.md
-
-    - name: Restore
-      uses: actions/cache@v2
-      with:
-        path: |
-          cache_test/cache_test/**/*.txt
-          cache_test/cache_test/**/*.md
-        key: multiple-files-${{ hashFiles('cache_test/cache_test/**') }}
-        restore-keys: |
-          multiple-files-${{ hashFiles('cache_test/cache_test/**') }}
-          multiple-files-
-    - name: Print files (B)
-      shell: bash
-      run: |
-        find cache_test -type f | xargs -t grep -e.
+    #    find cache_test -type f | xargs -t grep -e.
     
     
     
