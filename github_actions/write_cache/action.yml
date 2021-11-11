@@ -17,13 +17,6 @@ runs:
           ${{ inputs.cache_dir }}/**/*.txt
           ${{ inputs.cache_dir }}/**/*.md
         key: ${{ inputs.cache_id }}-${{ hashFiles('${{ inputs.cache_dir }}/**') }}
-    - name: Print files (A)
-      shell: bash
-      run: |
-        echo "Cache hit: ${{steps.store.outputs.cache-hit}}"
-        find ${{ inputs.cache_dir }}/subdir
-        cat ${{ inputs.cache_dir }}/subdir/a.txt
-        cat ${{ inputs.cache_dir }}/subdir/b.md
     #- name: Store in cache
     #  uses: actions/cache@v2
     #  with:
