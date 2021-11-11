@@ -14,8 +14,8 @@ runs:
       uses: actions/cache@v2.1.6
       with:
         path: |
-          ${{ inputs.cache_dir }}/**/*.txt
-          ${{ inputs.cache_dir }}/**/*.md
+          ${{ inputs.cache_dir }}/**/*.dll
+          ${{ inputs.cache_dir }}/**/*.lib
         key: ${{ inputs.cache_id }}-${{ hashFiles('${{ inputs.cache_dir }}/**') }}
     #- name: Store in cache
     #  uses: actions/cache@v2
