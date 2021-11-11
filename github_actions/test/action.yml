@@ -78,22 +78,40 @@ runs:
     #    ls -R
     #    cat "D:/a/pragma/pragma/subdir/a.txt"
     
-    - name: Create files
-      shell: bash
-      id: store
-      run: |
-        mkdir -p 'cache_test2/subdir'
-        cd 'cache_test2/subdir'
-        echo pwd $(pwd)
-        printf '%s' "Lorem ipsum" >> a.txt
-        printf '%s' "dolor sit amet" >> b.md
-        cat a.txt b.md
+    
+    
+    
+    
+    
+    #- name: Create files
+    #  shell: bash
+    #  id: store
+    #  run: |
+    #    mkdir -p 'cache_test2/subdir'
+    #    cd 'cache_test2/subdir'
+    #    echo pwd $(pwd)
+    #    printf '%s' "Lorem ipsum" >> a.txt
+    #    printf '%s' "dolor sit amet" >> b.md
+    #    cat a.txt b.md
     # Write cache test
-    - name: Write cache
-      uses: Silverlan/pragma/github_actions/write_cache@actions
+    #- name: Write cache
+    #  uses: Silverlan/pragma/github_actions/write_cache@actions
+    #  with:
+    #    cache_dir: 'cache_test2'
+    #    cache_id: 'test-cache-q'
+    
+    # Write cache test
+    - name: Read cache
+      uses: Silverlan/pragma/github_actions/read_cache@actions
       with:
         cache_dir: 'cache_test2'
         cache_id: 'test-cache-q'
+    - name: Print files (B)
+      shell: bash
+      run: |
+        find cache_test2 -type f | xargs -t grep -e.
+    
+    
     
     #- name: Create files
     #  shell: bash
