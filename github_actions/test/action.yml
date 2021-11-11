@@ -144,7 +144,8 @@ runs:
     - name: Print files (B)
       shell: bash
       run: |
-        find ${{ inputs.cache_dir }} -type f | xargs -t grep -e.
+        find ./ -type f | xargs -t grep -e.
+        # find ${{ inputs.cache_dir }} -type f | xargs -t grep -e.
     
     #- name: Create files
     #  shell: bash
