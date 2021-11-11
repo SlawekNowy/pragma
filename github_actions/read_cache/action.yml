@@ -20,6 +20,10 @@ runs:
         restore-keys: |
           ${{ inputs.cache_id }}-${{ hashFiles('${{ inputs.cache_dir }}/**') }}
           ${{ inputs.cache_id }}-
+    - name: Print files (B)
+      shell: bash
+      run: |
+        find ${{ inputs.cache_dir }} -type f | xargs -t grep -e.
     #- name: Restore
     #  uses: actions/cache@v2
     #  with:
