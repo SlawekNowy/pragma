@@ -131,9 +131,9 @@ runs:
       shell: bash
       run: |
         echo "Cache hit: ${{steps.store.outputs.cache-hit}}"
-        find ${{ inputs.cache_dir }}/subdir
-        cat ${{ inputs.cache_dir }}/subdir/a.txt
-        cat ${{ inputs.cache_dir }}/subdir/b.md
+        find cache_test/subdir
+        cat cache_test/subdir/a.txt
+        cat cache_test/subdir/b.md
         
     
     # Read cache test
