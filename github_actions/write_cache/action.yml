@@ -14,8 +14,8 @@ runs:
       shell: bash
       id: store
       run: |
-        mkdir -p '${{ inputs.cache_dir }}/cache_test/subdir'
-        cd '${{ inputs.cache_dir }}/cache_test/subdir'
+        mkdir -p '${{ inputs.cache_dir }}/subdir'
+        cd '${{ inputs.cache_dir }}/subdir'
         echo pwd $(pwd)
         printf '%s' "Lorem ipsum" >> a.txt
         printf '%s' "dolor sit amet" >> b.md
@@ -24,16 +24,16 @@ runs:
       uses: actions/cache@v2
       with:
         path: |
-          ${{ inputs.cache_dir }}/cache_test/**/*.txt
-          ${{ inputs.cache_dir }}/cache_test/**/*.md
-        key: ${{ inputs.cache_id }}-${{ hashFiles('${{ inputs.cache_dir }}/cache_test/**') }}
+          ${{ inputs.cache_dir }}/**/*.txt
+          ${{ inputs.cache_dir }}/**/*.md
+        key: ${{ inputs.cache_id }}-${{ hashFiles('${{ inputs.cache_dir }}/**') }}
     - name: Print files (A)
       shell: bash
       run: |
         echo "Cache hit: ${{steps.store.outputs.cache-hit}}"
-        find ${{ inputs.cache_dir }}/cache_test/subdir
-        cat ${{ inputs.cache_dir }}/cache_test/subdir/a.txt
-        cat ${{ inputs.cache_dir }}/cache_test/subdir/b.md
+        find ${{ inputs.cache_dir }}/subdir
+        cat ${{ inputs.cache_dir }}/subdir/a.txt
+        cat ${{ inputs.cache_dir }}/subdir/b.md
     #- name: Store in cache
     #  uses: actions/cache@v2
     #  with:
