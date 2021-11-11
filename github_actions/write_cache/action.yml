@@ -10,10 +10,34 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Create files
+      shell: bash
+      id: store
+      run: |
+        mkdir -p 'cache_test/cache_test/subdir'
+        cd 'cache_test/cache_test/subdir'
+        echo pwd $(pwd)
+        printf '%s' "Lorem ipsum" >> a.txt
+        printf '%s' "dolor sit amet" >> b.md
+        cat a.txt b.md
     - name: Store in cache
       uses: actions/cache@v2
       with:
         path: |
-          '${{ inputs.cache_dir }}/**/*.txt'
-          '${{ inputs.cache_dir }}/**/*.md'
-        key: ${{ inputs.cache_id }}-${{ hashFiles('${{ inputs.cache_dir }}/**') }}
+          cache_test/cache_test/**/*.txt
+          cache_test/cache_test/**/*.md
+        key: multiple-files-${{ hashFiles('cache_test/cache_test/**') }}
+    - name: Print files (A)
+      shell: bash
+      run: |
+        echo "Cache hit: ${{steps.store.outputs.cache-hit}}"
+        find cache_test/cache_test/subdir
+        cat cache_test/cache_test/subdir/a.txt
+        cat cache_test/cache_test/subdir/b.md
+    #- name: Store in cache
+    #  uses: actions/cache@v2
+    #  with:
+    #    path: |
+    #      '${{ inputs.cache_dir }}/**/*.txt'
+    #      '${{ inputs.cache_dir }}/**/*.md'
+    #    key: ${{ inputs.cache_id }}-${{ hashFiles('${{ inputs.cache_dir }}/**') }}
