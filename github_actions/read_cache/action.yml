@@ -16,10 +16,10 @@ runs:
         path: |
           cache_test/cache_test/**/*.txt
           cache_test/cache_test/**/*.md
-        key: multiple-files-${{ hashFiles('cache_test/cache_test/**') }}
+        key: ${{ inputs.cache_id }}-${{ hashFiles('cache_test/cache_test/**') }}
         restore-keys: |
-          multiple-files-${{ hashFiles('cache_test/cache_test/**') }}
-          multiple-files-
+          ${{ inputs.cache_id }}-${{ hashFiles('cache_test/cache_test/**') }}
+          ${{ inputs.cache_id }}-
     - name: Print files (B)
       shell: bash
       run: |
