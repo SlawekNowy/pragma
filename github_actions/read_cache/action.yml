@@ -14,7 +14,6 @@ runs:
       uses: actions/cache@v2
       with:
         path: |
-        path: |
           '${{ inputs.cache_dir }}/**/*.txt'
           '${{ inputs.cache_dir }}/**/*.md'
         key: ${{ inputs.cache_id }}-${{ hashFiles('${{ inputs.cache_dir }}/**') }}
