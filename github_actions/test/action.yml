@@ -101,17 +101,22 @@ runs:
     #    cache_id: 'test-cache-q'
     
     # Write cache test
-    - name: Read cache
-      uses: Silverlan/pragma/github_actions/read_cache@actions
+    #- name: Read cache
+    #  uses: Silverlan/pragma/github_actions/read_cache@actions
+    #  with:
+    #    cache_dir: 'cache_test2'
+    #    cache_id: 'test-cache-q'
+    #- name: Print files (B)
+    #  shell: bash
+    #  run: |
+    #    find cache_test2 -type f | xargs -t grep -e.
+    
+    # Write cache test
+    - name: Write cache
+      uses: Silverlan/pragma/github_actions/write_cache@actions
       with:
         cache_dir: 'cache_test2'
         cache_id: 'test-cache-q'
-    - name: Print files (B)
-      shell: bash
-      run: |
-        find cache_test2 -type f | xargs -t grep -e.
-    
-    
     
     #- name: Create files
     #  shell: bash
