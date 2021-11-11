@@ -27,10 +27,6 @@ runs:
         
         
         
-        
-    - name: Initialize Env
-      id: init-env
-      uses: Silverlan/common_actions/set_common_env_vars@main
 
     - name: Download boost
       uses: Silverlan/common_actions/curl_download@main
