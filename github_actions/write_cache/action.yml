@@ -10,16 +10,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Create files
-      shell: bash
-      id: store
-      run: |
-        mkdir -p '${{ inputs.cache_dir }}/subdir'
-        cd '${{ inputs.cache_dir }}/subdir'
-        echo pwd $(pwd)
-        printf '%s' "Lorem ipsum" >> a.txt
-        printf '%s' "dolor sit amet" >> b.md
-        cat a.txt b.md
     - name: Store in cache
       uses: actions/cache@v2.1.6
       with:
