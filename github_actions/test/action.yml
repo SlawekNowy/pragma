@@ -90,7 +90,7 @@ runs:
         cat a.txt b.md
     # Write cache test
     - name: Write cache
-      uses: Silverlan/common_actions/write_cache@actions
+      uses: Silverlan/pragma/github_actions/write_cache@actions
       with:
         cache_dir: 'cache_test2'
         cache_id: 'test-cache-q'
