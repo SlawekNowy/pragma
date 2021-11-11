@@ -112,18 +112,18 @@ runs:
     #    find cache_test2 -type f | xargs -t grep -e.
     
     # Write cache test
-    #- name: Write cache
-    #  uses: Silverlan/pragma/github_actions/write_cache@actions
+    - name: Write cache
+      uses: Silverlan/pragma/github_actions/write_cache@actions
+      with:
+        cache_dir: 'cache_test'
+        cache_id: 'test-cache-e'
+    
+    # Read cache test
+    #- name: Read cache
+    #  uses: Silverlan/pragma/github_actions/read_cache@actions
     #  with:
     #    cache_dir: 'cache_test2'
     #    cache_id: 'test-cache-w'
-    
-    # Read cache test
-    - name: Read cache
-      uses: Silverlan/pragma/github_actions/read_cache@actions
-      with:
-        cache_dir: 'cache_test2'
-        cache_id: 'test-cache-w'
     
     #- name: Create files
     #  shell: bash
