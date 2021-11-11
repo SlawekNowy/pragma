@@ -1,19 +1,23 @@
 name: Read cached files
 description: 'Read cached files'
+inputs:
+  cache_dir:
+    description: 'Root path which contains the files that should be cached'
+    required: true
+  cache_id:
+    description: 'The id of the cache'
+    required: true
 runs:
   using: "composite"
   steps:
-    - name: Get cached file
+    - name: Restore
       uses: actions/cache@v2
-      id: get-cached-file
       with:
-        path: "D:/a/pragma/pragma/**/*.txt"
-        key: test-cache-file4
-            
-    - name: Print files
-      shell: bash
-      run: |
-        echo "Cache hit: ${{steps.get-boost-cache.outputs.cache-hit}}"
-        cd "D:/a/pragma/pragma"
-        ls -R
-    
+        path: |
+        path: |
+          '${{ inputs.cache_dir }}/**/*.txt'
+          '${{ inputs.cache_dir }}/**/*.md'
+        key: ${{ inputs.cache_id }}-${{ hashFiles('${{ inputs.cache_dir }}/**') }}
+        restore-keys: |
+          ${{ inputs.cache_id }}-${{ hashFiles('cache_test/**') }}
+          ${{ inputs.cache_id }}-
