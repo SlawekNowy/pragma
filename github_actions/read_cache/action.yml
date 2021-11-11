@@ -14,9 +14,23 @@ runs:
       uses: actions/cache@v2
       with:
         path: |
-          '${{ inputs.cache_dir }}/**/*.txt'
-          '${{ inputs.cache_dir }}/**/*.md'
-        key: ${{ inputs.cache_id }}-${{ hashFiles('${{ inputs.cache_dir }}/**') }}
+          cache_test/cache_test/**/*.txt
+          cache_test/cache_test/**/*.md
+        key: multiple-files-${{ hashFiles('cache_test/cache_test/**') }}
         restore-keys: |
-          ${{ inputs.cache_id }}-${{ hashFiles('cache_test/**') }}
-          ${{ inputs.cache_id }}-
+          multiple-files-${{ hashFiles('cache_test/cache_test/**') }}
+          multiple-files-
+    - name: Print files (B)
+      shell: bash
+      run: |
+        find cache_test -type f | xargs -t grep -e.
+    #- name: Restore
+    #  uses: actions/cache@v2
+    #  with:
+    #    path: |
+    #      '${{ inputs.cache_dir }}/**/*.txt'
+    #      '${{ inputs.cache_dir }}/**/*.md'
+    #    key: ${{ inputs.cache_id }}-${{ hashFiles('${{ inputs.cache_dir }}/**') }}
+    #    restore-keys: |
+    #      ${{ inputs.cache_id }}-${{ hashFiles('cache_test/**') }}
+    #      ${{ inputs.cache_id }}-
