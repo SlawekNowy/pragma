@@ -112,28 +112,33 @@ runs:
     #    find cache_test2 -type f | xargs -t grep -e.
     
     # Write cache test
-    #- name: Write cache
-    #  uses: Silverlan/pragma/github_actions/write_cache@actions
+    - name: Create files
+      shell: bash
+      id: store
+      run: |
+        mkdir -p 'cache_test/subdir'
+        cd 'cache_test/subdir'
+        echo pwd $(pwd)
+        printf '%s' "Lorem ipsum" >> a.txt
+        printf '%s' "dolor sit amet" >> b.md
+        cat a.txt b.md
+    - name: Write cache
+      uses: Silverlan/pragma/github_actions/write_cache@actions
+      with:
+        cache_dir: 'cache_test'
+        cache_id: 'test-cache-i'
+        
+    
+    # Read cache test
+    #- name: Read cache
+    #  uses: Silverlan/pragma/github_actions/read_cache@actions
     #  with:
     #    cache_dir: 'cache_test'
     #    cache_id: 'test-cache-u'
-    
-    # Read cache test
-    - name: Read cache
-      uses: Silverlan/pragma/github_actions/read_cache@actions
-      with:
-        cache_dir: 'cache_test'
-        cache_id: 'test-cache-u'
-    - name: Print files (B)
-      shell: bash
-      run: |
-        find 'cache_test' -type f | xargs -t grep -e.
     #- name: Print files (B)
     #  shell: bash
     #  run: |
-    #    ls -R
-    #    # find ./ -type f | xargs -t grep -e.
-    #    # find ${{ inputs.cache_dir }} -type f | xargs -t grep -e.
+    #    find 'cache_test' -type f | xargs -t grep -e.
     
     #- name: Create files
     #  shell: bash
