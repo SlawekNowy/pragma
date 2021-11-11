@@ -80,6 +80,45 @@ runs:
     
     
     
+    - name: Create files
+      shell: bash
+      id: store
+      run: |
+        mkdir -p 'cache_test/cache_test/subdir'
+        cd 'cache_test/cache_test/subdir'
+        echo pwd $(pwd)
+        printf '%s' "Lorem ipsum" >> a.txt
+        printf '%s' "dolor sit amet" >> b.md
+        cat a.txt b.md
+    - name: Store in cache
+      uses: actions/cache@v2
+      with:
+        path: |
+          cache_test/cache_test/**/*.txt
+          cache_test/cache_test/**/*.md
+        key: multiple-files-${{ hashFiles('cache_test/cache_test/**') }}
+    - name: Print files (A)
+      shell: bash
+      run: |
+        echo "Cache hit: ${{steps.store.outputs.cache-hit}}"
+        find cache_test/cache_test/subdir
+        cat cache_test/cache_test/subdir/a.txt
+        cat cache_test/cache_test/subdir/b.md
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     # Test with multiple paths
     #- name: Create files
     #  shell: bash
@@ -98,23 +137,23 @@ runs:
     #    key: test-cache-multi-path-${{ hashFiles('cache_test/**') }}
     
     # Read cache
-    - name: Get cached file
-      uses: actions/cache@v2
-      id: get-cache
-      with:
-        path: |
-          "cache_test/**/*.txt"
-          "cache_test/**/*.md"
-        key: test-cache-multi-path-${{ hashFiles('cache_test/**') }}
+    #- name: Get cached file
+    #  uses: actions/cache@v2
+    #  id: get-cache
+    #  with:
+    #    path: |
+    #      "cache_test/**/*.txt"
+    #      "cache_test/**/*.md"
+    #    key: test-cache-multi-path-${{ hashFiles('cache_test/**') }}
     
-    - name: Print files
-      shell: bash
-      run: |
-        echo "Cache hit: ${{steps.get-cache.outputs.cache-hit}}"
-        cd "D:/a/pragma/pragma"
-        ls -R
-        cat "D:/a/pragma/pragma/subdir/a.txt"
-        cat "D:/a/pragma/pragma/subdir/b.md"
+    #- name: Print files
+    #  shell: bash
+    #  run: |
+    #    echo "Cache hit: ${{steps.get-cache.outputs.cache-hit}}"
+    #    cd "D:/a/pragma/pragma"
+    #    ls -R
+    #    cat "D:/a/pragma/pragma/subdir/a.txt"
+    #    cat "D:/a/pragma/pragma/subdir/b.md"
     
     
     
