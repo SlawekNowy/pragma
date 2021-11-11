@@ -81,40 +81,40 @@ runs:
     
     
     # Test with multiple paths
-    #- name: Create files
-    #  shell: bash
-    #  run: |
-    #    mkdir subdir
-    #    cd subdir
-    #    printf '%s' "Lorem ipsum" >> a.txt
-    #    printf '%s' "dolor sit amet" >> b.md
+    - name: Create files
+      shell: bash
+      run: |
+        mkdir subdir
+        cd subdir
+        printf '%s' "Lorem ipsum" >> a.txt
+        printf '%s' "dolor sit amet" >> b.md
         
-    #- name: Write cache (Multi path)
+    - name: Write cache (Multi path)
+      uses: actions/cache@v2
+      with:
+        path: |
+          "**/*.txt"
+          "**/*.md"
+        key: test-cache-multi-path-${{ hashFiles('**') }}
+    
+    # Read cache
+    #- name: Get cached file
     #  uses: actions/cache@v2
+    #  id: get-cache
     #  with:
     #    path: |
     #      "D:/a/pragma/pragma/**/*.txt"
     #      "D:/a/pragma/pragma/**/*.md"
     #    key: test-cache-multi-path
     
-    # Read cache
-    - name: Get cached file
-      uses: actions/cache@v2
-      id: get-cache
-      with:
-        path: |
-          "D:/a/pragma/pragma/**/*.txt"
-          "D:/a/pragma/pragma/**/*.md"
-        key: test-cache-multi-path
-    
-    - name: Print files
-      shell: bash
-      run: |
-        echo "Cache hit: ${{steps.get-cache.outputs.cache-hit}}"
-        cd "D:/a/pragma/pragma"
-        ls -R
-        cat "D:/a/pragma/pragma/subdir/a.txt"
-        cat "D:/a/pragma/pragma/subdir/b.md"
+    #- name: Print files
+    #  shell: bash
+    #  run: |
+    #    echo "Cache hit: ${{steps.get-cache.outputs.cache-hit}}"
+    #    cd "D:/a/pragma/pragma"
+    #    ls -R
+    #    cat "D:/a/pragma/pragma/subdir/a.txt"
+    #    cat "D:/a/pragma/pragma/subdir/b.md"
     
     
     
