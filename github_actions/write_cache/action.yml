@@ -26,7 +26,7 @@ runs:
         path: |
           cache_test/cache_test/**/*.txt
           cache_test/cache_test/**/*.md
-        key: multiple-files-${{ hashFiles('cache_test/cache_test/**') }}
+        key: ${{ inputs.cache_id }}-${{ hashFiles('cache_test/cache_test/**') }}
     - name: Print files (A)
       shell: bash
       run: |
