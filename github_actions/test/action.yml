@@ -22,6 +22,128 @@ runs:
     - shell: bash
       run: |
         echo "Building submodule..."
+        
+        
+        
+        
+        
+        
+    - name: Initialize Env
+      id: init-env
+      uses: Silverlan/common_actions/set_common_env_vars@main
+
+    - name: Download boost
+      uses: Silverlan/common_actions/curl_download@main
+      with:
+        download_url: 'https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.zip'
+        file_name: 'boost_1_76_0.zip'
+
+    - name: Install boost
+      id: install-boost
+      shell: pwsh
+      run: |
+        mv "./third_party_libs/boost_1_76_0" "./third_party_libs/boost" 
+        cd "./third_party_libs/boost"
+        echo "Running boost bootstrap..."
+        .\bootstrap.bat
+        echo "Running b2..."
+        .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=shared runtime-link=shared -j3
+        .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=static runtime-link=shared -j3
+        set ZLIB_SOURCE="$PWD/third_party_libs/zlib"
+        set ZLIB_INCLUDE="$PWD/third_party_libs/zlib"
+        set ZLIB_LIBPATH="$PWD/third_party_libs/zlib/build/RelWithDebInfo"
+        echo "Running b2 for zlib..."
+        .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=shared runtime-link=shared --with-iostreams -sZLIB_SOURCE=%ZLIB_SOURCE% -sZLIB_INCLUDE=%ZLIB_INCLUDE% -sZLIB_LIBPATH=%ZLIB_LIBPATH%
+        .\b2 toolset=msvc-14.2 address-model=64 stage variant=release link=static runtime-link=shared --with-iostreams -sZLIB_SOURCE=%ZLIB_SOURCE% -sZLIB_INCLUDE=%ZLIB_INCLUDE% -sZLIB_LIBPATH=%ZLIB_LIBPATH%
+        echo "Done!"
+        
+    - name: Write boost cache
+      uses: Silverlan/pragma/github_actions/write_cache@actions
+      with:
+        cache_dir: 'third_party_libs/boost'
+        cache_id: 'boost-cache-1-76-v3'
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+    # Working with sub-actions
+    # Write cache test
+    #- name: Create files
+    #  shell: bash
+    #  id: store
+    #  run: |
+    #    mkdir -p 'cache_test/subdir'
+    #    cd 'cache_test/subdir'
+    #    echo pwd $(pwd)
+    #    printf '%s' "Lorem ipsum" >> a.txt
+    #    printf '%s' "dolor sit amet" >> b.md
+    #    cat a.txt b.md
+    #- name: Write cache
+    #  uses: Silverlan/pragma/github_actions/write_cache@actions
+    #  with:
+    #    cache_dir: 'cache_test'
+    #    cache_id: 'test-cache-j'
+    #- name: Print files (A)
+    #  shell: bash
+    #  run: |
+    #    echo "Cache hit: ${{steps.store.outputs.cache-hit}}"
+    #    find cache_test/subdir
+    #    cat cache_test/subdir/a.txt
+    #    cat cache_test/subdir/b.md
+        
+    
+    # Read cache test
+    #- name: Read cache
+    #  uses: Silverlan/pragma/github_actions/read_cache@actions
+    #  with:
+    #    cache_dir: 'cache_test'
+    #    cache_id: 'test-cache-j'
+    #- name: Print files (B)
+    #  shell: bash
+    #  run: |
+    #    find 'cache_test' -type f | xargs -t grep -e.
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
     ############################## WORKS ##############################
     # Write cache test
@@ -111,41 +233,7 @@ runs:
     #  run: |
     #    find cache_test2 -type f | xargs -t grep -e.
     
-    # Write cache test
-    #- name: Create files
-    #  shell: bash
-    #  id: store
-    #  run: |
-    #    mkdir -p 'cache_test/subdir'
-    #    cd 'cache_test/subdir'
-    #    echo pwd $(pwd)
-    #    printf '%s' "Lorem ipsum" >> a.txt
-    #    printf '%s' "dolor sit amet" >> b.md
-    #    cat a.txt b.md
-    #- name: Write cache
-    #  uses: Silverlan/pragma/github_actions/write_cache@actions
-    #  with:
-    #    cache_dir: 'cache_test'
-    #    cache_id: 'test-cache-j'
-    #- name: Print files (A)
-    #  shell: bash
-    #  run: |
-    #    echo "Cache hit: ${{steps.store.outputs.cache-hit}}"
-    #    find cache_test/subdir
-    #    cat cache_test/subdir/a.txt
-    #    cat cache_test/subdir/b.md
-        
-    
-    # Read cache test
-    - name: Read cache
-      uses: Silverlan/pragma/github_actions/read_cache@actions
-      with:
-        cache_dir: 'cache_test'
-        cache_id: 'test-cache-j'
-    - name: Print files (B)
-      shell: bash
-      run: |
-        find 'cache_test' -type f | xargs -t grep -e.
+
     
     #- name: Create files
     #  shell: bash
