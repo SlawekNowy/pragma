@@ -33,7 +33,7 @@ runs:
         echo "Done!"
         
     - name: Write boost cache
-      uses: Silverlan/pragma/github_actions/write_build_cache@actions
+      uses: Silverlan/common_actions/write_build_cache@actions
       id: write-boost-cache
       with:
         cache_dir: 'third_party_libs/boost'
