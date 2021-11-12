@@ -24,6 +24,13 @@ runs:
         echo "Building submodule..."
         
         
+    - name: Build boost
+      uses: Silverlan/pragma/github_actions/build_boost@actions
+        
+        
+        
+        
+        
         
         
         
@@ -61,16 +68,16 @@ runs:
         
         
     # Read cache test
-    - name: Read cache
-      uses: Silverlan/pragma/github_actions/read_cache@actions
-      with:
-        cache_dir: 'third_party_libs/boost'
-        cache_id: 'boost-cache-1-76-v3'
-    - name: Print files (B)
-      shell: bash
-      run: |
-        find 'third_party_libs' -type f | xargs -t grep -e.
-        ls -R
+    #- name: Read cache
+    #  uses: Silverlan/pragma/github_actions/read_cache@actions
+    #  with:
+    #    cache_dir: 'third_party_libs/boost'
+    #    cache_id: 'boost-cache-1-76-v3'
+    #- name: Print files (B)
+    #  shell: bash
+    #  run: |
+    #    find 'third_party_libs' -type f | xargs -t grep -e.
+    #    ls -R
         
         
         
