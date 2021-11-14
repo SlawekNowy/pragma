@@ -118,7 +118,7 @@ runs:
         echo pwd $(pwd)
         printf '%s' "Lorem ipsum" >> a.dll
         printf '%s' "dolor sit amet" >> b.lib
-        cat a.txt b.md
+        cat a.dll b.lib
     - name: Write cache
       uses: Silverlan/pragma/github_actions/write_cache@actions
       with:
