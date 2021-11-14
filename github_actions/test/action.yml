@@ -195,28 +195,43 @@ runs:
         
     # Bug Test Write
     # Write cache test
-    - name: Create files
-      shell: bash
-      id: store
-      run: |
-        mkdir -p 'dir/subdir'
-        cd 'dir/subdir'
-        echo pwd $(pwd)
-        printf '%s' "Lorem ipsum" >> a.dll
-        printf '%s' "dolor sit amet" >> b.lib
-        printf '%s' "dolor sit amet" >> c.so
-        cat a.dll b.lib c.so
+    #- name: Create files
+    #  shell: bash
+    #  id: store
+    #  run: |
+    #    mkdir -p 'dir/subdir'
+    #    cd 'dir/subdir'
+    #    echo pwd $(pwd)
+    #    printf '%s' "Lorem ipsum" >> a.dll
+    #    printf '%s' "dolor sit amet" >> b.lib
+    #    printf '%s' "dolor sit amet" >> c.so
+    #    cat a.dll b.lib c.so
         
-    - name: Store in cache
+    #- name: Store in cache
+    #  uses: actions/cache@v2.1.6
+    #  with:
+    #    path: |
+    #      dir/subdir/**/*.dll
+    #      dir/subdir/**/*.lib
+    #      dir/subdir/**/*.so
+    #    key: cache-test-${{ hashFiles('${{ inputs.cache_dir }}/**') }}
+        
+    # Bug Test Read
+    - name: Restore
       uses: actions/cache@v2.1.6
       with:
         path: |
           dir/subdir/**/*.dll
           dir/subdir/**/*.lib
           dir/subdir/**/*.so
-        key: cache-test-${{ hashFiles('${{ inputs.cache_dir }}/**') }}
-        
-        
+        key: cache-test-${{ hashFiles('dir/subdir/**') }}
+        restore-keys: |
+          cache-test-${{ hashFiles('dir/subdir/**') }}
+          cache-test-
+    - name: Print files (B)
+      shell: bash
+      run: |
+        find 'dir' -type f | xargs -t grep -e.
         
         
         
