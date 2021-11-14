@@ -132,42 +132,65 @@ runs:
         
         
     # Write test
-    - name: Download boost
-      shell: bash
-      run: |
-        mkdir -p third_party_libs/boost
-        cd third_party_libs/boost
+    #- name: Download boost
+    #  shell: bash
+    #  run: |
+    #    mkdir -p third_party_libs/boost
+    #    cd third_party_libs/boost
 
-        curl -LJO https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.zip
-        7z x boost_1_76_0.zip -aos -y
-        cd ../
+    #    curl -LJO https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.zip
+    #    7z x boost_1_76_0.zip -aos -y
+    #    cd ../
         
-    - name: Create some files
-      shell: bash
-      id: store
-      run: |
-        mkdir -p 'third_party_libs/boost/stage/lib'
-        cd 'third_party_libs/boost/stage/lib'
-        echo pwd $(pwd)
-        printf '%s' "Lorem ipsum" >> a.dll
-        printf '%s' "dolor sit amet" >> b.lib
-        printf '%s' "consectetur adipiscing elit" >> c.so
-        cat a.dll b.lib
-    - name: Store everything cache
+    #- name: Create some files
+    #  shell: bash
+    #  id: store
+    #  run: |
+    #    mkdir -p 'third_party_libs/boost/stage/lib'
+    #    cd 'third_party_libs/boost/stage/lib'
+    #    echo pwd $(pwd)
+    #    printf '%s' "Lorem ipsum" >> a.dll
+    #    printf '%s' "dolor sit amet" >> b.lib
+    #    printf '%s' "consectetur adipiscing elit" >> c.so
+    #    cat a.dll b.lib
+    #- name: Store everything cache
+    #  uses: actions/cache@v2.1.6
+    #  with:
+    #    path: |
+    #      third_party_libs/boost/**/*.dll
+    #      third_party_libs/boost/**/*.lib
+    #      third_party_libs/boost/**/*.so
+    #      third_party_libs/boost/**/*.a
+    #      third_party_libs/boost/**/*.h
+    #      third_party_libs/boost/**/*.hpp
+    #    key: test-cache-multi-files-${{ hashFiles('third_party_libs/boost/**') }}
+    #- name: Print info
+    #  shell: bash
+    #  run: |
+    #    echo "Cache hit: ${{steps.store.outputs.cache-hit}}"
+        
+    # Read test
+    - name: Restore cache
       uses: actions/cache@v2.1.6
       with:
         path: |
-          third_party_libs/boost/**/*.dll
-          third_party_libs/boost/**/*.lib
-          third_party_libs/boost/**/*.so
-          third_party_libs/boost/**/*.a
-          third_party_libs/boost/**/*.h
-          third_party_libs/boost/**/*.hpp
+          ${{ inputs.cache_dir }}/**/*.dll
+          ${{ inputs.cache_dir }}/**/*.lib
+          ${{ inputs.cache_dir }}/**/*.so
+          ${{ inputs.cache_dir }}/**/*.a
+          ${{ inputs.cache_dir }}/**/*.h
+          ${{ inputs.cache_dir }}/**/*.hpp
         key: test-cache-multi-files-${{ hashFiles('third_party_libs/boost/**') }}
-    - name: Print info
+        restore-keys: |
+          test-cache-multi-files-${{ hashFiles('third_party_libs/boost/**') }}
+          test-cache-multi-files-
+    - name: Print files (B)
       shell: bash
       run: |
-        echo "Cache hit: ${{steps.store.outputs.cache-hit}}"
+        find '.' -type f | xargs -t grep -e.
+        
+        
+        
         
     
     # Read cache test
