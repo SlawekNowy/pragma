@@ -175,15 +175,15 @@ runs:
     #  run: |
     #    find 'third_party_libs' -type f | xargs -t grep -e.
     # Read cache test
-    #- name: Read cache
-    #  uses: Silverlan/pragma/github_actions/read_cache@actions
-    #  with:
-    #    cache_dir: 'third_party_libs/boost'
-    #    cache_id: 'test-cache-n-cv6'
-    #- name: Print files (B)
-    #  shell: bash
-    #  run: |
-    #    find 'third_party_libs' -type f | xargs -t grep -e.
+    - name: Read cache
+      uses: Silverlan/pragma/github_actions/read_cache@actions
+      with:
+        cache_dir: 'third_party_libs/boost'
+        cache_id: 'test-cache-n-cv6'
+    - name: Print files (B)
+      shell: bash
+      run: |
+        find 'third_party_libs' -type f | xargs -t grep -e.
         
         
         
@@ -217,21 +217,21 @@ runs:
     #    key: cache-test-${{ hashFiles('${{ inputs.cache_dir }}/**') }}
         
     # Bug Test Read
-    - name: Restore
-      uses: actions/cache@v2.1.6
-      with:
-        path: |
-          dir/subdir/**/*.dll
-          dir/subdir/**/*.lib
-          dir/subdir/**/*.so
-        key: cache-test-${{ hashFiles('dir/subdir/**') }}
-        restore-keys: |
-          cache-test-${{ hashFiles('dir/subdir/**') }}
-          cache-test-
-    - name: Print files (B)
-      shell: bash
-      run: |
-        find 'dir' -type f | xargs -t grep -e.
+    #- name: Restore
+    #  uses: actions/cache@v2.1.6
+    #  with:
+    #    path: |
+    #      dir/subdir/**/*.dll
+    #      dir/subdir/**/*.lib
+    #      dir/subdir/**/*.so
+    #    key: cache-test-${{ hashFiles('dir/subdir/**') }}
+    #    restore-keys: |
+    #      cache-test-${{ hashFiles('dir/subdir/**') }}
+    #      cache-test-
+    #- name: Print files (B)
+    #  shell: bash
+    #  run: |
+    #    find 'dir' -type f | xargs -t grep -e.
         
         
         
