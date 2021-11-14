@@ -16,6 +16,7 @@ runs:
         path: |
           ${{ inputs.cache_dir }}/**/*.dll
           ${{ inputs.cache_dir }}/**/*.lib
+          ${{ inputs.cache_dir }}/**/*.so
         key: ${{ inputs.cache_id }}-${{ hashFiles('${{ inputs.cache_dir }}/**') }}
         restore-keys: |
           ${{ inputs.cache_id }}-${{ hashFiles('${{ inputs.cache_dir }}/**') }}
