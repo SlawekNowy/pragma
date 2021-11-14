@@ -109,40 +109,40 @@ runs:
         
     # Working with sub-actions
     # Write cache test
-    - name: Create files
-      shell: bash
-      id: store
-      run: |
-        mkdir -p 'cache_test/subdir'
-        cd 'cache_test/subdir'
-        echo pwd $(pwd)
-        printf '%s' "Lorem ipsum" >> a.dll
-        printf '%s' "dolor sit amet" >> b.lib
-        cat a.dll b.lib
-    - name: Write cache
-      uses: Silverlan/pragma/github_actions/write_cache@actions
-      with:
-        cache_dir: 'cache_test'
-        cache_id: 'test-cache-k'
-    - name: Print files (A)
-      shell: bash
-      run: |
-        echo "Cache hit: ${{steps.store.outputs.cache-hit}}"
-        find cache_test/subdir
-        cat cache_test/subdir/a.dll
-        cat cache_test/subdir/b.lib
+    #- name: Create files
+    #  shell: bash
+    #  id: store
+    #  run: |
+    #    mkdir -p 'cache_test/subdir'
+    #    cd 'cache_test/subdir'
+    #    echo pwd $(pwd)
+    #    printf '%s' "Lorem ipsum" >> a.dll
+    #    printf '%s' "dolor sit amet" >> b.lib
+    #    cat a.dll b.lib
+    #- name: Write cache
+    #  uses: Silverlan/pragma/github_actions/write_cache@actions
+    #  with:
+    #    cache_dir: 'cache_test'
+    #    cache_id: 'test-cache-k'
+    #- name: Print files (A)
+    #  shell: bash
+    #  run: |
+    #    echo "Cache hit: ${{steps.store.outputs.cache-hit}}"
+    #    find cache_test/subdir
+    #    cat cache_test/subdir/a.dll
+    #    cat cache_test/subdir/b.lib
         
     
     # Read cache test
-    #- name: Read cache
-    #  uses: Silverlan/pragma/github_actions/read_cache@actions
-    #  with:
-    #    cache_dir: 'cache_test'
-    #    cache_id: 'test-cache-j'
-    #- name: Print files (B)
-    #  shell: bash
-    #  run: |
-    #    find 'cache_test' -type f | xargs -t grep -e.
+    - name: Read cache
+      uses: Silverlan/pragma/github_actions/read_cache@actions
+      with:
+        cache_dir: 'cache_test'
+        cache_id: 'test-cache-k'
+    - name: Print files (B)
+      shell: bash
+      run: |
+        find 'cache_test' -type f | xargs -t grep -e.
         
         
         
