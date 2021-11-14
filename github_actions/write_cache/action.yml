@@ -17,9 +17,6 @@ runs:
           ${{ inputs.cache_dir }}/**/*.dll
           ${{ inputs.cache_dir }}/**/*.lib
           ${{ inputs.cache_dir }}/**/*.so
-          ${{ inputs.cache_dir }}/**/*.a
-          ${{ inputs.cache_dir }}/**/*.h
-          ${{ inputs.cache_dir }}/**/*.hpp
         key: ${{ inputs.cache_id }}-${{ hashFiles('${{ inputs.cache_dir }}/**') }}
     #- name: Store in cache
     #  uses: actions/cache@v2
