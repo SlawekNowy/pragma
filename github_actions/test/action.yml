@@ -167,7 +167,7 @@ runs:
       uses: Silverlan/common_actions/read_build_cache@actions
       with:
         cache_dir: 'third_party_libs/boost'
-        cache_id: 'test-cache-n'
+        cache_id: 'test-cache-n-cv2'
     - name: Print files (B)
       shell: bash
       run: |
