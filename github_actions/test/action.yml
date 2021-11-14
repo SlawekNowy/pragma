@@ -138,30 +138,30 @@ runs:
         
     # Working with sub-actions
     # Write cache test
-    - name: Create files
-      shell: bash
-      id: store
-      run: |
-        mkdir -p 'third_party_libs/boost/stage/lib'
-        cd 'third_party_libs/boost/stage/lib'
-        echo pwd $(pwd)
-        printf '%s' "Lorem ipsum" >> a.dll
-        printf '%s' "dolor sit amet" >> b.lib
-        printf '%s' "dolor sit amet" >> c.so
-        cat a.dll b.lib
-    - name: Write cache
-      uses: Silverlan/pragma/github_actions/write_cache@actions
-      with:
-        cache_dir: 'third_party_libs/boost'
-        cache_id: 'test-cache-n-cv10'
-    - name: Print files (A)
-      shell: bash
-      run: |
-        echo "Cache hit: ${{steps.store.outputs.cache-hit}}"
-        find third_party_libs/boost/stage/lib
-        cat third_party_libs/boost/stage/lib/a.dll
-        cat third_party_libs/boost/stage/lib/b.lib
-        cat third_party_libs/boost/stage/lib/c.so
+    #- name: Create files
+    #  shell: bash
+    #  id: store
+    #  run: |
+    #    mkdir -p 'third_party_libs/boost/stage/lib'
+    #    cd 'third_party_libs/boost/stage/lib'
+    #    echo pwd $(pwd)
+    #    printf '%s' "Lorem ipsum" >> a.dll
+    #    printf '%s' "dolor sit amet" >> b.lib
+    #    printf '%s' "dolor sit amet" >> c.so
+    #    cat a.dll b.lib
+    #- name: Write cache
+    #  uses: Silverlan/pragma/github_actions/write_cache@actions
+    #  with:
+    #    cache_dir: 'third_party_libs/boost'
+    #    cache_id: 'test-cache-n-cv10'
+    #- name: Print files (A)
+    #  shell: bash
+    #  run: |
+    #    echo "Cache hit: ${{steps.store.outputs.cache-hit}}"
+    #    find third_party_libs/boost/stage/lib
+    #    cat third_party_libs/boost/stage/lib/a.dll
+    #    cat third_party_libs/boost/stage/lib/b.lib
+    #    cat third_party_libs/boost/stage/lib/c.so
         
     
     # Read cache test
@@ -175,15 +175,15 @@ runs:
     #  run: |
     #    find 'third_party_libs' -type f | xargs -t grep -e.
     # Read cache test
-    #- name: Read cache
-    #  uses: Silverlan/pragma/github_actions/read_cache@actions
-    #  with:
-    #    cache_dir: 'third_party_libs/boost'
-    #    cache_id: 'test-cache-n-cv10'
-    #- name: Print files (B)
-    #  shell: bash
-    #  run: |
-    #    find 'third_party_libs' -type f | xargs -t grep -e.
+    - name: Read cache
+      uses: Silverlan/pragma/github_actions/read_cache@actions
+      with:
+        cache_dir: 'third_party_libs/boost'
+        cache_id: 'test-cache-n-cv10'
+    - name: Print files (B)
+      shell: bash
+      run: |
+        find 'third_party_libs' -type f | xargs -t grep -e.
         
         
         
