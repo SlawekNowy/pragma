@@ -104,11 +104,11 @@ runs:
         
         
         
-    #- name: Download boost
-    #  uses: Silverlan/common_actions/curl_download@main
-    #  with:
-    #    download_url: 'https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.zip'
-    #    file_name: 'boost_1_76_0.zip'
+    - name: Download boost
+      uses: Silverlan/common_actions/curl_download@main
+      with:
+        download_url: 'https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.zip'
+        file_name: 'boost_1_76_0.zip'
 
     - name: Install boost
       id: install-boost
