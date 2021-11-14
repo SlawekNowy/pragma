@@ -174,12 +174,12 @@ runs:
       uses: actions/cache@v2.1.6
       with:
         path: |
-          ${{ inputs.cache_dir }}/**/*.dll
-          ${{ inputs.cache_dir }}/**/*.lib
-          ${{ inputs.cache_dir }}/**/*.so
-          ${{ inputs.cache_dir }}/**/*.a
-          ${{ inputs.cache_dir }}/**/*.h
-          ${{ inputs.cache_dir }}/**/*.hpp
+          third_party_libs/boost/**/*.dll
+          third_party_libs/boost/**/*.lib
+          third_party_libs/boost/**/*.so
+          third_party_libs/boost/**/*.a
+          third_party_libs/boost/**/*.h
+          third_party_libs/boost/**/*.hpp
         key: test-cache-multi-files-v2-${{ hashFiles('third_party_libs/boost/**') }}
         restore-keys: |
           test-cache-multi-files-v2-${{ hashFiles('third_party_libs/boost/**') }}
