@@ -175,25 +175,46 @@ runs:
     #  run: |
     #    find 'third_party_libs' -type f | xargs -t grep -e.
     # Read cache test
-    - name: Read cache
-      uses: Silverlan/pragma/github_actions/read_cache@actions
-      with:
-        cache_dir: 'third_party_libs/boost'
-        cache_id: 'test-cache-n-cv6'
-    - name: Print files (B)
+    #- name: Read cache
+    #  uses: Silverlan/pragma/github_actions/read_cache@actions
+    #  with:
+    #    cache_dir: 'third_party_libs/boost'
+    #    cache_id: 'test-cache-n-cv6'
+    #- name: Print files (B)
+    #  shell: bash
+    #  run: |
+    #    find 'third_party_libs' -type f | xargs -t grep -e.
+        
+        
+        
+        
+        
+        
+        
+        
+        
+    # Bug Test Write
+    # Write cache test
+    - name: Create files
       shell: bash
+      id: store
       run: |
-        find 'third_party_libs' -type f | xargs -t grep -e.
+        mkdir -p 'dir/subdir'
+        cd 'dir/subdir'
+        echo pwd $(pwd)
+        printf '%s' "Lorem ipsum" >> a.dll
+        printf '%s' "dolor sit amet" >> b.lib
+        printf '%s' "dolor sit amet" >> c.so
+        cat a.dll b.lib c.so
         
-        
-        
-        
-        
-        
-        
-        
-        
-        
+    - name: Store in cache
+      uses: actions/cache@v2.1.6
+      with:
+        path: |
+          dir/subdir/**/*.dll
+          dir/subdir/**/*.lib
+          dir/subdir/**/*.so
+        key: cache-test-${{ hashFiles('${{ inputs.cache_dir }}/**') }}
         
         
         
