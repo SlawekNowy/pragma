@@ -163,11 +163,21 @@ runs:
         
     
     # Read cache test
+    #- name: Read cache
+    #  uses: Silverlan/common_actions/read_build_cache@actions
+    #  with:
+    #    cache_dir: 'third_party_libs/boost'
+    #    cache_id: 'test-cache-n'
+    #- name: Print files (B)
+    #  shell: bash
+    #  run: |
+    #    find 'third_party_libs' -type f | xargs -t grep -e.
+    # Read cache test
     - name: Read cache
-      uses: Silverlan/common_actions/read_build_cache@actions
+      uses: Silverlan/pragma/github_actions/read_cache@actions
       with:
         cache_dir: 'third_party_libs/boost'
-        cache_id: 'test-cache-n'
+        cache_id: 'test-cache-n-cv1'
     - name: Print files (B)
       shell: bash
       run: |
