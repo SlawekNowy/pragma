@@ -6,14 +6,10 @@ project(pragma)
 #variable_watch(DEPENDENCY_ANVIL_INCLUDE)
 #variable_watch(_STR_LEN)
 #variable_watch(TMP_VAR)
-variable_watch(DEPENDENCY_UTIL_DMX_INCLUDE)
+#variable_watch(DEPENDENCY_UTIL_DMX_INCLUDE)
 #set(CMAKE_DISABLE_FIND_PACKAGE_HarfBuzz TRUE CACHE INTERNAL "" FORCE)
 #set_target_properties(freetype PROPERTIES CMAKE_DISABLE_FIND_PACKAGE_HarfBuzz TRUE)
-if(WIN32)
-	set(CONFIG_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Build Type")
-else()
-	set(CONFIG_BUILD_TYPE "Release" CACHE STRING "Build Type")
-endif()
+
 set_property(CACHE CONFIG_BUILD_TYPE PROPERTY STRINGS RelWithDebInfo Release Debug)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -334,6 +330,13 @@ else()
 	set(GLFW_LIB_NAME "glfw" CACHE INTERNAL "" FORCE)
 endif()
 search_lib_recursive(DEPENDENCY_GLFW_LIBRARY third_party_libs/glfw/src/${BINARY_PRAGMA_DIR} ${GLFW_LIB_NAME})
+
+
+
+if(UNIX)
+    set(DEPENDENCY_LIBLTDL_INCLUDE ${CMAKE_CURRENT_LIST_DIR}/third_party_libs/libtool/libltdl CACHE PATH "Path to include directory.")
+    search_lib_recursive(DEPENDENCY_LIBLTDL_LIBRARY third_party_libs/libtool/src/libltdl-build/libltdl/.libs/ ltdl)
+endif()
 
 set(DEPENDENCY_CLIP2TRI_INCLUDE ${CMAKE_CURRENT_LIST_DIR}/third_party_libs/clip2tri CACHE PATH "Path to include directory.")
 search_lib_recursive(DEPENDENCY_CLIP2TRI_LIBRARY third_party_libs/clip2tri/${BINARY_PRAGMA_DIR} clip2tri-static STATIC)
@@ -918,6 +921,31 @@ endif()
 #TODO - HLLib is compilable in linux via makefile. Can we use it?
 #
 
+
+
+#Linux: libltdl
+if (UNIX)
+    set(C_FLAGS "$<$<CONFIG:DEBUG>:${CMAKE_C_FLAGS_DEBUG}>$<$<CONFIG:RELWITHDEBINFO>:${CMAKE_C_FLAGS_RELWITHDEBINFO}>$<$<CONFIG:RELEASE>:${CMAKE_C_FLAGS_RELEASE}>")
+    set(CXX_FLAGS "$<$<CONFIG:DEBUG>:${CMAKE_CXX_FLAGS_DEBUG}>$<$<CONFIG:RELWITHDEBINFO>:${CMAKE_CXX_FLAGS_RELWITHDEBINFO}>$<$<CONFIG:RELEASE>:${CMAKE_CXX_FLAGS_RELEASE}>")
+
+
+#execute_process(COMMAND "${CMAKE_COMMAND} -E env CC=${CMAKE_C_COMPILER}
+#CXX=${CMAKE_CXX_COMPILER}
+#CFLAGS=\"${CMAKE_C_FLAGS} ${C_FLAGS}\"
+#CXXFLAGS=\"${CMAKE_CXX_FLAGS} ${CXX_FLAGS}\"
+#third_party_libs/libtool/configure"
+#        WORKING_DIRECTORY "third_party_libs/libtool/")
+    #builddeps: help2man make makeinfo xz autoconf automake
+#Call bootstrap and configure scripts now.
+ExternalProject_Add(libltdl
+    PREFIX "third_party_libs/libtool"
+    SOURCE_DIR "third_party_libs/libtool"
+    CONFIGURE_COMMAND ${CMAKE_COMMAND} -E env CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} "CFLAGS=${CMAKE_C_FLAGS} ${C_FLAGS}" "CXXFLAGS=${CMAKE_CXX_FLAGS} ${CXX_FLAGS}" "${CMAKE_CURRENT_LIST_DIR}/third_party_libs/libtool/configure"
+    BUILD_COMMAND "make"
+    INSTALL_COMMAND ""
+    BUILD_IN_SOURCE)
+ExternalProject_Add_Step(libltdl bootstrap COMMAND "./bootstrap" DEPENDERS configure WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/third_party_libs/libtool")
+endif()
 # dependencies
 add_dependencies(png zlib)
 add_dependencies(freetype zlib)
@@ -926,7 +954,9 @@ add_dependencies(vorbis ogg)
 add_dependencies(util_pad zip)
 # add_dependencies(util_archive bsa)
 
-
+if (UNIX)
+    add_dependencies(sharedutils libltdl)
+endif()
 
 add_dependencies(util_image mathutil vfilesystem sharedutils png)
 add_dependencies(materialsystem datasystem util_image png VTFLib13 util_source2 util_udm)
@@ -1188,6 +1218,9 @@ else()
     pragma_install_lib("${DEPENDENCY_ZLIB_LIBRARY}" "${BINARY_OUTPUT_DIR}")
 endif()
 
+if(UNIX)
+    pragma_install_lib("${DEPENDENCY_LIBLTDL_LIBRARY}" "${BINARY_OUTPUT_DIR}")
+endif()
 if(WIN32)
     set(OS_LIB_BIN_EXT ".dll")
     set(OS_LIB_BIN_PRE "")

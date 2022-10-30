@@ -178,3 +178,6 @@
 [submodule "third_party_libs/bvh"]
 	path = third_party_libs/bvh
 	url = https://github.com/madmann91/bvh.git
+[submodule "third_party_libs/libtool"]
+	path = third_party_libs/libtool
+	url = https://github.com/autotools-mirror/libtool
