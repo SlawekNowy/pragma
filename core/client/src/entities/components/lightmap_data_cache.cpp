@@ -127,6 +127,7 @@ bool LightmapDataCache::LoadFromAssetData(const udm::AssetData &data,std::string
 		}
 		cacheData[LmUuid{util::uuid_string_to_bytes(std::string{pair.key})}] = std::move(instanceData);
 	}
+    return true;
 }
 const std::vector<Vector2> *LightmapDataCache::FindLightmapUvs(const util::Uuid &entUuid,const util::Uuid &meshUuid) const
 {
