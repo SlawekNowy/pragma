@@ -937,6 +937,7 @@ if (UNIX)
 #        WORKING_DIRECTORY "third_party_libs/libtool/")
     #builddeps: help2man make makeinfo xz autoconf automake
 #Call bootstrap and configure scripts now.
+include(ExternalProject)
 ExternalProject_Add(libltdl
     PREFIX "third_party_libs/libtool"
     SOURCE_DIR "third_party_libs/libtool"
