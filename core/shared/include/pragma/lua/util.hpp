@@ -48,6 +48,16 @@ namespace Lua {
 		get_table_values(l, tIdx, values, tCheck);
 		return values;
 	}
+    template<typename T>
+        void register_nested_scope(lua_State *l, luabind::scope &scope)
+        {
+            auto *registry = luabind::detail::class_registry::get_registry(l);
+            auto *crep = registry->find_class(typeid(T));
+            assert(registry != nullptr && crep != nullptr);
+            crep->get_table(l);
+            scope.register_(l);
+            Lua::Pop(l, 1);
+        }
 };
 
 #endif

@@ -89,6 +89,12 @@
         "valarray": "cpp",
         "variant": "cpp",
         "ios": "cpp",
-        "rope": "cpp"
+        "rope": "cpp",
+        "barrier": "cpp",
+        "coroutine": "cpp",
+        "regex": "cpp",
+        "slist": "cpp",
+        "latch": "cpp",
+        "scoped_allocator": "cpp"
     }
 }

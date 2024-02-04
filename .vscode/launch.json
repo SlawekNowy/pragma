@@ -23,6 +23,10 @@
                     "name": "__GLX_VENDOR_LIBRARY_NAME",
                     "value": "nvidia"
                 },
+                {
+                    "name": "ASAN_OPTIONS",
+                    "value": "detect_odr_violation=0"
+                },
             ],
             "externalConsole": true,
             "MIMode": "gdb",

@@ -20,6 +20,8 @@
 #include "pragma/rendering/render_queue.hpp"
 #include "pragma/lua/classes/lmaterial.h"
 #include "pragma/lua/classes/lentity.h"
+#include "pragma/lua/classes/lanimation.h"
+#include <pragma/lua/util.hpp>
 #include "pragma/entities/point/c_point_rendertarget.h"
 #include "pragma/lua/classes/c_lshaderinfo.h"
 #include "pragma/lua/classes/lshaderinfo.h"
@@ -1112,7 +1114,10 @@ void CGame::RegisterLuaClasses()
 	}));
 	modelClassDef.scope[defMdlExportInfo];
 
-	Lua::Model::register_class(GetLuaState(), modelClassDef, modelMeshClassDef, subModelMeshClassDef);
+    Lua::Model::register_class(GetLuaState(), modelClassDef, modelMeshClassDef, subModelMeshClassDef);
+    auto frameCreateDef = luabind::def("Create", &Lua::Frame::Create);
+
+    Lua::register_nested_scope<::Frame>(GetLuaState(),frameCreateDef);
 	modelClassDef.scope[luabind::def(
 	  "create_quad", +[](Game &game, const pragma::model::QuadCreateInfo &createInfo) -> std::shared_ptr<::Model> {
 		  auto mesh = pragma::model::create_quad(game, createInfo);

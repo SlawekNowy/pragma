@@ -30,6 +30,7 @@
 #include "pragma/model/modelmesh.h"
 
 #include "pragma/lua/ostream_operator_alias.hpp"
+#include "pragma/lua/util.hpp"
 #include <material_manager2.hpp>
 #include <luabind/iterator_policy.hpp>
 #include <pragma/lua/lua_call.hpp>
@@ -766,7 +767,7 @@ void Lua::Model::register_class(lua_State *l, luabind::class_<::Model> &classDef
 		                       auto cpy = ::Frame::Create(frame);
 		                       Lua::Push(l, cpy);
 	                       }));
-	classDefFrame.scope[luabind::def("Create", &Lua::Frame::Create)];
+    //classDefFrame.scope[luabind::def("Create", &Lua::Frame::Create)];
 
 	// Animation
 	auto classDefAnimation = luabind::class_<pragma::animation::Animation>("Animation")
@@ -1152,6 +1153,7 @@ void Lua::Model::register_class(lua_State *l, luabind::class_<::Model> &classDef
 	classDef.scope[classDefVertexAnimation];
 	classDefModelMesh.scope[classDefModelSubMesh];
 	classDef.scope[classDefModelMesh];
+
 }
 
 void Lua::Model::GetCollisionMeshes(lua_State *l, ::Model &mdl)

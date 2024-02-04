@@ -13,6 +13,8 @@
 #include "pragma/lua/classes/s_lvhcwheel.h"
 #include "pragma/lua/classes/lshaderinfo.h"
 #include "pragma/lua/classes/lmaterial.h"
+#include "pragma/lua/classes/lanimation.h"
+#include <pragma/lua/util.hpp>
 #include "pragma/entities/environment/lights/env_light.h"
 #include <pragma/entities/environment/lights/env_light_spot.h>
 #include "pragma/entities/environment/lights/env_light_point.h"
@@ -256,6 +258,10 @@ void SGame::RegisterLuaClasses()
 	modelClassDef.def("AddMaterial", &Lua::Model::Server::AddMaterial);
 	modelClassDef.def("SetMaterial", &Lua::Model::Server::SetMaterial);
 	modGame[modelClassDef];
+
+    auto frameCreateDef = luabind::def("Create", &Lua::Frame::Create);
+
+    Lua::register_nested_scope<::Frame>(GetLuaState(),frameCreateDef);
 	auto _G = luabind::globals(GetLuaState());
 	_G["Model"] = _G["game"]["Model"];
 	_G["Animation"] = _G["game"]["Model"]["Animation"];
