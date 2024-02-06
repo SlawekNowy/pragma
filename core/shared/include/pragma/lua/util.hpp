@@ -49,7 +49,7 @@ namespace Lua {
 		return values;
 	}
     template<typename T>
-        void register_nested_scope(lua_State *l, luabind::scope &scope)
+        void register_nested_scope(lua_State *l, const luabind::scope &scope)
         {
             auto *registry = luabind::detail::class_registry::get_registry(l);
             auto *crep = registry->find_class(typeid(T));
@@ -58,6 +58,17 @@ namespace Lua {
             scope.register_(l);
             Lua::Pop(l, 1);
         }
-};
+
+            template<typename T>
+            struct ScopeWrapper {
+                ScopeWrapper(lua_State *l) : lua {l} {}
+                ScopeWrapper &operator<<(const luabind::scope &scope)
+                {
+                    register_nested_scope<T>(lua, scope);
+                    return *this;
+                }
+                lua_State *lua;
+            };
+}
 
 #endif

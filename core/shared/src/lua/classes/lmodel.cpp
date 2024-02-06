@@ -695,78 +695,7 @@ void Lua::Model::register_class(lua_State *l, luabind::class_<::Model> &classDef
 	classDef.scope[classDefFlex];
 
 	// Frame
-	auto classDefFrame = luabind::class_<::Frame>("Frame")
-	                       .def("GetBoneMatrix", &Lua::Frame::GetBoneMatrix)
-	                       .def("GetBoneTransform", &Lua::Frame::GetBonePosition)
-	                       .def("GetBoneRotation", &Lua::Frame::GetBoneOrientation)
-	                       .def("SetBonePosition", &Lua::Frame::SetBonePosition)
-	                       .def("SetBoneRotation", &Lua::Frame::SetBoneOrientation)
-	                       .def("Localize", static_cast<void (*)(lua_State *, ::Frame &, pragma::animation::Animation &, panima::Skeleton *)>(&Lua::Frame::Localize))
-	                       .def("Localize", static_cast<void (*)(lua_State *, ::Frame &, panima::Skeleton *)>(&Lua::Frame::Localize))
-	                       .def("Globalize", static_cast<void (*)(lua_State *, ::Frame &, pragma::animation::Animation &, panima::Skeleton *)>(&Lua::Frame::Globalize))
-	                       .def("Globalize", static_cast<void (*)(lua_State *, ::Frame &, panima::Skeleton *)>(&Lua::Frame::Globalize))
-	                       .def("CalcRenderBounds", &Lua::Frame::CalcRenderBounds)
-	                       .def("Rotate", &Lua::Frame::Rotate)
-	                       .def("Translate", &Lua::Frame::Translate)
-	                       .def("Scale", &Lua::Frame::Scale)
-	                       .def("GetMoveTranslation", &Lua::Frame::GetMoveTranslation)
-	                       .def("GetMoveTranslationX", &Lua::Frame::GetMoveTranslationX)
-	                       .def("GetMoveTranslationZ", &Lua::Frame::GetMoveTranslationZ)
-	                       .def("SetMoveTranslation", &Lua::Frame::SetMoveTranslation)
-	                       .def("SetMoveTranslationX", &Lua::Frame::SetMoveTranslationX)
-	                       .def("SetMoveTranslationZ", &Lua::Frame::SetMoveTranslationZ)
-	                       .def("SetBoneScale", &Lua::Frame::SetBoneScale)
-	                       .def("GetBoneScale", &Lua::Frame::GetBoneScale)
-	                       .def("SetBoneTransform", static_cast<void (*)(lua_State *, ::Frame &, unsigned int, const Vector3 &, const Quat &, const Vector3 &)>(&Lua::Frame::SetBoneTransform))
-	                       .def("SetBoneTransform", static_cast<void (*)(lua_State *, ::Frame &, unsigned int, const Vector3 &, const Quat &)>(&Lua::Frame::SetBoneTransform))
-	                       .def("GetLocalBoneTransform", &Lua::Frame::GetLocalBoneTransform)
-	                       .def("GetBoneCount", &Lua::Frame::GetBoneCount)
-	                       .def("SetBoneCount", &Lua::Frame::SetBoneCount)
-	                       .def("SetBonePose", static_cast<void (*)(lua_State *, ::Frame &, uint32_t, const umath::ScaledTransform &)>(&Lua::Frame::SetBonePose))
-	                       .def("SetBonePose", static_cast<void (*)(lua_State *, ::Frame &, uint32_t, const umath::Transform &)>(&Lua::Frame::SetBonePose))
-	                       .def("GetBonePose", &Lua::Frame::GetBonePose)
-	                       .def("GetFlexControllerWeights", static_cast<void (*)(lua_State *, ::Frame &)>([](lua_State *l, ::Frame &frame) {
-		                       auto &flexFrameData = frame.GetFlexFrameData();
-		                       auto t = Lua::CreateTable(l);
-		                       auto n = flexFrameData.flexControllerWeights.size();
-		                       for(auto i = decltype(n) {0u}; i < n; ++i) {
-			                       Lua::PushInt(l, i + 1);
-			                       Lua::PushNumber(l, flexFrameData.flexControllerWeights.at(i));
-			                       Lua::SetTableValue(l, t);
-		                       }
-	                       }))
-	                       .def("GetFlexControllerIds", static_cast<void (*)(lua_State *, ::Frame &)>([](lua_State *l, ::Frame &frame) {
-		                       auto &flexFrameData = frame.GetFlexFrameData();
-		                       auto t = Lua::CreateTable(l);
-		                       auto n = flexFrameData.flexControllerIds.size();
-		                       for(auto i = decltype(n) {0u}; i < n; ++i) {
-			                       Lua::PushInt(l, i + 1);
-			                       Lua::PushInt(l, flexFrameData.flexControllerIds.at(i));
-			                       Lua::SetTableValue(l, t);
-		                       }
-	                       }))
-	                       .def("SetFlexControllerWeights", static_cast<void (*)(lua_State *, ::Frame &, luabind::object)>([](lua_State *l, ::Frame &frame, luabind::object) {
-		                       auto &flexFrameData = frame.GetFlexFrameData();
-		                       flexFrameData.flexControllerIds.clear();
-		                       flexFrameData.flexControllerWeights.clear();
 
-		                       auto t = Lua::CreateTable(l);
-		                       Lua::CheckTable(l, 2);
-
-		                       Lua::PushNil(l);
-		                       while(Lua::GetNextPair(l, 2) != 0) {
-			                       auto flexCId = Lua::CheckInt(l, -2);
-			                       auto weight = Lua::CheckNumber(l, -1);
-			                       flexFrameData.flexControllerIds.push_back(flexCId);
-			                       flexFrameData.flexControllerWeights.push_back(weight);
-
-			                       Lua::Pop(l, 1);
-		                       }
-	                       }))
-	                       .def("Copy", static_cast<void (*)(lua_State *, ::Frame &)>([](lua_State *l, ::Frame &frame) {
-		                       auto cpy = ::Frame::Create(frame);
-		                       Lua::Push(l, cpy);
-	                       }));
     //classDefFrame.scope[luabind::def("Create", &Lua::Frame::Create)];
 
 	// Animation
@@ -841,19 +770,8 @@ void Lua::Model::register_class(lua_State *l, luabind::class_<::Model> &classDef
 		                           else
 			                           Lua::PushBool(l, result);
 	                           }));
-	classDefAnimation.scope[luabind::def("Create", &Lua::Animation::Create), luabind::def("Load", &Lua::Animation::Load), luabind::def("RegisterActivity", &Lua::Animation::RegisterActivityEnum), luabind::def("RegisterEvent", &Lua::Animation::RegisterEventEnum),
-	  luabind::def("GetActivityEnums", &Lua::Animation::GetActivityEnums), luabind::def("GetEventEnums", &Lua::Animation::GetEventEnums), luabind::def("GetActivityEnumName", &Lua::Animation::GetActivityEnumName), luabind::def("GetEventEnumName", &Lua::Animation::GetEventEnumName),
-	  luabind::def("FindActivityId", &Lua::Animation::FindActivityId), luabind::def("FindEventId", &Lua::Animation::FindEventId), classDefFrame];
-	classDefAnimation.scope[luabind::def("Load", static_cast<void (*)(lua_State *, udm::AssetData &)>([](lua_State *l, udm::AssetData &assetData) {
-		std::string err;
-		auto anim = pragma::animation::Animation::Load(assetData, err);
-		if(anim == nullptr) {
-			Lua::PushBool(l, false);
-			Lua::PushString(l, err);
-			return;
-		}
-		Lua::Push(l, anim);
-	}))];
+
+
 	//for(auto &pair : ANIMATION_EVENT_NAMES)
 	//	classDefAnimation.add_static_constant(pair.second.c_str(),pair.first);
 
@@ -960,38 +878,12 @@ void Lua::Model::register_class(lua_State *l, luabind::class_<::Model> &classDef
 	classDef.scope[classDefFlexAnim];
 
 	// Vertex Animation
-	auto classDefVertexAnimation = luabind::class_<::VertexAnimation>("VertexAnimation")
-	                                 .def("Rotate", static_cast<void (*)(lua_State *, ::VertexAnimation &, const Quat &)>([](lua_State *l, ::VertexAnimation &vertAnim, const Quat &rot) { vertAnim.Rotate(rot); }))
-	                                 .def("GetMeshAnimations", &Lua::VertexAnimation::GetMeshAnimations)
-	                                 .def("GetName", &Lua::VertexAnimation::GetName);
+    auto classDefVertexAnimation = luabind::class_<::VertexAnimation>("VertexAnimation")
+                                     .def("Rotate", static_cast<void (*)(lua_State *, ::VertexAnimation &, const Quat &)>([](lua_State *l, ::VertexAnimation &vertAnim, const Quat &rot) { vertAnim.Rotate(rot); }))
+                                     .def("GetMeshAnimations", &Lua::VertexAnimation::GetMeshAnimations)
+                                     .def("GetName", &Lua::VertexAnimation::GetName);
 
-	auto classDefMeshVertexFrame = luabind::class_<::MeshVertexFrame>("Frame")
-	                                 .def("Rotate", static_cast<void (*)(lua_State *, ::MeshVertexFrame &, const Quat &)>([](lua_State *l, ::MeshVertexFrame &meshVertFrame, const Quat &rot) { meshVertFrame.Rotate(rot); }))
-	                                 .def("GetVertices", &Lua::MeshVertexFrame::GetVertices)
-	                                 .def("SetVertexCount", &Lua::MeshVertexFrame::SetVertexCount)
-	                                 .def("SetVertexPosition", &Lua::MeshVertexFrame::SetVertexPosition)
-	                                 .def("GetVertexPosition", &Lua::MeshVertexFrame::GetVertexPosition)
-	                                 .def("SetVertexNormal", &Lua::MeshVertexFrame::SetVertexNormal)
-	                                 .def("GetVertexNormal", &Lua::MeshVertexFrame::GetVertexNormal)
-	                                 .def("GetVertexCount", static_cast<void (*)(lua_State *, ::MeshVertexFrame &)>([](lua_State *l, ::MeshVertexFrame &meshVertFrame) { Lua::PushInt(l, meshVertFrame.GetVertexCount()); }))
-	                                 .def("GetFlags", static_cast<void (*)(lua_State *, ::MeshVertexFrame &)>([](lua_State *l, ::MeshVertexFrame &meshVertFrame) { Lua::PushInt(l, umath::to_integral(meshVertFrame.GetFlags())); }))
-	                                 .def("SetFlags", static_cast<void (*)(lua_State *, ::MeshVertexFrame &, uint32_t)>([](lua_State *l, ::MeshVertexFrame &meshVertFrame, uint32_t flags) { meshVertFrame.SetFlags(static_cast<::MeshVertexFrame::Flags>(flags)); }))
-	                                 .def("SetDeltaValue", static_cast<void (*)(lua_State *, ::MeshVertexFrame &, uint32_t, float)>([](lua_State *l, ::MeshVertexFrame &meshVertFrame, uint32_t vertId, float value) { meshVertFrame.SetDeltaValue(vertId, value); }))
-	                                 .def("GetDeltaValue", static_cast<void (*)(lua_State *, ::MeshVertexFrame &, uint32_t)>([](lua_State *l, ::MeshVertexFrame &meshVertFrame, uint32_t vertId) {
-		                                 float value;
-		                                 if(meshVertFrame.GetDeltaValue(vertId, value) == false)
-			                                 return;
-		                                 Lua::PushNumber(l, value);
-	                                 }));
-	classDefMeshVertexFrame.add_static_constant("FLAG_NONE", umath::to_integral(::MeshVertexFrame::Flags::None));
-	classDefMeshVertexFrame.add_static_constant("FLAG_BIT_HAS_DELTA_VALUES", umath::to_integral(::MeshVertexFrame::Flags::HasDeltaValues));
 
-	auto classDefMeshVertexAnimation = luabind::class_<::MeshVertexAnimation>("MeshAnimation")
-	                                     .def("Rotate", static_cast<void (*)(lua_State *, ::MeshVertexAnimation &, const Quat &)>([](lua_State *l, ::MeshVertexAnimation &meshVertAnim, const Quat &rot) { meshVertAnim.Rotate(rot); }))
-	                                     .def("GetFrames", &Lua::MeshVertexAnimation::GetFrames)
-	                                     .def("GetMesh", &Lua::MeshVertexAnimation::GetMesh);
-	classDefMeshVertexAnimation.scope[classDefMeshVertexFrame];
-	classDefVertexAnimation.scope[classDefMeshVertexAnimation];
 
 	auto classDefSkeleton = luabind::class_<panima::Skeleton>("Skeleton");
 	classDefSkeleton.def("GetBone", &Lua::Skeleton::GetBone);
