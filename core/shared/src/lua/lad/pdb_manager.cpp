@@ -132,6 +132,41 @@ bool PdbManager::Initialize()
 	CoInitializeEx(nullptr, COINIT_MULTITHREADED); // If failed, was probably already initialized, so we're ignoring the return value (we still have to call CoUnInitialize either way)
 	return true;
 }
+bool pragma::lua::PdbManager::InitPdbFileDatabase(std::string pdbPath) { 
+
+	//Recursively search for PDB files.
+
+	std::vector<std::string> pdbFilePaths;
+	FileManager::FindSystemFiles((pdbPath + "*.pdb").c_str(),&pdbFilePaths , nullptr);
+	for(auto path: pdbFilePaths)
+	{
+		auto sessionInfo = std::unique_ptr<PdbSession> {new PdbSession {}};
+		auto hr = CoCreateInstance(CLSID_DiaSource, nullptr, CLSCTX_INPROC_SERVER, __uuidof(IDiaDataSource), (void **)&sessionInfo->source);
+		if(FAILED(hr))
+			continue;
+
+		wchar_t wszFilename[_MAX_PATH];
+		mbstowcs(wszFilename, pdbPath.data(), sizeof(wszFilename) / sizeof(wszFilename[0]));
+		if(FAILED(sessionInfo->source->loadDataFromPdb(wszFilename))) {
+			if(FAILED(sessionInfo->source->loadDataForExe(wszFilename, nullptr, nullptr)))
+				continue;
+		}
+
+		if(FAILED(sessionInfo->source->openSession(&sessionInfo->session)))
+			continue;
+		if(FAILED(sessionInfo->session->get_globalScope(&sessionInfo->globalSymbol)))
+			continue;
+		PDBID pdbid;
+		if(FAILED(sessionInfo->globalSymbol->get_guid(&pdbid.Signature)))
+			continue;
+		if(FAILED(sessionInfo->globalSymbol->get_age(&pdbid.Age)))
+			continue;
+		m_pdbFileDatabase.emplace(pdbid, path);
+	}
+	
+	
+	return true; 
+}
 SymbolIterator PdbManager::begin(const std::string &moduleName) const
 {
 	auto it = m_pdbSessions.find(moduleName);

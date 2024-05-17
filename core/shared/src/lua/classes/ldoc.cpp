@@ -967,15 +967,16 @@ static void autogenerate(const std::string &buildDir)
 			cl->InitializeLibrary("openvr/pr_openvr");
 
 			cl->InitializeLibrary("pr_dmx");
-			cl->InitializeLibrary("steamworks/pr_steamworks");
+			//cl->InitializeLibrary("steamworks/pr_steamworks");
 
 			cl->InitializeLibrary("chromium/pr_chromium");
+			cl->InitializeLibrary("davinci/pr_davinci");
 		}
 
 		auto *sv = pragma::get_engine()->GetServerNetworkState();
 		if(sv) {
 			sv->InitializeLibrary("pr_dmx");
-			sv->InitializeLibrary("steamworks/pr_steamworks");
+			//sv->InitializeLibrary("steamworks/pr_steamworks");
 		}
 	}
 
@@ -1008,13 +1009,14 @@ static void autogenerate(const std::string &buildDir)
 	  {"util_image", buildDir + "/external_libs/util_image/RelWithDebInfo/util_image.pdb"}, {"util_pragma_doc", buildDir + "/external_libs/util_pragma_doc/RelWithDebInfo/util_pragma_doc.pdb"}, {"util_sound", buildDir + "/external_libs/util_sound/RelWithDebInfo/util_sound.pdb"},
 	  {"util_udm", buildDir + "/external_libs/util_udm/RelWithDebInfo/util_udm.pdb"}, {"wgui", buildDir + "/external_libs/wgui/RelWithDebInfo/wgui.pdb"}, {"pr_dmx", buildDir + "/modules/pr_dmx/RelWithDebInfo/pr_dmx.pdb"},
 	  {"pr_cycles", buildDir + "/modules/pr_cycles/RelWithDebInfo/pr_unirender.pdb"}, {"pr_openvr", buildDir + "/modules/pr_openvr/RelWithDebInfo/pr_openvr.pdb"}, {"pr_chromium", buildDir + "/modules/pr_chromium/RelWithDebInfo/pr_chromium.pdb"},
-	  {"pr_chromium_wrapper", buildDir + "/modules/pr_chromium/external_libs/pr_chromium_wrapper/RelWithDebInfo/pr_chromium_wrapper.pdb"}, {"pr_steamworks", buildDir + "/modules/pr_steamworks/RelWithDebInfo/pr_steamworks.pdb"},
-	  {"panima", buildDir + "/external_libs/panima/RelWithDebInfo/panima.pdb"}};
+	  {"pr_chromium_wrapper", buildDir + "/modules/pr_chromium/external_libs/pr_chromium_wrapper/RelWithDebInfo/pr_chromium_wrapper.pdb"}, {"panima", buildDir + "/external_libs/panima/RelWithDebInfo/panima.pdb"}, {"pr_davinci", buildDir + "modules/pr_davinci/RelWithDebInfo/pr_davinci.pdb"}};
 
 #ifdef ENABLE_PDB_MANAGER
 	pragma::lua::PdbManager pdbManager {};
 	if(pdbManager.Initialize()) {
+		pdbManager.InitPdbFileDatabase(buildDir);
 		// TODO: Determine the paths automatically somehow?
+		//For every loaded library load its
 		for(auto &pair : pdbModules)
 			pdbManager.LoadPdb(pair.first, pair.second);
 	}

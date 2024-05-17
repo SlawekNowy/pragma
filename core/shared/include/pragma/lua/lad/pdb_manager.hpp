@@ -15,12 +15,42 @@
 #include <optional>
 #include <unordered_map>
 #include <luasystem.h>
+#include <filesystem>
+#include <winnt.h> //for IMAGE_NT headers
+#include <guiddef.h> //for GUID.
+#include <rpc.h> //for UuidHash
+
+#pragma comment(lib, "Rpcrt4.lib") //for UuidHash
 
 struct IDiaDataSource;
 struct IDiaSession;
 struct IDiaSymbol;
 struct IDiaEnumTables;
 struct IDiaEnumSymbolsByAddr;
+template<class T>
+inline void hash_combine(std::size_t &s, const T &v)
+{
+	std::hash<T> h;
+	s ^= h(v) + 0x9e3779b9 + (s << 6) + (s >> 2);
+}
+
+
+struct PDBID {
+	GUID Signature;
+	DWORD Age;
+};
+inline bool operator==(const PDBID &lhs, const PDBID &rhs) { return ::IsEqualGUID(lhs.Signature, rhs.Signature) && lhs.Age == rhs.Age; };
+template<>
+struct std::hash<PDBID> {
+	std::size_t operator()(const PDBID &s) const
+	{
+		std::size_t res = 0;
+		RPC_STATUS rpcs = RPC_S_OK;
+		hash_combine(res, ::UuidHash(&const_cast<GUID &>(s.Signature), &rpcs));
+		hash_combine(res, s.Age);
+		return res;
+	}
+};
 
 namespace pragma::lua {
 	struct ParameterInfo {
@@ -174,6 +204,7 @@ namespace pragma::lua {
 
 		~PdbManager();
 		bool Initialize();
+		bool InitPdbFileDatabase(std::string pdbPath);
 		bool LoadPdb(const std::string &moduleName, const std::string &pdbPath);
 		const std::vector<std::string> &GetModuleNames() const { return m_moduleNames; }
 
@@ -182,11 +213,19 @@ namespace pragma::lua {
 
 		std::optional<SymbolInfo> FindSymbolByRva(const std::string &moduleName, DWORD64 rva);
 	  private:
+		struct CV_INFO_PDB70 {
+			DWORD CvSignature;
+			GUID Signature;
+			DWORD Age;
+			BYTE PdbFileName[]; //null terminated. use c string facilities.
+		};
 		static std::optional<ParameterInfo> SymbolToParameterInfo(IDiaSymbol *pSymbol);
 		static std::optional<std::vector<ParameterInfo>> GetFunctionParameters(IDiaSymbol *pSymbol, std::optional<ParameterInfo> &outReturnValue);
 
 		std::unordered_map<std::string, std::unique_ptr<PdbSession>> m_pdbSessions {};
 		std::vector<std::string> m_moduleNames;
+		std::unordered_map<PDBID, std::string> m_pdbFileDatabase {};
+		
 	};
 };
 REGISTER_BASIC_BITWISE_OPERATORS(pragma::lua::ParameterInfo::Flags)

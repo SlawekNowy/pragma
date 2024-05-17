@@ -186,16 +186,18 @@ void LuaDocGenerator::InitializeRepositoryUrls()
 {
 	m_moduleToRepositoryMap = {{"shared", BuildRepositoryUrl("https://github.com/Silverlan/pragma/", "blob/%commitid%/core/shared/")}, {"server", BuildRepositoryUrl("https://github.com/Silverlan/pragma/", "blob/%commitid%/core/server/")},
 	  {"client", BuildRepositoryUrl("https://github.com/Silverlan/pragma/", "blob/%commitid%/core/client/")}, {"luabind", BuildRepositoryUrl("https://github.com/Silverlan/luabind-deboostified/", "blob/%commitid%/")},
-	  {"pr_steamworks", BuildRepositoryUrl("https://github.com/Silverlan/pr_steamworks/", "blob/%commitid%/")}, {"mathutil", BuildRepositoryUrl("https://github.com/Silverlan/mathutil/", "blob/%commitid%/")},
-	  {"sharedutils", BuildRepositoryUrl("https://github.com/Silverlan/sharedutils/", "blob/%commitid%/")}, {"util_udm", BuildRepositoryUrl("https://github.com/Silverlan/util_udm/", "blob/%commitid%/")}, {"glm", BuildRepositoryUrl("https://github.com/g-truc/glm/", "blob/%commitid%/")},
-	  {"prosper", BuildRepositoryUrl("https://github.com/Silverlan/prosper/", "blob/%commitid%/")}, {"vfilesystem", BuildRepositoryUrl("https://github.com/Silverlan/vfilesystem/", "blob/%commitid%/")},
-	  {"alsoundsystem", BuildRepositoryUrl("https://github.com/Silverlan/alsoundsystem/", "blob/%commitid%/")}, {"datasystem", BuildRepositoryUrl("https://github.com/Silverlan/datasystem/", "blob/%commitid%/")},
-	  {"iglfw", BuildRepositoryUrl("https://github.com/Silverlan/iglfw/", "blob/%commitid%/")}, {"materialsystem", BuildRepositoryUrl("https://github.com/Silverlan/materialsystem/", "blob/%commitid%/")},
-	  {"cmaterialsystem", BuildRepositoryUrl("https://github.com/Silverlan/materialsystem/", "blob/%commitid%/")}, {"util_image", BuildRepositoryUrl("https://github.com/Silverlan/util_image/", "blob/%commitid%/")},
-	  {"util_pragma_doc", BuildRepositoryUrl("https://github.com/Silverlan/util_pragma_doc/", "blob/%commitid%/")}, {"util_sound", BuildRepositoryUrl("https://github.com/Silverlan/util_sound/", "blob/%commitid%/")},
-	  {"util_udm", BuildRepositoryUrl("https://github.com/Silverlan/util_udm/", "blob/%commitid%/")}, {"wgui", BuildRepositoryUrl("https://github.com/Silverlan/wgui/", "blob/%commitid%/")}, {"pr_dmx", BuildRepositoryUrl("https://github.com/Silverlan/pr_dmx/", "blob/%commitid%/")},
-	  {"pr_cycles", BuildRepositoryUrl("https://github.com/Silverlan/pr_cycles/", "blob/%commitid%/")}, {"pr_openvr", BuildRepositoryUrl("https://github.com/Silverlan/pr_openvr/", "blob/%commitid%/")},
-	  {"pr_steamworks", BuildRepositoryUrl("https://github.com/Silverlan/pr_steamworks/", "blob/%commitid%/")}, {"panima", BuildRepositoryUrl("https://github.com/Silverlan/panima/", "blob/%commitid%/")}};
+
+	  {"mathutil", BuildRepositoryUrl("https://github.com/Silverlan/mathutil/", "blob/%commitid%/")}, {"sharedutils", BuildRepositoryUrl("https://github.com/Silverlan/sharedutils/", "blob/%commitid%/")},
+	  {"util_udm", BuildRepositoryUrl("https://github.com/Silverlan/util_udm/", "blob/%commitid%/")}, {"glm", BuildRepositoryUrl("https://github.com/g-truc/glm/", "blob/%commitid%/")}, {"prosper", BuildRepositoryUrl("https://github.com/Silverlan/prosper/", "blob/%commitid%/")},
+	  {"vfilesystem", BuildRepositoryUrl("https://github.com/Silverlan/vfilesystem/", "blob/%commitid%/")}, {"alsoundsystem", BuildRepositoryUrl("https://github.com/Silverlan/alsoundsystem/", "blob/%commitid%/")},
+	  {"datasystem", BuildRepositoryUrl("https://github.com/Silverlan/datasystem/", "blob/%commitid%/")}, {"iglfw", BuildRepositoryUrl("https://github.com/Silverlan/iglfw/", "blob/%commitid%/")},
+	  {"materialsystem", BuildRepositoryUrl("https://github.com/Silverlan/materialsystem/", "blob/%commitid%/")}, {"cmaterialsystem", BuildRepositoryUrl("https://github.com/Silverlan/materialsystem/", "blob/%commitid%/")},
+	  {"util_image", BuildRepositoryUrl("https://github.com/Silverlan/util_image/", "blob/%commitid%/")}, {"util_pragma_doc", BuildRepositoryUrl("https://github.com/Silverlan/util_pragma_doc/", "blob/%commitid%/")},
+	  {"util_sound", BuildRepositoryUrl("https://github.com/Silverlan/util_sound/", "blob/%commitid%/")}, {"util_udm", BuildRepositoryUrl("https://github.com/Silverlan/util_udm/", "blob/%commitid%/")}, {"wgui", BuildRepositoryUrl("https://github.com/Silverlan/wgui/", "blob/%commitid%/")},
+	  {"pr_dmx", BuildRepositoryUrl("https://github.com/Silverlan/pr_dmx/", "blob/%commitid%/")}, {"pr_cycles", BuildRepositoryUrl("https://github.com/Silverlan/pr_cycles/", "blob/%commitid%/")},
+	  {"pr_openvr", BuildRepositoryUrl("https://github.com/Silverlan/pr_openvr/", "blob/%commitid%/")},
+
+	  {"panima", BuildRepositoryUrl("https://github.com/Silverlan/panima/", "blob/%commitid%/")}, {"pr_davinci", BuildRepositoryUrl("https://github.com/Silverlan/pr_davinci/", "blob/%commitid%/")}};
 }
 
 void LuaDocGenerator::IterateLibraries(luabind::object o, const std::string &path, pragma::doc::Collection &collection, pragma::doc::Collection &colTarget)
