@@ -15,4 +15,10 @@ external_libs/*
 !external_libs/sharedutils-static*
 !external_libs/.clang-format*
 !external_libs/CMakeLists.txt
+tools/*
+!tools/pfm_executable
+!tools/udm_convert
+!tools/updater
+!tools/.clang-format
+!tools/CMakeLists.txt
 *.pyc
