@@ -1,0 +1,14 @@
+{
+    "version": "0.1.0",
+    "tasks": [
+        {
+            "type":"shell",
+            "label":"Clang-format: format everything in workspace",
+            "taskName": "clang-format-everything",
+            "command": "clang-format",
+            "args": ["-i", "*" ],
+            "isShellCommand": true,
+            "isBackground": true
+        }
+    ]
+}

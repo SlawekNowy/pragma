@@ -30,6 +30,9 @@ parser.add_argument("--with-vr", type=str2bool, nargs='?', const=True, default=F
 parser.add_argument("--with-networking", type=str2bool, nargs='?', const=True, default=False, help="Include networking module(s) for multiplayer support.")
 parser.add_argument("--with-common-entities", type=str2bool, nargs='?', const=True, default=True, help="Include addons with support for common entity types.")
 parser.add_argument("--with-lua-debugger", type=str2bool, nargs='?', const=True, default=False, help="Include Lua-debugger support.")
+parser.add_argument("--with-lua-doc-generator", type=str2bool, nargs='?', const=True, default=False, help="Include Lua documentation generator. Requires the --dia-include-path and --dia-library-path options.")
+parser.add_argument('--dia-include-path', help='The include path to the Debug Interface Access SDK (required for Lua doc generator).', default='')
+parser.add_argument('--dia-library-path', help='The path to the "diaguids.lib" library of Debug Interface Access SDK (required for Lua doc generator).', default='')
 parser.add_argument('--vtune-include-path', help='The include path to the VTune profiler (required for CPU profiling).', default='')
 parser.add_argument('--vtune-library-path', help='The path to the "libittnotify" library of the VTune profiler (required for CPU profiling).', default='')
 parser.add_argument("--build", type=str2bool, nargs='?', const=True, default=True, help="Build Pragma after configurating and generating build files.")
@@ -98,6 +101,9 @@ with_vr = args["with_vr"]
 with_networking = args["with_networking"]
 with_common_entities = args["with_common_entities"]
 with_lua_debugger = args["with_lua_debugger"]
+with_lua_doc_generator = args["with_lua_doc_generator"]
+dia_include_path = args["dia_include_path"]
+dia_library_path = args["dia_library_path"]
 vtune_include_path = args["vtune_include_path"]
 vtune_library_path = args["vtune_library_path"]
 build = args["build"]
@@ -120,6 +126,10 @@ print("Inputs:")
 if platform == "linux":
 	print("cxx_compiler: " +cxx_compiler)
 	print("c_compiler: " +c_compiler)
+
+	if with_lua_doc_generator:
+		with_lua_doc_generator = 0
+		print_warning("Lua documentation generator is only supported on Windows! --with-lua-doc-generator flag will be ignored.")
 
 print("generator: " +generator)
 #if platform == "win32":
@@ -703,7 +713,6 @@ def execbuildscript(filepath):
 	#	l["vcvars"] = "vcvars"
 
 	if platform == "win32":
-		l["determine_vs_installation_path"] = determine_vs_installation_path
 		l["determine_vsdevcmd_path"] = determine_vsdevcmd_path
 
 	execfile(filepath,g,l)
@@ -767,7 +776,7 @@ if with_pfm:
 	if with_core_pfm_modules or with_all_pfm_modules:
 		add_pragma_module(
 			name="pr_curl",
-			commitSha="d49b477d77310737fd5f88d49e35b7db58f9718c",
+			commitSha="025c6d150ba88031f1b7b9a1bcc387b746e1ac89",
 			repositoryUrl="https://github.com/Silverlan/pr_curl.git"
 		)
 		add_pragma_module(
@@ -783,7 +792,7 @@ if with_pfm:
 		)
 		add_pragma_module(
 			name="pr_unirender",
-			commitSha="6cea10b5bd03ecd17ed61321688ef66e7cfe67f2",
+			commitSha="afbaecc93f8e4ee016b4b632206b930789e02d26",
 			repositoryUrl="https://github.com/Slaweknowy/pr_cycles.git"
 		)
 		add_pragma_module(
@@ -802,7 +811,7 @@ if with_pfm:
 			repositoryUrl="https://github.com/Silverlan/pr_opencv.git"
 		)
 
-if with_pfm:
+if with_lua_doc_generator or with_pfm:
 	add_pragma_module(
 		name="pr_git",
 		commitSha="84d7c32",
@@ -924,14 +933,14 @@ cmake_args.append("-DPME_EXTERNAL_LIB_BIN_LOCATION=" +external_libs_bin_dir)
 cmake_args.append("-DPME_THIRD_PARTY_LIB_LOCATION=" +third_party_libs_dir)
 
 
-#if with_lua_doc_generator:
-#	if len(dia_include_path) > 0 and len(dia_library_path) > 0:
-#		print_msg("Lua documentation generator is enabled!")
-#		cmake_args += ["-DCONFIG_BUILD_WITH_LAD=1"]
-#		cmake_args += ["-DDEPENDENCY_DIA_INCLUDE=" +dia_include_path]
-#		cmake_args += ["-DDEPENDENCY_DIA_LIBRARY=" +dia_library_path]
-#	else:
-#		raise argparse.ArgumentError(None,"Both the --dia-include-path and --dia-library-path options have to be specified to enable Lua documentation generator support!")
+if with_lua_doc_generator:
+	if len(dia_include_path) > 0 and len(dia_library_path) > 0:
+		print_msg("Lua documentation generator is enabled!")
+		cmake_args += ["-DCONFIG_BUILD_WITH_LAD=1"]
+		cmake_args += ["-DDEPENDENCY_DIA_INCLUDE=" +dia_include_path]
+		cmake_args += ["-DDEPENDENCY_DIA_LIBRARY=" +dia_library_path]
+	else:
+		raise argparse.ArgumentError(None,"Both the --dia-include-path and --dia-library-path options have to be specified to enable Lua documentation generator support!")
 
 if len(vtune_include_path) > 0 or len(vtune_library_path) > 0:
 	if len(vtune_include_path) > 0 and len(vtune_library_path) > 0:

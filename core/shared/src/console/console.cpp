@@ -74,10 +74,10 @@ void DebugConsole::open()
 	}
 
 #else
-	// this will barf out everything.
+    // this will barf out everything.
 	this->_cinbuf = std::cin.rdbuf();
-	this->_coutbuf = std::cout.rdbuf();
-	this->_cerrbuf = std::cerr.rdbuf();
+    this->_coutbuf = std::cout.rdbuf();
+    this->_cerrbuf = std::cerr.rdbuf();
 #endif
 }
 
@@ -99,7 +99,7 @@ void DebugConsole::close()
 	fclose(stderr);
 	FreeConsole();
 #else
-	std::cout.rdbuf(this->_coutbuf);
-	std::cerr.rdbuf(this->_cerrbuf);
-#endif
+    std::cout.rdbuf(this->_coutbuf);
+    std::cerr.rdbuf(this->_cerrbuf);
+	#endif
 }
