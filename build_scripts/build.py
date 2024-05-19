@@ -792,7 +792,7 @@ if with_pfm:
 		)
 		add_pragma_module(
 			name="pr_unirender",
-			commitSha="afbaecc93f8e4ee016b4b632206b930789e02d26",
+			commitSha="2a7b39cbdad128d0b672f008218b222d33d7297f",
 			repositoryUrl="https://github.com/Slaweknowy/pr_cycles.git"
 		)
 		add_pragma_module(

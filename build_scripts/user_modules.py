@@ -18,3 +18,6 @@
 add_pragma_module(
      name = "pr_mount_external"
 )
+add_pragma_module(
+     name = "pr_luadoc"
+)
