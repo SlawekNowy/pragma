@@ -51,6 +51,8 @@ void DebugConsole::open()
 		auto fontPath = util::get_program_path() + "\\fonts\\ubuntu\\UbuntuMono-R.ttf";
 		ustring::replace(fontPath, "/", "\\");
 		HANDLE m_stdOut = handleOut;
+		SetConsoleCP(65001);
+		SetConsoleOutputCP(65001);
 		auto numFontsAdded = AddFontResourceEx(fontPath.c_str(), FR_NOT_ENUM, 0);
 		if(numFontsAdded > 0) {
 			SendNotifyMessage(HWND_BROADCAST, WM_FONTCHANGE, 0, 0);
@@ -97,6 +99,9 @@ void DebugConsole::close()
 	fclose(stdin);
 	fclose(stdout);
 	fclose(stderr);
+	auto fontPath = util::get_program_path() + "\\fonts\\ubuntu\\UbuntuMono-R.ttf";
+	ustring::replace(fontPath, "/", "\\");
+	RemoveFontResourceEx(fontPath.c_str(), FR_NOT_ENUM, 0);
 	FreeConsole();
 #else
     std::cout.rdbuf(this->_coutbuf);
