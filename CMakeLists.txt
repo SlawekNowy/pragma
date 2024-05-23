@@ -394,7 +394,6 @@ set(DEPENDENCY_GLI_INCLUDE ${CMAKE_CURRENT_LIST_DIR}/third_party_libs/gli CACHE 
 
 set(DEPENDENCY_GLFW_INCLUDE ${CMAKE_CURRENT_LIST_DIR}/third_party_libs/glfw/include CACHE PATH "Path to include directory.")
 
-set(DEPENDENCY_GLFW_INCLUDE ${CMAKE_CURRENT_LIST_DIR}/third_party_libs/glfw/include CACHE PATH "Path to include directory.")
 if(WIN32)
 	set(GLFW_LIB_NAME "glfw3dll" CACHE INTERNAL "" FORCE)
 else()
@@ -1131,8 +1130,10 @@ set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT p
 
 if(WIN32)
 	set(BINARY_OUTPUT_DIR "bin")
+	set(EXECUTABLE_OUTPUT_DIR "bin")
 else()
-        set(BINARY_OUTPUT_DIR "lib")
+    set(BINARY_OUTPUT_DIR "lib")
+	set(EXECUTABLE_OUTPUT_DIR "lib")
 endif()
 
 set(EXECUTABLE_OUTPUT_DIR "bin")
@@ -1338,8 +1339,8 @@ function(pragma_install_file FILE_PATH INSTALL_PATH)
 	)
 endfunction(pragma_install_file)
 
-pragma_install_file("${DEPENDENCY_ICU_ICUUC_BINARY}" "${BINARY_OUTPUT_DIR}")
-pragma_install_file("${DEPENDENCY_ICU_ICUDT_BINARY}" "${BINARY_OUTPUT_DIR}")
+pragma_install_lib("${DEPENDENCY_ICU_ICUUC_BINARY}" "${BINARY_OUTPUT_DIR}")
+pragma_install_lib("${DEPENDENCY_ICU_ICUDT_BINARY}" "${BINARY_OUTPUT_DIR}")
 
 function(pragma_install_program FILE_PATH INSTALL_PATH)
     if("${FILE_PATH}" STREQUAL "")

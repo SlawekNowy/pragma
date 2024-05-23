@@ -22,3 +22,4 @@ tools/*
 !tools/.clang-format
 !tools/CMakeLists.txt
 *.pyc
+sync.ffs_lock

@@ -13,8 +13,8 @@ parser = argparse.ArgumentParser(description='Pragma build script', allow_abbrev
 
 # See https://stackoverflow.com/a/43357954/1879228 for boolean args
 if platform == "linux":
-	parser.add_argument('--c-compiler', help='The C-compiler to use.', default='clang-15')
-	parser.add_argument('--cxx-compiler', help='The C++-compiler to use.', default='clang++-15')
+	parser.add_argument('--c-compiler', help='The C-compiler to use.', default='clang-18')
+	parser.add_argument('--cxx-compiler', help='The C++-compiler to use.', default='clang++-18')
 	defaultGenerator = "Ninja Multi-Config"
 else:
 	defaultGenerator = "Visual Studio 17 2022"
@@ -254,12 +254,13 @@ if platform == "linux":
 		commands = [
 			# Required for the build script
 			"apt-get install python3",
-
+			
 			# Required for Pragma core
 			"apt install build-essential",
-			"add-apt-repository ppa:savoury1/llvm-defaults-14",
+			# "add-apt-repository ppa:savoury1/llvm-defaults-14",
 			"apt update",
-			"apt install clang-15",
+			"apt install clang-18",
+			"apt-get install clang-tools-18", # Required for C++20 Modules
 			"apt install libstdc++-12-dev",
 			"apt install libstdc++6",
 			"apt-get install patchelf",
@@ -279,19 +280,25 @@ if platform == "linux":
 			# Required for Cycles
 			"apt-get install subversion",
 			"apt-get install meson", # epoxy
+			
+			# CMake
+			"apt-get install cmake",
 
 			# Required for Curl
 			"apt-get install libssl-dev",
 			"apt install libssh2-1",
+			
+			# Curl
+			"apt-get install curl zip unzip tar",
 
 			# Required for OIIO
-			"apt-get install python3-distutils",
+			# "apt-get install python3-distutils",
 
 			#install freetype for linking. X server frontends (Gnome, KDE etc) already include it somewhere down the line. Also install pkg-config for easy export of flags.
 			"apt-get install pkg-config libfreetype-dev",
 
 
-			#Ninja
+			# Ninja
 			"apt-get install ninja-build"
 		]
 
@@ -407,13 +414,13 @@ ZLIB_LIBPATH = normalize_path(zlib_lib_path)
 if platform == "linux":
     #do we even need static build?
 	subprocess.run([boost_root +"/bootstrap.sh"],check=True,shell=True)
-	subprocess.run(["./b2","cxxflags=-fPIC","cflags=-fPIC","address-model=64","stage","variant=release","link=shared","runtime-link=shared","-j3"],check=True,shell=True)
-	subprocess.run(["./b2","cxxflags=-fPIC","cflags=-fPIC","address-model=64","stage","variant=release","link=static","runtime-link=shared","-j3"],check=True,shell=True)
+	subprocess.run(["./b2","cxxflags=-fPIC","cflags=-fPIC","linkflags=-fPIC","address-model=64","stage","variant=release","link=shared","runtime-link=shared","-j3"],check=True,shell=True)
+	subprocess.run(["./b2","cxxflags=-fPIC","cflags=-fPIC","linkflags=-fPIC","address-model=64","stage","variant=release","link=static","runtime-link=shared","-j3"],check=True,shell=True)
 
 	print_msg("Building boost zlib libraries...")
-	subprocess.run(["./b2","cxxflags=-fPIC","cflags=-fPIC","address-model=64","stage","variant=release","link=shared","runtime-link=shared","--with-iostreams","-sZLIB_SOURCE=" +ZLIB_SOURCE,"-sZLIB_INCLUDE=" +ZLIB_INCLUDE,"-sZLIB_LIBPATH=" +ZLIB_LIBPATH],check=True,shell=True)
+	subprocess.run(["./b2","cxxflags=-fPIC","cflags=-fPIC","linkflags=-fPIC","address-model=64","stage","variant=release","link=shared","runtime-link=shared","--with-iostreams","-sZLIB_SOURCE=" +ZLIB_SOURCE,"-sZLIB_INCLUDE=" +ZLIB_INCLUDE,"-sZLIB_LIBPATH=" +ZLIB_LIBPATH],check=True,shell=True)
     
-	subprocess.run(["./b2","cxxflags=-fPIC","cflags=-fPIC","address-model=64","stage","variant=release","link=static","runtime-link=shared","--with-iostreams","-sZLIB_SOURCE=" +ZLIB_SOURCE,"-sZLIB_INCLUDE=" +ZLIB_INCLUDE,"-sZLIB_LIBPATH=" +ZLIB_LIBPATH],check=True,shell=True)
+	subprocess.run(["./b2","cxxflags=-fPIC","cflags=-fPIC","linkflags=-fPIC","address-model=64","stage","variant=release","link=static","runtime-link=shared","--with-iostreams","-sZLIB_SOURCE=" +ZLIB_SOURCE,"-sZLIB_INCLUDE=" +ZLIB_INCLUDE,"-sZLIB_LIBPATH=" +ZLIB_LIBPATH],check=True,shell=True)
 else:
 	mkdir("build",cd=True)
 
@@ -751,7 +758,7 @@ if with_essential_client_modules:
 if with_common_modules:
 	add_pragma_module(
 		name="pr_bullet",
-		commitSha="4f1aea9",
+		commitSha="4eb3df9",
 		repositoryUrl="https://github.com/Silverlan/pr_bullet.git"
 	)
 	add_pragma_module(
@@ -772,7 +779,7 @@ if with_pfm:
 		)
 		add_pragma_module(
 			name="pr_dmx",
-			commitSha="f818ed1954705d98739ad59ad6e8d928e910aca1",
+			commitSha="f818ed1",
 			repositoryUrl="https://github.com/Silverlan/pr_dmx.git"
 		)
 	if with_all_pfm_modules:
@@ -783,7 +790,7 @@ if with_pfm:
 		)
 		add_pragma_module(
 			name="pr_unirender",
-			commitSha="2a7b39cbdad128d0b672f008218b222d33d7297f",
+			commitSha="7e3c32445fc53c472af70b1d41b1a04b14cde6f2",
 			repositoryUrl="https://github.com/Slaweknowy/pr_cycles.git"
 		)
 		add_pragma_module(
@@ -1031,7 +1038,7 @@ if not skip_repository_updates:
 		download_addon("model editor","tool_model_editor","https://github.com/Silverlan/pragma_model_editor.git","56d46dacb398fa7540e794359eaf1081c9df1edd")
 
 	if with_vr:
-		download_addon("VR","virtual_reality","https://github.com/Silverlan/PragmaVR.git","908786fa9318205395296486012c7d47cbceb3dc")
+		download_addon("VR","virtual_reality","https://github.com/Silverlan/PragmaVR.git","c773f17")
 
 	if with_pfm:
 		download_addon("PFM Living Room Demo","pfm_demo_living_room","https://github.com/Silverlan/pfm_demo_living_room.git","4cbecad4a2d6f502b6d9709178883678101f7e2c")
