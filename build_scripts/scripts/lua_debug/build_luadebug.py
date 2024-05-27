@@ -14,7 +14,7 @@ def reset_to_commit(sha):
 	subprocess.run(["git","fetch"],check=True)
 	subprocess.run(["git","checkout",sha,"--recurse-submodules"],check=True)
 
-reset_to_commit("693549d")
+reset_to_commit("9e1f46502571c4f25eebfad681312d75399e4cda")
 
 subprocess.run(["../luamake/luamake", "lua", "compile/download_deps.lua"])
 subprocess.run(["../luamake/luamake", "-mode", "release"])
