@@ -1,14 +1,16 @@
 {
-    "version": "0.1.0",
+    "version": "2.0.0",
     "tasks": [
         {
-            "type":"shell",
-            "label":"Clang-format: format everything in workspace",
-            "taskName": "clang-format-everything",
+            "label": "clang-format-everything",
+            "type": "shell",
             "command": "clang-format",
-            "args": ["-i", "*" ],
-            "isShellCommand": true,
-            "isBackground": true
+            "args": [
+                "-i",
+                "*"
+            ],
+            "isBackground": true,
+            "problemMatcher": []
         }
     ]
 }

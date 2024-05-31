@@ -593,41 +593,41 @@ static int log(lua_State *l, spdlog::level::level_enum logLevel)
 		component.Log(logLevel, std::string {msg});
 		break;
 	case 1:
-		component.Log(logLevel, fmt::vformat(msg, fmt::make_format_args(to_string(l, argOffset + 1))));
+        component.Log(logLevel, fmt::format(fmt::runtime(msg), to_string(l, argOffset + 1)));
 		break;
 	case 2:
-		component.Log(logLevel, fmt::vformat(msg, fmt::make_format_args(to_string(l, argOffset + 1), to_string(l, argOffset + 2))));
+        component.Log(logLevel, fmt::format(fmt::runtime(msg), to_string(l, argOffset + 1), to_string(l, argOffset + 2)));
 		break;
 	case 3:
-		component.Log(logLevel, fmt::vformat(msg, fmt::make_format_args(to_string(l, argOffset + 1), to_string(l, argOffset + 2), to_string(l, argOffset + 3))));
+        component.Log(logLevel, fmt::format(fmt::runtime(msg), to_string(l, argOffset + 1), to_string(l, argOffset + 2), to_string(l, argOffset + 3)));
 		break;
 	case 4:
-		component.Log(logLevel, fmt::vformat(msg, fmt::make_format_args(to_string(l, argOffset + 1), to_string(l, argOffset + 2), to_string(l, argOffset + 3), to_string(l, argOffset + 4))));
+        component.Log(logLevel, fmt::format(fmt::runtime(msg), to_string(l, argOffset + 1), to_string(l, argOffset + 2), to_string(l, argOffset + 3), to_string(l, argOffset + 4)));
 		break;
 	case 5:
-		component.Log(logLevel, fmt::vformat(msg, fmt::make_format_args(to_string(l, argOffset + 1), to_string(l, argOffset + 2), to_string(l, argOffset + 3), to_string(l, argOffset + 4), to_string(l, argOffset + 5))));
+        component.Log(logLevel, fmt::format(fmt::runtime(msg), to_string(l, argOffset + 1), to_string(l, argOffset + 2), to_string(l, argOffset + 3), to_string(l, argOffset + 4), to_string(l, argOffset + 5)));
 		break;
 	case 6:
-		component.Log(logLevel, fmt::vformat(msg, fmt::make_format_args(to_string(l, argOffset + 1), to_string(l, argOffset + 2), to_string(l, argOffset + 3), to_string(l, argOffset + 4), to_string(l, argOffset + 5), to_string(l, argOffset + 6))));
+        component.Log(logLevel, fmt::format(fmt::runtime(msg), to_string(l, argOffset + 1), to_string(l, argOffset + 2), to_string(l, argOffset + 3), to_string(l, argOffset + 4), to_string(l, argOffset + 5), to_string(l, argOffset + 6)));
 		break;
 	case 7:
-		component.Log(logLevel, fmt::vformat(msg, fmt::make_format_args(to_string(l, argOffset + 1), to_string(l, argOffset + 2), to_string(l, argOffset + 3), to_string(l, argOffset + 4), to_string(l, argOffset + 5), to_string(l, argOffset + 6), to_string(l, argOffset + 7))));
+        component.Log(logLevel, fmt::format(fmt::runtime(msg), to_string(l, argOffset + 1), to_string(l, argOffset + 2), to_string(l, argOffset + 3), to_string(l, argOffset + 4), to_string(l, argOffset + 5), to_string(l, argOffset + 6), to_string(l, argOffset + 7)));
 		break;
 	case 8:
 		component.Log(logLevel,
-		  fmt::vformat(msg, fmt::make_format_args(to_string(l, argOffset + 1), to_string(l, argOffset + 2), to_string(l, argOffset + 3), to_string(l, argOffset + 4), to_string(l, argOffset + 5), to_string(l, argOffset + 6), to_string(l, argOffset + 7), to_string(l, argOffset + 8))));
+          fmt::format(fmt::runtime(msg), to_string(l, argOffset + 1), to_string(l, argOffset + 2), to_string(l, argOffset + 3), to_string(l, argOffset + 4), to_string(l, argOffset + 5), to_string(l, argOffset + 6), to_string(l, argOffset + 7), to_string(l, argOffset + 8)));
 		break;
 	case 9:
 		component.Log(logLevel,
-		  fmt::vformat(msg,
-		    fmt::make_format_args(to_string(l, argOffset + 1), to_string(l, argOffset + 2), to_string(l, argOffset + 3), to_string(l, argOffset + 4), to_string(l, argOffset + 5), to_string(l, argOffset + 6), to_string(l, argOffset + 7), to_string(l, argOffset + 8),
-		      to_string(l, argOffset + 9))));
+          fmt::format(fmt::runtime(msg),
+            to_string(l, argOffset + 1), to_string(l, argOffset + 2), to_string(l, argOffset + 3), to_string(l, argOffset + 4), to_string(l, argOffset + 5), to_string(l, argOffset + 6), to_string(l, argOffset + 7), to_string(l, argOffset + 8),
+              to_string(l, argOffset + 9)));
 		break;
 	case 10:
 		component.Log(logLevel,
-		  fmt::vformat(msg,
-		    fmt::make_format_args(to_string(l, argOffset + 1), to_string(l, argOffset + 2), to_string(l, argOffset + 3), to_string(l, argOffset + 4), to_string(l, argOffset + 5), to_string(l, argOffset + 6), to_string(l, argOffset + 7), to_string(l, argOffset + 8),
-		      to_string(l, argOffset + 9), to_string(l, argOffset + 10))));
+          fmt::format(fmt::runtime(msg),
+            to_string(l, argOffset + 1), to_string(l, argOffset + 2), to_string(l, argOffset + 3), to_string(l, argOffset + 4), to_string(l, argOffset + 5), to_string(l, argOffset + 6), to_string(l, argOffset + 7), to_string(l, argOffset + 8),
+              to_string(l, argOffset + 9), to_string(l, argOffset + 10)));
 		break;
 	default:
 		component.Log(logLevel, std::string {msg});
