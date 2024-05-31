@@ -48,6 +48,7 @@ parser.add_argument("--skip-repository-updates", type=str2bool, nargs='?', const
 if platform == "linux":
 	parser.add_argument("--no-sudo", type=str2bool, nargs='?', const=True, default=False, help="Will not run sudo commands. System packages will have to be installed manually.")
 	parser.add_argument("--no-confirm", type=str2bool, nargs='?', const=True, default=False, help="Disable any interaction with user (suitable for automated run).")
+	parser.add_argument("--no-libssl", type=str2bool, nargs='?', const=True, default=False, help="Disable the installation of the libssl-dev package.")
 args,unknown = parser.parse_known_args()
 args = vars(args)
 input_args = args
@@ -86,6 +87,7 @@ if platform == "linux":
 	cxx_compiler = args["cxx_compiler"]
 	no_sudo = args["no_sudo"]
 	no_confirm = args["no_confirm"]
+	no_libssl = args["no_libssl"]
 generator = args["generator"]
 #if platform == "win32":
 #	vcvars = args["vcvars
@@ -142,6 +144,7 @@ print("install_directory: " +install_directory)
 if platform == "linux":
 	print("no_sudo: " +str(no_sudo))
 	print("no_confirm: " +str(no_confirm))
+	print("no_libssl: " +str(no_libssl))
 print("cmake_args: " +', '.join(additional_cmake_args))
 print("modules: " +', '.join(modules))
 
@@ -241,6 +244,7 @@ def execscript(filepath):
 		l["cxx_compiler"] = cxx_compiler
 		l["no_confirm"] = no_confirm
 		l["no_sudo"] = no_sudo
+		l["no_libssl"] = no_libssl
 
 	execfile(filepath,g,l)
 
@@ -283,10 +287,6 @@ if platform == "linux":
 			
 			# CMake
 			"apt-get install cmake",
-
-			# Required for Curl
-			"apt-get install libssl-dev",
-			"apt install libssh2-1",
 			
 			# Curl
 			"apt-get install curl zip unzip tar",
@@ -301,6 +301,12 @@ if platform == "linux":
 			# Ninja
 			"apt-get install ninja-build"
 		]
+
+		if not no_libssl:
+			# Required for Curl
+			# On a Ubuntu 24.04 GitHub runner this will currently cause a build failure, see https://github.com/actions/runner-images/issues/9937
+			# The --no-libssl option is a workaround until that issue has been resolved.
+			commands.append("apt-get install libssl-dev")
 
 		install_system_packages(commands, no_confirm)
 
@@ -826,7 +832,7 @@ if with_vr:
 if with_networking:
 	add_pragma_module(
 		name="pr_steam_networking_sockets",
-		commitSha="d1127f8c981be69448a68b4d4b7665a6e5df6cf4",
+		commitSha="c76bb55fdbd736f0d3992d44f2c867a365920aa5",
 		repositoryUrl="https://github.com/Silverlan/pr_steam_networking_sockets.git",
 		skipBuildTarget=True
 	)
@@ -858,6 +864,7 @@ for module in module_info:
 			if moduleUrl:
 				get_submodule(moduleName,moduleUrl,commitId,branch)
 
+	os.chdir(moduleDir)
 	scriptPath = moduleDir +"build_scripts/setup.py"
 	if Path(scriptPath).is_file():
 		print_msg("Executing module setup script...")
