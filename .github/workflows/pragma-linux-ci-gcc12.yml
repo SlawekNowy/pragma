@@ -49,17 +49,17 @@ jobs:
       
       - name: Move repo to target location
         run: |
-            mv pr_source/ pr_mount_external/ && s|
+            mv pr_source/ pr_mount_external/ && 
             mv pr_mount_external ./pragma/modules/
             
       - name: Add dependencies
         run: |
-            apt install python3 build-essential libssl-dev |
-            add-apt-repository ppa:savoury1/llvm-defaults-14 |
-            apt update |
-            apt install |
-            apt -qq install -y libwayland-dev libxrandr-dev |
-            apt install libstdc++-12-dev libstdc++6 patchelf libxcb-keysyms1-dev xcb libxcb-xkb-dev x11-xkb-utils libx11-xcb-dev libxkbcommon-x11-dev xorg-dev git-lfs subversion |
+            apt install python3 build-essential libssl-dev 
+            add-apt-repository ppa:savoury1/llvm-defaults-14 
+            apt update 
+            apt install 
+            apt -qq install -y libwayland-dev libxrandr-dev 
+            apt install libstdc++-12-dev libstdc++6 patchelf libxcb-keysyms1-dev xcb libxcb-xkb-dev x11-xkb-utils libx11-xcb-dev libxkbcommon-x11-dev xorg-dev git-lfs subversion 
             apt install meson cmake curl zip unzip tar python3-distutils pkg-config libfreetype-dev ninja-build
 
       - name: Build Pragma
