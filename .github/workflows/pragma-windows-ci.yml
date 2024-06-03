@@ -51,7 +51,7 @@ jobs:
       
       - name: Move repo to target location
         run: |
-            mv pr_source/ pr_mount_external/ |
+            mv pr_source/ pr_mount_external/ &&|
             mv pr_mount_external c:/pragma/modules/
 
       # We need the latest Windows SDK
