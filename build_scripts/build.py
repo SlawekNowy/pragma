@@ -48,7 +48,6 @@ parser.add_argument("--skip-repository-updates", type=str2bool, nargs='?', const
 if platform == "linux":
 	parser.add_argument("--no-sudo", type=str2bool, nargs='?', const=True, default=False, help="Will not run sudo commands. System packages will have to be installed manually.")
 	parser.add_argument("--no-confirm", type=str2bool, nargs='?', const=True, default=False, help="Disable any interaction with user (suitable for automated run).")
-	parser.add_argument("--no-libssl", type=str2bool, nargs='?', const=True, default=False, help="Disable the installation of the libssl-dev package.")
 args,unknown = parser.parse_known_args()
 args = vars(args)
 input_args = args
@@ -87,7 +86,6 @@ if platform == "linux":
 	cxx_compiler = args["cxx_compiler"]
 	no_sudo = args["no_sudo"]
 	no_confirm = args["no_confirm"]
-	no_libssl = args["no_libssl"]
 generator = args["generator"]
 #if platform == "win32":
 #	vcvars = args["vcvars
@@ -144,7 +142,6 @@ print("install_directory: " +install_directory)
 if platform == "linux":
 	print("no_sudo: " +str(no_sudo))
 	print("no_confirm: " +str(no_confirm))
-	print("no_libssl: " +str(no_libssl))
 print("cmake_args: " +', '.join(additional_cmake_args))
 print("modules: " +', '.join(modules))
 
@@ -244,7 +241,6 @@ def execscript(filepath):
 		l["cxx_compiler"] = cxx_compiler
 		l["no_confirm"] = no_confirm
 		l["no_sudo"] = no_sudo
-		l["no_libssl"] = no_libssl
 
 	execfile(filepath,g,l)
 
@@ -287,6 +283,9 @@ if platform == "linux":
 			
 			# CMake
 			"apt-get install cmake",
+
+			# Required for Curl
+			"apt-get install libssl-dev",
 			
 			# Curl
 			"apt-get install curl zip unzip tar",
@@ -297,17 +296,9 @@ if platform == "linux":
 			#install freetype for linking. X server frontends (Gnome, KDE etc) already include it somewhere down the line. Also install pkg-config for easy export of flags.
 			"apt-get install pkg-config libfreetype-dev",
 
-
 			# Ninja
 			"apt-get install ninja-build"
 		]
-
-		if not no_libssl:
-			# Required for Curl
-			# On a Ubuntu 24.04 GitHub runner this will currently cause a build failure, see https://github.com/actions/runner-images/issues/9937
-			# The --no-libssl option is a workaround until that issue has been resolved.
-			commands.append("apt-get install libssl-dev")
-
 		install_system_packages(commands, no_confirm)
 
 module_list = []
@@ -825,14 +816,14 @@ if with_pfm:
 if with_vr:
 	add_pragma_module(
 		name="pr_openvr",
-		commitSha="08310f8c6cff3efc4bbdbc24d941c56c1d5fa892",
+		commitSha="3588afb128193970360b85c1a7e7f4946fb76619",
 		repositoryUrl="https://github.com/Silverlan/pr_openvr.git"
 	)
 
 if with_networking:
 	add_pragma_module(
 		name="pr_steam_networking_sockets",
-		commitSha="c76bb55fdbd736f0d3992d44f2c867a365920aa5",
+		commitSha="311e721c1160d631461c5860d70575ffe79208ef",
 		repositoryUrl="https://github.com/Silverlan/pr_steam_networking_sockets.git",
 		skipBuildTarget=True
 	)
@@ -1041,11 +1032,11 @@ def download_addon(name,addonName,url,commitId=None):
 curDir = os.getcwd()
 if not skip_repository_updates:
 	if with_pfm:
-		download_addon("PFM","filmmaker","https://github.com/Silverlan/pfm.git","dd8334da633ab0f2cd73c418b1cf2a771c582ec5")
+		download_addon("PFM","filmmaker","https://github.com/Silverlan/pfm.git","1b4fa03f9a11b8bd12bca2912408d9dfb429be20")
 		download_addon("model editor","tool_model_editor","https://github.com/Silverlan/pragma_model_editor.git","56d46dacb398fa7540e794359eaf1081c9df1edd")
 
 	if with_vr:
-		download_addon("VR","virtual_reality","https://github.com/Silverlan/PragmaVR.git","c773f17")
+		download_addon("VR","virtual_reality","https://github.com/Silverlan/PragmaVR.git","96d815c56680ce250c77b21b3bee7ee8d993a186")
 
 	if with_pfm:
 		download_addon("PFM Living Room Demo","pfm_demo_living_room","https://github.com/Silverlan/pfm_demo_living_room.git","4cbecad4a2d6f502b6d9709178883678101f7e2c")
