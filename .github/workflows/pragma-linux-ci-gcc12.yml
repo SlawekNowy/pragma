@@ -49,7 +49,7 @@ jobs:
       
       - name: Move repo to target location
         run: |
-            mv pr_source/ pr_mount_external/ &&|
+            mv pr_source/ pr_mount_external/ && s|
             mv pr_mount_external ./pragma/modules/
             
       - name: Add dependencies
