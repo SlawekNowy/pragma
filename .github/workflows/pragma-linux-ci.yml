@@ -27,7 +27,10 @@ jobs:
           - os: ubuntu-24.04
             name: "Ubuntu 24.04"
     steps:
-
+      - name: Setup Pragma
+        uses: Silverlan/pragma/github_actions/setup@main
+        with:
+          clone_url: "https://github.com/${{ github.repository }}.git"
 
       - name: Clone pr_source repo
         uses: GuillaumeFalourd/clone-github-repo-action@main
