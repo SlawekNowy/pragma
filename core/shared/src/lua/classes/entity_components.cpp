@@ -901,6 +901,8 @@ void pragma::lua::register_entity_component_classes(lua_State *l, luabind::modul
 	}));
 	entityComponentDef.def("Log", static_cast<void (pragma::BaseEntityComponent::*)(const std::string &, pragma::BaseEntityComponent::LogSeverity) const>(&pragma::BaseEntityComponent::Log));
 	entityComponentDef.def("Log", static_cast<void (pragma::BaseEntityComponent::*)(const std::string &, pragma::BaseEntityComponent::LogSeverity) const>(&pragma::BaseEntityComponent::Log), luabind::default_parameter_policy<3, pragma::BaseEntityComponent::LogSeverity::Warning> {});
+	entityComponentDef.def("SetPropertyAnimated", &pragma::BaseEntityComponent::SetPropertyAnimated);
+	entityComponentDef.def("IsPropertyAnimated", &pragma::BaseEntityComponent::IsPropertyAnimated);
 	entityComponentDef.add_static_constant("FREGISTER_NONE", umath::to_integral(pragma::ComponentFlags::None));
 	entityComponentDef.add_static_constant("FREGISTER_BIT_NETWORKED", umath::to_integral(pragma::ComponentFlags::Networked));
 
@@ -1479,6 +1481,8 @@ void pragma::lua::base_animated_component::register_class(luabind::module_ &mod)
 		return luabind::object {l, *flags};
 	}));
 	def.def("SetLayeredAnimationFlags", &pragma::BaseAnimatedComponent::SetLayeredAnimationFlags);
+	def.def("SetPostAnimationUpdateEnabled", &pragma::BaseAnimatedComponent::SetPostAnimationUpdateEnabled);
+	def.def("IsPostAnimationUpdateEnabled", &pragma::BaseAnimatedComponent::IsPostAnimationUpdateEnabled);
 	def.def("GetMetaBoneId", &pragma::BaseAnimatedComponent::GetMetaBoneId);
 	def.def(
 	  "GetMetaBonePose", +[](pragma::BaseAnimatedComponent &animC, animation::MetaRigBoneType boneType, umath::CoordinateSpace space) -> std::optional<umath::ScaledTransform> {
