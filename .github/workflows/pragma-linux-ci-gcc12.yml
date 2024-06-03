@@ -54,13 +54,13 @@ jobs:
             
       - name: Add dependencies
         run: |
-            apt install python3 build-essential libssl-dev 
-            add-apt-repository ppa:savoury1/llvm-defaults-14 
-            apt update 
-            apt install 
-            apt -qq install -y libwayland-dev libxrandr-dev 
-            apt install libstdc++-12-dev libstdc++6 patchelf libxcb-keysyms1-dev xcb libxcb-xkb-dev x11-xkb-utils libx11-xcb-dev libxkbcommon-x11-dev xorg-dev git-lfs subversion 
-            apt install meson cmake curl zip unzip tar python3-distutils pkg-config libfreetype-dev ninja-build
+            sudo apt install python3 build-essential libssl-dev 
+            sudo add-apt-repository ppa:savoury1/llvm-defaults-14 
+            sudo apt update 
+            sudo apt install 
+            sudo apt -qq install -y libwayland-dev libxrandr-dev 
+            sudo apt install libstdc++-12-dev libstdc++6 patchelf libxcb-keysyms1-dev xcb libxcb-xkb-dev x11-xkb-utils libx11-xcb-dev libxkbcommon-x11-dev xorg-dev git-lfs subversion 
+            sudo apt install meson cmake curl zip unzip tar python3-distutils pkg-config libfreetype-dev ninja-build
 
       - name: Build Pragma
         uses: ./pragma/github_actions/build
