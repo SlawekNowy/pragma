@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: environment-lin-${{ github.ref }}
+  group: environment-lin-gcc12-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
