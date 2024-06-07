@@ -6,9 +6,9 @@ pfm = {}
 
 --- 
 --- @class pfm.Version
---- @field major int 
---- @field minor int 
---- @field revision int 
+--- @field major  
+--- @field minor  
+--- @field revision  
 --- @overload fun(arg1: string):pfm.Version
 --- @overload fun(arg1: int, arg2: int, arg3: int):pfm.Version
 --- @overload fun(arg1: int, arg2: int):pfm.Version
@@ -16,15 +16,15 @@ pfm = {}
 pfm.Version = {}
 
 --- 
---- @return string ret0
-function pfm.Version:ToString() end
+--- @param 1 pfm.Version
+function pfm.Version:__le(arg1) end
 
 --- 
 function pfm.Version:Reset() end
 
 --- 
---- @param 1 pfm.Version
-function pfm.Version:__le(arg1) end
+--- @return string ret0
+function pfm.Version:ToString() end
 
 --- 
 --- @param 1 pfm.Version

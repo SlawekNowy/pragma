@@ -4,24 +4,25 @@
 opencv = {}
 
 --- 
---- @param arg0 util.ImageBuffer
---- @param arg1 int
---- @param arg2 int
+--- @param psrc util.ImageBuffer
+--- @param dst util.ImageBuffer
+--- @param x int
+--- @param y int
+--- @param w int
+--- @param h int
+function opencv.copy(psrc, dst, x, y, w, h) end
+
+--- 
+--- @param img util.ImageBuffer
+--- @param newWidth int
+--- @param newHeight int
 --- @return util.ImageBuffer ret0
-function opencv.resize(arg0, arg1, arg2) end
+function opencv.resize(img, newWidth, newHeight) end
 
 --- 
---- @param arg0 util.ImageBuffer
---- @param arg1 util.ImageBuffer
---- @param arg2 int
---- @param arg3 int
---- @param arg4 int
---- @param arg5 int
-function opencv.copy(arg0, arg1, arg2, arg3, arg4, arg5) end
-
---- 
---- @param arg0 util.ImageBuffer
+--- @param img util.ImageBuffer
+--- @param filePath string
 --- @return bool ret0
-function opencv.save(arg0) end
+function opencv.save(img, filePath) end
 
 

@@ -13,55 +13,15 @@ function doc.load(fileName) end
 function doc.autogenerate(buildDir) end
 
 --- 
-function doc.generate_lad_assets() end
+--- @return string ret0
+function doc.generate_convar_documentation() end
 
 --- 
 function doc.generate_documentation() end
 
 --- 
---- @return string ret0
-function doc.generate_convar_documentation() end
-
-
---- 
---- @class doc.Module
-doc.Module = {}
-
---- 
-function doc.Module:GetWikiURL() end
-
---- 
-function doc.Module:GetTarget() end
-
-
---- 
---- @class doc.Group
-doc.Group = {}
-
---- 
-function doc.Group:GetName() end
-
-
---- 
---- @class doc.DerivedFrom
-doc.DerivedFrom = {}
-
---- 
-function doc.DerivedFrom:GetName() end
-
---- 
-function doc.DerivedFrom:GetParent() end
-
-
---- 
---- @class doc.BaseCollectionObject
-doc.BaseCollectionObject = {}
-
---- 
-function doc.BaseCollectionObject:GetWikiURL() end
-
---- 
-function doc.BaseCollectionObject:GetFullName() end
+--- @param path string
+function doc.generate_lad_assets(path) end
 
 
 --- 
@@ -69,20 +29,13 @@ function doc.BaseCollectionObject:GetFullName() end
 doc.Member = {}
 
 --- 
-function doc.Member:GetWikiURL() end
-
---- 
-function doc.Member:GetName() end
+function doc.Member:GetMode() end
 
 --- 
 function doc.Member:GetDefault() end
 
 --- 
-function doc.Member:GetMode() end
-
---- 
---- @return struct pragma::doc::Variant ret0
-function doc.Member:GetType() end
+function doc.Member:GetDescription() end
 
 --- 
 function doc.Member:GetGameStateFlags() end
@@ -91,7 +44,14 @@ function doc.Member:GetGameStateFlags() end
 function doc.Member:GetFullName() end
 
 --- 
-function doc.Member:GetDescription() end
+function doc.Member:GetWikiURL() end
+
+--- 
+function doc.Member:GetName() end
+
+--- 
+--- @return struct pragma::doc::Variant ret0
+function doc.Member:GetType() end
 
 
 --- @enum Mode
@@ -102,23 +62,22 @@ doc.Member = {
 }
 
 --- 
+--- @class doc.BaseCollectionObject
+doc.BaseCollectionObject = {}
+
+--- 
+function doc.BaseCollectionObject:GetFullName() end
+
+--- 
+function doc.BaseCollectionObject:GetWikiURL() end
+
+
+--- 
 --- @class doc.Function
 doc.Function = {}
 
 --- 
 function doc.Function:GetDescription() end
-
---- 
-function doc.Function:GetURL() end
-
---- 
-function doc.Function:GetGameStateFlags() end
-
---- 
-function doc.Function:GetFullName() end
-
---- 
-function doc.Function:GetExampleCode() end
 
 --- 
 function doc.Function:GetOverloads() end
@@ -127,16 +86,28 @@ function doc.Function:GetOverloads() end
 function doc.Function:GetFlags() end
 
 --- 
-function doc.Function:GetGroups() end
+function doc.Function:GetExampleCode() end
 
 --- 
-function doc.Function:GetType() end
+function doc.Function:GetFullName() end
+
+--- 
+function doc.Function:GetGameStateFlags() end
+
+--- 
+function doc.Function:GetGroups() end
 
 --- 
 function doc.Function:GetName() end
 
 --- 
 function doc.Function:GetRelated() end
+
+--- 
+function doc.Function:GetType() end
+
+--- 
+function doc.Function:GetURL() end
 
 
 --- @enum Flag
@@ -156,8 +127,8 @@ doc.Function = {
 
 --- 
 --- @class doc.Function.ExampleCode
---- @field description string 
---- @field code string 
+--- @field code  
+--- @field description  
 doc.Function.ExampleCode = {}
 
 
@@ -166,7 +137,10 @@ doc.Function.ExampleCode = {}
 doc.Collection = {}
 
 --- 
-function doc.Collection:GetDescription() end
+function doc.Collection:GetURL() end
+
+--- 
+function doc.Collection:GetChildren() end
 
 --- 
 function doc.Collection:GetFunctions() end
@@ -175,34 +149,31 @@ function doc.Collection:GetFunctions() end
 function doc.Collection:GetDerivedFrom() end
 
 --- 
-function doc.Collection:GetMembers() end
-
---- 
-function doc.Collection:GetRelated() end
+function doc.Collection:GetDescription() end
 
 --- 
 function doc.Collection:GetEnumSets() end
 
 --- 
+function doc.Collection:GetFlags() end
+
+--- 
 function doc.Collection:GetFullName() end
 
 --- 
-function doc.Collection:GetChildren() end
+function doc.Collection:GetMembers() end
 
 --- 
-function doc.Collection:GetURL() end
+function doc.Collection:GetName() end
 
 --- 
 function doc.Collection:GetParent() end
 
 --- 
-function doc.Collection:GetFlags() end
+function doc.Collection:GetRelated() end
 
 --- 
 function doc.Collection:GetWikiURL() end
-
---- 
-function doc.Collection:GetName() end
 
 
 --- @enum FlagBit
@@ -218,17 +189,25 @@ doc.Collection = {
 }
 
 --- 
---- @class doc.Overload
-doc.Overload = {}
+--- @class doc.DerivedFrom
+doc.DerivedFrom = {}
 
 --- 
---- @overload fun(): 
-function doc.Overload:GetParameters() end
+function doc.DerivedFrom:GetName() end
+
+--- 
+function doc.DerivedFrom:GetParent() end
 
 
 --- 
 --- @class doc.EnumSet
 doc.EnumSet = {}
+
+--- 
+function doc.EnumSet:GetEnums() end
+
+--- 
+function doc.EnumSet:GetFullName() end
 
 --- 
 function doc.EnumSet:GetWikiURL() end
@@ -239,12 +218,6 @@ function doc.EnumSet:GetUnderlyingType() end
 --- 
 function doc.EnumSet:GetName() end
 
---- 
-function doc.EnumSet:GetEnums() end
-
---- 
-function doc.EnumSet:GetFullName() end
-
 
 --- 
 --- @class doc.Enum
@@ -254,22 +227,22 @@ doc.Enum = {}
 function doc.Enum:GetDescription() end
 
 --- 
-function doc.Enum:GetType() end
+function doc.Enum:GetGameStateFlags() end
 
 --- 
-function doc.Enum:GetValue() end
+function doc.Enum:GetFullName() end
 
 --- 
 function doc.Enum:GetWikiURL() end
 
 --- 
+function doc.Enum:GetValue() end
+
+--- 
 function doc.Enum:GetName() end
 
 --- 
-function doc.Enum:GetGameStateFlags() end
-
---- 
-function doc.Enum:GetFullName() end
+function doc.Enum:GetType() end
 
 
 --- @enum Type
@@ -277,4 +250,32 @@ doc.Enum = {
 	TYPE_BIT = 1,
 	TYPE_REGULAR = 0,
 }
+
+--- 
+--- @class doc.Group
+doc.Group = {}
+
+--- 
+function doc.Group:GetName() end
+
+
+--- 
+--- @class doc.Module
+doc.Module = {}
+
+--- 
+function doc.Module:GetTarget() end
+
+--- 
+function doc.Module:GetWikiURL() end
+
+
+--- 
+--- @class doc.Overload
+doc.Overload = {}
+
+--- 
+--- @overload fun(): 
+function doc.Overload:GetParameters() end
+
 
