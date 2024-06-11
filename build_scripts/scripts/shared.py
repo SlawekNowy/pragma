@@ -107,7 +107,14 @@ def http_download(url,fileName=None):
 	if not fileName:
 		a = urlparse(url)
 		fileName = os.path.basename(a.path)
-	urllib.request.urlretrieve(url,fileName)
+	try:
+		urllib.request.urlretrieve(url,fileName)
+	except PermissionError as e:
+		print_warning("Failed to download '" +url +"' as '" +fileName +"' (PermissionError) (cwd: " + os.getcwd() +"): {}".format(e))
+		raise
+	except urllib.error.URLError as e:
+		print_warning("Failed to download '" +url +"' as '" +fileName +"' (URLError) (cwd: " + os.getcwd() +"): {}".format(e))
+		raise
 	return fileName
 
 # See https://stackoverflow.com/a/54748564
@@ -238,8 +245,27 @@ def get_submodule(directory,url,commitId=None,branch=None):
 	subprocess.run(["git","submodule","update","--init","--recursive"],check=True)
 	os.chdir(curDir)
 
+def compile_lua_file(deps_dir, luaFile):
+	from scripts.shared import normalize_path
+	curDir = os.getcwd()
+	os.chdir(deps_dir)
+	lua_compile_root = normalize_path(deps_dir +"/lua_compile")
+	if not Path(lua_compile_root).is_dir():
+		mkdir("lua_compile",True)
+		print_msg("lua_compile not found. Downloading...")
+		if platform == "win32":
+			http_extract("https://github.com/Silverlan/lua_compile/releases/download/latest/binaries_windows64.zip")
+		else:
+			http_extract("https://github.com/Silverlan/lua_compile/releases/download/latest/binaries_linux64.tar.gz",format="tar.gz")
+	os.chdir(lua_compile_root)
+	if platform == "win32":
+		subprocess.run([os.getcwd() +"/lua_compile.exe",luaFile],check=True)
+	else:
+		subprocess.run([os.getcwd() +"/lua_compile",luaFile],check=True)
+	os.chdir(curDir)
+
 if platform == "win32":
-	def determine_vsdevcmd_path(deps_dir):
+	def determine_vs_installation_path(deps_dir):
 		# Create the deps_dir if it doesn't exist
 		if not os.path.exists(deps_dir):
 			os.makedirs(deps_dir)
@@ -251,7 +277,10 @@ if platform == "win32":
 		if not os.path.exists(vswhere_path):
 			urllib.request.urlretrieve(vswhere_url, vswhere_path)
 
-		installation_path = subprocess.check_output([vswhere_path, "-property", "installationPath"], text=True).strip()
+		return subprocess.check_output([vswhere_path, "-property", "installationPath"], text=True).strip()
+	
+	def determine_vsdevcmd_path(deps_dir):
+		installation_path = determine_vs_installation_path(deps_dir)
 		vsdevcmd_path = os.path.join(installation_path, "Common7", "Tools", "vsdevcmd.bat")
 		return vsdevcmd_path
 

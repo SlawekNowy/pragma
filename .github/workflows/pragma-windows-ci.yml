@@ -1,9 +1,9 @@
 name: Build Windows
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
   workflow_dispatch:
 
 concurrency:
@@ -19,6 +19,12 @@ env:
 
 jobs:
   build:
+    permissions:
+      actions: write
+      contents: write
+      issues: read
+      pull-requests: read
+
     name: Build - ${{ matrix.config.os }}
     runs-on: ${{ matrix.config.os }}
     strategy:
@@ -37,23 +43,9 @@ jobs:
             build_dir: 'build'
     steps:
       - name: Setup Pragma
-        uses: Silverlan/pragma/github_actions/setup@master
+        uses: Silverlan/pragma/github_actions/setup@main
         with:
           clone_url: "https://github.com/${{ github.repository }}.git"
-
-      - name: Clone pr_source repo
-        uses: GuillaumeFalourd/clone-github-repo-action@main
-        with:
-          owner: 'Slaweknowy'
-          branch: master
-          repository: 'pr_source'
-          submodule: true
-          access-token: ${{ secrets.PR_SOURCE_REPO_TOKEN }}
-      
-      - name: Move repo to target location
-        run: |
-            mv pr_source/ pr_mount_external/ |
-            mv pr_mount_external ./pragma/modules/
 
       # We need the latest Windows SDK
       - uses: GuillaumeFalourd/setup-windows10-sdk-action@v1.11
@@ -100,7 +92,7 @@ jobs:
           prerelease: true
 
       - name: Update nightly release
-        uses: pyTooling/Actions/releaser/composite@main
+        uses: Silverlan/Releaser/releaser/composite@main
         with:
           tag: nightly
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -148,17 +140,18 @@ jobs:
           7z a debug_pdb.zip "$winPath/pdb/**"
 
       - name: Update PDB release
-        uses: pyTooling/Actions/releaser/composite@main
+        uses: Silverlan/Releaser/releaser/composite@main
         with:
           tag: nightly
           token: ${{ secrets.GITHUB_TOKEN }}
           files: "debug_pdb.zip"
 
       - name: Run Tests
-        uses: ./pragma/github_actions/run_tests
+        uses: benc-uk/workflow-dispatch@v1
         timeout-minutes: 10
         with:
-          install-dir: "${{ steps.build-pragma.outputs.install-dir }}"
+          workflow: pragma-server-tests-ci.yml
+          inputs: '{ "os": "windows" }'
 
       - name: Generate File Lists
         shell: bash

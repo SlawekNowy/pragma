@@ -13,8 +13,8 @@ parser = argparse.ArgumentParser(description='Pragma build script', allow_abbrev
 
 # See https://stackoverflow.com/a/43357954/1879228 for boolean args
 if platform == "linux":
-	parser.add_argument('--c-compiler', help='The C-compiler to use.', default='clang-15')
-	parser.add_argument('--cxx-compiler', help='The C++-compiler to use.', default='clang++-15')
+	parser.add_argument('--c-compiler', help='The C-compiler to use.', default='clang-18')
+	parser.add_argument('--cxx-compiler', help='The C++-compiler to use.', default='clang++-18')
 	defaultGenerator = "Ninja Multi-Config"
 else:
 	defaultGenerator = "Visual Studio 17 2022"
@@ -30,9 +30,6 @@ parser.add_argument("--with-vr", type=str2bool, nargs='?', const=True, default=F
 parser.add_argument("--with-networking", type=str2bool, nargs='?', const=True, default=False, help="Include networking module(s) for multiplayer support.")
 parser.add_argument("--with-common-entities", type=str2bool, nargs='?', const=True, default=True, help="Include addons with support for common entity types.")
 parser.add_argument("--with-lua-debugger", type=str2bool, nargs='?', const=True, default=False, help="Include Lua-debugger support.")
-parser.add_argument("--with-lua-doc-generator", type=str2bool, nargs='?', const=True, default=False, help="Include Lua documentation generator. Requires the --dia-include-path and --dia-library-path options.")
-parser.add_argument('--dia-include-path', help='The include path to the Debug Interface Access SDK (required for Lua doc generator).', default='')
-parser.add_argument('--dia-library-path', help='The path to the "diaguids.lib" library of Debug Interface Access SDK (required for Lua doc generator).', default='')
 parser.add_argument('--vtune-include-path', help='The include path to the VTune profiler (required for CPU profiling).', default='')
 parser.add_argument('--vtune-library-path', help='The path to the "libittnotify" library of the VTune profiler (required for CPU profiling).', default='')
 parser.add_argument("--build", type=str2bool, nargs='?', const=True, default=True, help="Build Pragma after configurating and generating build files.")
@@ -101,9 +98,6 @@ with_vr = args["with_vr"]
 with_networking = args["with_networking"]
 with_common_entities = args["with_common_entities"]
 with_lua_debugger = args["with_lua_debugger"]
-with_lua_doc_generator = args["with_lua_doc_generator"]
-dia_include_path = args["dia_include_path"]
-dia_library_path = args["dia_library_path"]
 vtune_include_path = args["vtune_include_path"]
 vtune_library_path = args["vtune_library_path"]
 build = args["build"]
@@ -126,10 +120,6 @@ print("Inputs:")
 if platform == "linux":
 	print("cxx_compiler: " +cxx_compiler)
 	print("c_compiler: " +c_compiler)
-
-	if with_lua_doc_generator:
-		with_lua_doc_generator = 0
-		print_warning("Lua documentation generator is only supported on Windows! --with-lua-doc-generator flag will be ignored.")
 
 print("generator: " +generator)
 #if platform == "win32":
@@ -264,12 +254,13 @@ if platform == "linux":
 		commands = [
 			# Required for the build script
 			"apt-get install python3",
-
+			
 			# Required for Pragma core
 			"apt install build-essential",
-			"add-apt-repository ppa:savoury1/llvm-defaults-14",
+			# "add-apt-repository ppa:savoury1/llvm-defaults-14",
 			"apt update",
-			"apt install clang-15",
+			"apt install clang-18",
+			"apt-get install clang-tools-18", # Required for C++20 Modules
 			"apt install libstdc++-12-dev",
 			"apt install libstdc++6",
 			"apt-get install patchelf",
@@ -289,22 +280,25 @@ if platform == "linux":
 			# Required for Cycles
 			"apt-get install subversion",
 			"apt-get install meson", # epoxy
+			
+			# CMake
+			"apt-get install cmake",
 
 			# Required for Curl
 			"apt-get install libssl-dev",
-			"apt install libssh2-1",
+			
+			# Curl
+			"apt-get install curl zip unzip tar",
 
 			# Required for OIIO
-			"apt-get install python3-distutils",
+			# "apt-get install python3-distutils",
 
 			#install freetype for linking. X server frontends (Gnome, KDE etc) already include it somewhere down the line. Also install pkg-config for easy export of flags.
 			"apt-get install pkg-config libfreetype-dev",
 
-
-			#Ninja
+			# Ninja
 			"apt-get install ninja-build"
 		]
-
 		install_system_packages(commands, no_confirm)
 
 module_list = []
@@ -417,13 +411,13 @@ ZLIB_LIBPATH = normalize_path(zlib_lib_path)
 if platform == "linux":
     #do we even need static build?
 	subprocess.run([boost_root +"/bootstrap.sh"],check=True,shell=True)
-	subprocess.run(["./b2","cxxflags=-fPIC","cflags=-fPIC","address-model=64","stage","variant=release","link=shared","runtime-link=shared","-j3"],check=True,shell=True)
-	subprocess.run(["./b2","cxxflags=-fPIC","cflags=-fPIC","address-model=64","stage","variant=release","link=static","runtime-link=shared","-j3"],check=True,shell=True)
+	subprocess.run(["./b2","cxxflags=-fPIC","cflags=-fPIC","linkflags=-fPIC","address-model=64","stage","variant=release","link=shared","runtime-link=shared","-j3"],check=True,shell=True)
+	subprocess.run(["./b2","cxxflags=-fPIC","cflags=-fPIC","linkflags=-fPIC","address-model=64","stage","variant=release","link=static","runtime-link=shared","-j3"],check=True,shell=True)
 
 	print_msg("Building boost zlib libraries...")
-	subprocess.run(["./b2","cxxflags=-fPIC","cflags=-fPIC","address-model=64","stage","variant=release","link=shared","runtime-link=shared","--with-iostreams","-sZLIB_SOURCE=" +ZLIB_SOURCE,"-sZLIB_INCLUDE=" +ZLIB_INCLUDE,"-sZLIB_LIBPATH=" +ZLIB_LIBPATH],check=True,shell=True)
+	subprocess.run(["./b2","cxxflags=-fPIC","cflags=-fPIC","linkflags=-fPIC","address-model=64","stage","variant=release","link=shared","runtime-link=shared","--with-iostreams","-sZLIB_SOURCE=" +ZLIB_SOURCE,"-sZLIB_INCLUDE=" +ZLIB_INCLUDE,"-sZLIB_LIBPATH=" +ZLIB_LIBPATH],check=True,shell=True)
     
-	subprocess.run(["./b2","cxxflags=-fPIC","cflags=-fPIC","address-model=64","stage","variant=release","link=static","runtime-link=shared","--with-iostreams","-sZLIB_SOURCE=" +ZLIB_SOURCE,"-sZLIB_INCLUDE=" +ZLIB_INCLUDE,"-sZLIB_LIBPATH=" +ZLIB_LIBPATH],check=True,shell=True)
+	subprocess.run(["./b2","cxxflags=-fPIC","cflags=-fPIC","linkflags=-fPIC","address-model=64","stage","variant=release","link=static","runtime-link=shared","--with-iostreams","-sZLIB_SOURCE=" +ZLIB_SOURCE,"-sZLIB_INCLUDE=" +ZLIB_INCLUDE,"-sZLIB_LIBPATH=" +ZLIB_LIBPATH],check=True,shell=True)
 else:
 	mkdir("build",cd=True)
 
@@ -713,6 +707,7 @@ def execbuildscript(filepath):
 	#	l["vcvars"] = "vcvars"
 
 	if platform == "win32":
+		l["determine_vs_installation_path"] = determine_vs_installation_path
 		l["determine_vsdevcmd_path"] = determine_vsdevcmd_path
 
 	execfile(filepath,g,l)
@@ -760,7 +755,7 @@ if with_essential_client_modules:
 if with_common_modules:
 	add_pragma_module(
 		name="pr_bullet",
-		commitSha="4f1aea9",
+		commitSha="4eb3df9",
 		repositoryUrl="https://github.com/Silverlan/pr_bullet.git"
 	)
 	add_pragma_module(
@@ -768,7 +763,7 @@ if with_common_modules:
 		commitSha="0d82a619deff13cde9fd05c62a00ded933a9558e",
 		repositoryUrl="https://github.com/Silverlan/pr_soloud.git"
 	)
-	#add_pragma_module_prebuilt("Silverlan/pr_mount_external_prebuilt")
+	add_pragma_module_prebuilt("Silverlan/pr_mount_external_prebuilt")
 	add_pragma_module_prebuilt("Silverlan/pr_rig_prebuilt")
 	add_pragma_module_prebuilt("Silverlan/pr_ik_prebuilt")
 
@@ -776,7 +771,7 @@ if with_pfm:
 	if with_core_pfm_modules or with_all_pfm_modules:
 		add_pragma_module(
 			name="pr_curl",
-			commitSha="025c6d150ba88031f1b7b9a1bcc387b746e1ac89",
+			commitSha="d49b477d77310737fd5f88d49e35b7db58f9718c",
 			repositoryUrl="https://github.com/Silverlan/pr_curl.git"
 		)
 		add_pragma_module(
@@ -792,7 +787,7 @@ if with_pfm:
 		)
 		add_pragma_module(
 			name="pr_unirender",
-			commitSha="afbaecc93f8e4ee016b4b632206b930789e02d26",
+			commitSha="47b4e8dd3623d21ba96617ceb65d414fa70b0757",
 			repositoryUrl="https://github.com/Slaweknowy/pr_cycles.git"
 		)
 		add_pragma_module(
@@ -811,7 +806,7 @@ if with_pfm:
 			repositoryUrl="https://github.com/Silverlan/pr_opencv.git"
 		)
 
-if with_lua_doc_generator or with_pfm:
+if with_pfm:
 	add_pragma_module(
 		name="pr_git",
 		commitSha="84d7c32",
@@ -821,14 +816,14 @@ if with_lua_doc_generator or with_pfm:
 if with_vr:
 	add_pragma_module(
 		name="pr_openvr",
-		commitSha="08310f8c6cff3efc4bbdbc24d941c56c1d5fa892",
+		commitSha="c9ebb5553fc44fea3d02b5fc4762ed7c81797d0c",
 		repositoryUrl="https://github.com/Silverlan/pr_openvr.git"
 	)
 
 if with_networking:
 	add_pragma_module(
 		name="pr_steam_networking_sockets",
-		commitSha="d1127f8c981be69448a68b4d4b7665a6e5df6cf4",
+		commitSha="311e721c1160d631461c5860d70575ffe79208ef",
 		repositoryUrl="https://github.com/Silverlan/pr_steam_networking_sockets.git",
 		skipBuildTarget=True
 	)
@@ -860,6 +855,7 @@ for module in module_info:
 			if moduleUrl:
 				get_submodule(moduleName,moduleUrl,commitId,branch)
 
+	os.chdir(moduleDir)
 	scriptPath = moduleDir +"build_scripts/setup.py"
 	if Path(scriptPath).is_file():
 		print_msg("Executing module setup script...")
@@ -905,11 +901,11 @@ if platform == "linux":
 	cmake_args += [
 		"-DDEPENDENCY_BOOST_INCLUDE=" +boost_root,
 		"-DDEPENDENCY_BOOST_LIBRARY_LOCATION=" +boost_root +"/stage/lib",
-		"-DDEPENDENCY_BOOST_CHRONO_LIBRARY=" +boost_root +"/stage/lib/libboost_chrono.so",
-		"-DDEPENDENCY_BOOST_DATE_TIME_LIBRARY=" +boost_root +"/stage/lib/libboost_date_time.so",
-		"-DDEPENDENCY_BOOST_REGEX_LIBRARY=" +boost_root +"/stage/lib/libboost_regex.so",
-		"-DDEPENDENCY_BOOST_SYSTEM_LIBRARY=" +boost_root +"/stage/lib/libboost_system.so",
-		"-DDEPENDENCY_BOOST_THREAD_LIBRARY=" +boost_root +"/stage/lib/libsboost_thread.so",
+		"-DDEPENDENCY_BOOST_CHRONO_LIBRARY=" +boost_root +"/stage/lib/boost_chrono.a",
+		"-DDEPENDENCY_BOOST_DATE_TIME_LIBRARY=" +boost_root +"/stage/lib/boost_date_time.a",
+		"-DDEPENDENCY_BOOST_REGEX_LIBRARY=" +boost_root +"/stage/lib/boost_regex.a",
+		"-DDEPENDENCY_BOOST_SYSTEM_LIBRARY=" +boost_root +"/stage/lib/boost_system.a",
+		"-DDEPENDENCY_BOOST_THREAD_LIBRARY=" +boost_root +"/stage/lib/boost_thread.a",
 		"-DDEPENDENCY_LIBZIP_CONF_INCLUDE=" +build_dir +"/third_party_libs/libzip"
 	]
 else:
@@ -931,16 +927,6 @@ else:
 cmake_args.append("-DPME_EXTERNAL_LIB_LOCATION=" +external_libs_dir)
 cmake_args.append("-DPME_EXTERNAL_LIB_BIN_LOCATION=" +external_libs_bin_dir)
 cmake_args.append("-DPME_THIRD_PARTY_LIB_LOCATION=" +third_party_libs_dir)
-
-
-if with_lua_doc_generator:
-	if len(dia_include_path) > 0 and len(dia_library_path) > 0:
-		print_msg("Lua documentation generator is enabled!")
-		cmake_args += ["-DCONFIG_BUILD_WITH_LAD=1"]
-		cmake_args += ["-DDEPENDENCY_DIA_INCLUDE=" +dia_include_path]
-		cmake_args += ["-DDEPENDENCY_DIA_LIBRARY=" +dia_library_path]
-	else:
-		raise argparse.ArgumentError(None,"Both the --dia-include-path and --dia-library-path options have to be specified to enable Lua documentation generator support!")
 
 if len(vtune_include_path) > 0 or len(vtune_library_path) > 0:
 	if len(vtune_include_path) > 0 and len(vtune_library_path) > 0:
@@ -1046,11 +1032,11 @@ def download_addon(name,addonName,url,commitId=None):
 curDir = os.getcwd()
 if not skip_repository_updates:
 	if with_pfm:
-		download_addon("PFM","filmmaker","https://github.com/Silverlan/pfm.git","dd8334da633ab0f2cd73c418b1cf2a771c582ec5")
+		download_addon("PFM","filmmaker","https://github.com/Silverlan/pfm.git","675a87a79dcade37d32ede335559714aac2b2120")
 		download_addon("model editor","tool_model_editor","https://github.com/Silverlan/pragma_model_editor.git","56d46dacb398fa7540e794359eaf1081c9df1edd")
 
 	if with_vr:
-		download_addon("VR","virtual_reality","https://github.com/Silverlan/PragmaVR.git","908786fa9318205395296486012c7d47cbceb3dc")
+		download_addon("VR","virtual_reality","https://github.com/Silverlan/PragmaVR.git","6dfb9dbb1a87b9bb6903e8af6a8dc4e892d38269")
 
 	if with_pfm:
 		download_addon("PFM Living Room Demo","pfm_demo_living_room","https://github.com/Silverlan/pfm_demo_living_room.git","4cbecad4a2d6f502b6d9709178883678101f7e2c")
@@ -1095,23 +1081,14 @@ if build:
 	print_msg("Building Pragma...")
 
 	os.chdir(build_dir)
-
-    
-	print_msg("Running build command...")
-	cmake_build(build_config,["pragma-install-full"])
-	targets = []
+	targets = ["pragma-install-full"]
 	if with_pfm:
 		targets.append("pfm")
 	targets += additional_build_targets
-	#targets.append("pragma-install")
+	targets.append("pragma-install")
 
+	print_msg("Running build command...")
 	cmake_build(build_config,targets)
-
-	cmake_build(build_config,["pragma-install"])
-
-
-
-
 
 	print_msg("Build Successful! Pragma has been installed to \"" +normalize_path(install_dir) +"\".")
 	print_msg("If you make any changes to the core source code, you can build the \"pragma-install\" target to compile the changes and re-install the binaries automatically.")
