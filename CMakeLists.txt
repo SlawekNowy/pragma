@@ -1197,7 +1197,7 @@ pragma_install(util_unicode "${BINARY_OUTPUT_DIR}")
 
 message("Custom install targets: ${PRAGMA_INSTALL_CUSTOM_TARGETS}")
 add_custom_target(pragma-install
-	DEPENDS pragma iclient iserver udm_convert ${PRAGMA_INSTALL_CUSTOM_TARGETS}
+	DEPENDS ${PRAGMA_INSTALL_DEPENDENCIES}
 	COMMAND 
 		"${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=${PRAGMA_INSTALL_COMPONENT}
 		-DBUILD_TYPE=${CONFIG_BUILD_TYPE}

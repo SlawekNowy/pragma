@@ -1081,23 +1081,14 @@ if build:
 	print_msg("Building Pragma...")
 
 	os.chdir(build_dir)
-
-    
-	print_msg("Running build command...")
-	cmake_build(build_config,["pragma-install-full"])
-	targets = []
+	targets = ["pragma-install-full"]
 	if with_pfm:
 		targets.append("pfm")
 	targets += additional_build_targets
-	#targets.append("pragma-install")
+	targets.append("pragma-install")
 
+	print_msg("Running build command...")
 	cmake_build(build_config,targets)
-
-	cmake_build(build_config,["pragma-install"])
-
-
-
-
 
 	print_msg("Build Successful! Pragma has been installed to \"" +normalize_path(install_dir) +"\".")
 	print_msg("If you make any changes to the core source code, you can build the \"pragma-install\" target to compile the changes and re-install the binaries automatically.")
