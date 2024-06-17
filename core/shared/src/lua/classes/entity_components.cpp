@@ -448,8 +448,10 @@ static std::vector<pragma::ComponentMemberIndex> get_dynamic_member_ids(pragma::
 	return memberIndices;
 }
 
+#ifdef __linux__
 DEFINE_OSTREAM_OPERATOR_NAMESPACE_ALIAS(pragma, BaseEntityComponent);
 DEFINE_OSTREAM_OPERATOR_NAMESPACE_ALIAS(util, Path);
+#endif
 
 template<typename TMemberIdentifier, typename TValue, auto TSetValue>
 bool set_transform_member_value(pragma::BaseEntityComponent &component, const TMemberIdentifier &memId, umath::CoordinateSpace space, const TValue &value)
@@ -992,7 +994,7 @@ void pragma::lua::register_entity_component_classes(lua_State *l, luabind::modul
 	add_log_func<spdlog::level::debug>(l, oLogger, "LogDebug");
 	add_log_func<spdlog::level::info>(l, oLogger, "LogInfo");
 	add_log_func<spdlog::level::warn>(l, oLogger, "LogWarn");
-	add_log_func<spdlog::level::err>(l, oLogger, "LogError");
+	add_log_func<spdlog::level::err>(l, oLogger, "LogErr");
 	add_log_func<spdlog::level::critical>(l, oLogger, "LogCritical");
 
 	auto defBvh = Lua::create_base_entity_component_class<pragma::BaseBvhComponent>("BaseBvhComponent");
@@ -1378,6 +1380,7 @@ void pragma::lua::base_animated_component::register_class(luabind::module_ &mod)
 	def.def("PlayLayeredAnimation", static_cast<void (*)(lua_State *, pragma::BaseAnimatedComponent &, int, std::string)>([](lua_State *l, pragma::BaseAnimatedComponent &hAnim, int slot, std::string anim) { hAnim.PlayLayeredAnimation(slot, anim); }));
 	def.def("PlayLayeredActivity", static_cast<void (*)(lua_State *, pragma::BaseAnimatedComponent &, int, int)>([](lua_State *l, pragma::BaseAnimatedComponent &hAnim, int slot, int activity) { hAnim.PlayLayeredActivity(slot, static_cast<Activity>(activity)); }));
 	def.def("StopLayeredAnimation", &pragma::BaseAnimatedComponent::StopLayeredAnimation);
+	def.def("StopLayeredAnimations", &pragma::BaseAnimatedComponent::StopLayeredAnimations);
 	def.def("GetLayeredAnimation", &pragma::BaseAnimatedComponent::GetLayeredAnimation);
 	def.def("GetLayeredActivity", &pragma::BaseAnimatedComponent::GetLayeredActivity);
 	def.def("GetLayeredAnimations", static_cast<luabind::object (*)(lua_State *, pragma::BaseAnimatedComponent &)>([](lua_State *l, pragma::BaseAnimatedComponent &hAnim) -> luabind::object {
