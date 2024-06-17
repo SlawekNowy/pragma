@@ -18,7 +18,7 @@ def reset_to_commit(sha):
 reset_to_commit("66dffad")
 
 if platform == "win32":
-    subprocess.run(["./compile/install.bat"])
+    subprocess.run([".\\compile\\install.bat"])
 else:
     subprocess.run(["./compile/install.sh"])
 
