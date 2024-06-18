@@ -18,6 +18,12 @@ env:
 
 jobs:
   build:
+    permissions:
+      actions: write
+      contents: write
+      issues: read
+      pull-requests: read
+
     name: Build - ${{ matrix.config.os }}
     runs-on: ${{ matrix.config.os }}
     strategy:
@@ -63,7 +69,7 @@ jobs:
         uses: ./pragma/github_actions/build
         id: build-pragma
         with:
-          build-args: "--with-pfm --with-all-pfm-modules --with-vr --with-networking --with-lua-debugger=0 --cmake-arg=\"-DCMAKE_SYSTEM_VERSION=10.0.22621.0\" --vcvars \"C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat\""
+          build-args: "--with-pfm --with-all-pfm-modules --with-vr --with-networking --with-lua-debugger=0 --with-swiftshader --cmake-arg=\"-DCMAKE_SYSTEM_VERSION=10.0.22621.0\" --vcvars \"C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat\""
 
       - name: Create Release Archive
         shell: bash
@@ -154,10 +160,11 @@ jobs:
           files: "debug_pdb.zip"
 
       - name: Run Tests
-        uses: ./pragma/github_actions/run_tests
+        uses: benc-uk/workflow-dispatch@v1
         timeout-minutes: 10
         with:
-          install-dir: "${{ steps.build-pragma.outputs.install-dir }}"
+          workflow: pragma-server-tests-ci.yml
+          inputs: '{ "os": "windows" }'
 
       - name: Generate File Lists
         shell: bash
