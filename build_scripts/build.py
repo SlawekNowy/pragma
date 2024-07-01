@@ -781,7 +781,7 @@ execfile(scripts_dir +"/user_modules.py",g,l)
 if with_essential_client_modules:
 	add_pragma_module(
 		name="pr_prosper_vulkan",
-		commitSha="8f67850e5d4f4f6206a4e217d03d4277af464764",
+		commitSha="32b40a82978503b917d6d6b26f37aadc79ffd0f5",
 		repositoryUrl="https://github.com/Silverlan/pr_prosper_vulkan.git"
 	)
 
@@ -793,8 +793,13 @@ if with_common_modules:
 	)
 	add_pragma_module(
 		name="pr_audio_soloud",
-		commitSha="99ddd97bf54db2509ae2987bce3a5023f5e335e8",
+		commitSha="73ee6c707e47f41e06148c55aceae8eb43c34842",
 		repositoryUrl="https://github.com/Silverlan/pr_soloud.git"
+	)
+	add_pragma_module(
+		name="pr_audio_dummy",
+		commitSha="84e1249c296dfc6cf288c8262142170851286f48",
+		repositoryUrl="https://github.com/Silverlan/pr_audio_dummy.git"
 	)
 	#add_pragma_module_prebuilt("Silverlan/pr_mount_external_prebuilt")
 	add_pragma_module_prebuilt("Silverlan/pr_rig_prebuilt")
@@ -804,18 +809,18 @@ if with_pfm:
 	if with_core_pfm_modules or with_all_pfm_modules:
 		add_pragma_module(
 			name="pr_curl",
-			commitSha="5d09bb6ed75fc1d6217069bad759c10c425d4d7b",
+			commitSha="974c67cc76710809a9595fcfbc4167554799cd7f",
 			repositoryUrl="https://github.com/Silverlan/pr_curl.git"
 		)
 		add_pragma_module(
 			name="pr_dmx",
-			commitSha="6a0270b680c94fcdddb681667461e6080694d776",
+			commitSha="e2b0eff826eda999056f182fc15cfb16cbfbe913",
 			repositoryUrl="https://github.com/Silverlan/pr_dmx.git"
 		)
 	if with_all_pfm_modules:
 		add_pragma_module(
 			name="pr_chromium",
-			commitSha="b8cc18419a5bb1ddf62e283224df2cb6b1d78e29",
+			commitSha="b1bd5cdf6c6fda9eb205ba3bfdbd7af01260eba0",
 			repositoryUrl="https://github.com/Silverlan/pr_chromium.git"
 		)
 		add_pragma_module(
@@ -825,38 +830,38 @@ if with_pfm:
 		)
 		add_pragma_module(
 			name="pr_xatlas",
-			commitSha="4c9b1f6ca7ddef17043173f2b249d2d897c20f77",
+			commitSha="b6c7e6c466a3a70183b19b1f329e8bd79544a1e7",
 			repositoryUrl="https://github.com/Silverlan/pr_xatlas.git"
 		)
 		add_pragma_module(
 			name="pr_davinci",
-			commitSha="2a3a616f008423bec1e4efdac632b5e344951789",
+			commitSha="93295d5232134e437c3f009319110dff594d08a2",
 			repositoryUrl="https://github.com/Silverlan/pr_davinci.git"
 		)
 		add_pragma_module(
 			name="pr_opencv",
-			commitSha="6206d3afa9551ff3b6d5ad9a97631ea366161881",
+			commitSha="430e1cc87e741306753d1bdc3091bd04d537d6b1",
 			repositoryUrl="https://github.com/Silverlan/pr_opencv.git"
 		)
 
 if with_pfm:
 	add_pragma_module(
 		name="pr_git",
-		commitSha="35289bb4051e26f31ea0c0613a27592804ad6a31",
+		commitSha="9a5c12b900de8ada6d22689a849ba2c01ba0e4dd",
 		repositoryUrl="https://github.com/Silverlan/pr_git.git"
 	)
 
 if with_vr:
 	add_pragma_module(
 		name="pr_openvr",
-		commitSha="a69d07969a1c57c200cf4d5b0c01ea784e7bd1f8",
+		commitSha="54ab920d9ab71c57ce6d2c059187af0c6a99928f",
 		repositoryUrl="https://github.com/Silverlan/pr_openvr.git"
 	)
 
 if with_networking:
 	add_pragma_module(
 		name="pr_steam_networking_sockets",
-		commitSha="6c924b4eb30588a0c1b5d92f747e7537a7498589",
+		commitSha="4890de55f2bfddbe8a8d838ab8ce12301e1647f9",
 		repositoryUrl="https://github.com/Silverlan/pr_steam_networking_sockets.git",
 		skipBuildTarget=True
 	)
@@ -1065,11 +1070,11 @@ def download_addon(name,addonName,url,commitId=None):
 curDir = os.getcwd()
 if not skip_repository_updates:
 	if with_pfm:
-		download_addon("PFM","filmmaker","https://github.com/Silverlan/pfm.git","675a87a79dcade37d32ede335559714aac2b2120")
+		download_addon("PFM","filmmaker","https://github.com/Silverlan/pfm.git","049d43ba6da3c85b0ac522685bd09e82fdc25dc4")
 		download_addon("model editor","tool_model_editor","https://github.com/Silverlan/pragma_model_editor.git","56d46dacb398fa7540e794359eaf1081c9df1edd")
 
 	if with_vr:
-		download_addon("VR","virtual_reality","https://github.com/Silverlan/PragmaVR.git","6dfb9dbb1a87b9bb6903e8af6a8dc4e892d38269")
+		download_addon("VR","virtual_reality","https://github.com/Silverlan/PragmaVR.git","271d264ffcc2373ccfd197c5a1a7aacb557726c3")
 
 	if with_pfm:
 		download_addon("PFM Living Room Demo","pfm_demo_living_room","https://github.com/Silverlan/pfm_demo_living_room.git","4cbecad4a2d6f502b6d9709178883678101f7e2c")

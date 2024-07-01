@@ -1015,6 +1015,8 @@ void Lua::Model::register_class(lua_State *l, luabind::class_<::Model> &classDef
 	defRig.def_readwrite("forwardFacingRotationOffset", &pragma::animation::MetaRig::forwardFacingRotationOffset);
 	defRig.def_readwrite("forwardAxis", &pragma::animation::MetaRig::forwardAxis);
 	defRig.def_readwrite("upAxis", &pragma::animation::MetaRig::upAxis);
+	defRig.def_readwrite("min", &pragma::animation::MetaRig::min);
+	defRig.def_readwrite("max", &pragma::animation::MetaRig::max);
 	defRig.def(luabind::tostring(luabind::self));
 	defRig.add_static_constant("ROOT_BONE", umath::to_integral(pragma::animation::META_RIG_ROOT_BONE_TYPE));
 	defRig.scope[luabind::def("get_bone_name", &pragma::animation::get_meta_rig_bone_type_name)];
@@ -1024,6 +1026,8 @@ void Lua::Model::register_class(lua_State *l, luabind::class_<::Model> &classDef
 	defRig.scope[luabind::def("get_bone_children", &pragma::animation::get_meta_rig_bone_children)];
 	defRig.scope[luabind::def("get_blend_shape_name", &pragma::animation::get_blend_shape_name)];
 	defRig.scope[luabind::def("get_blend_shape_enum", &pragma::animation::get_blend_shape_enum)];
+	defRig.scope[luabind::def("get_meta_rig_bone_ids", &pragma::animation::get_meta_rig_bone_ids)];
+	defRig.scope[luabind::def("get_root_meta_bone_id", &pragma::animation::get_root_meta_bone_id)];
 	defRig.def(
 	  "GetNormalizedBoneInfo", +[](const pragma::animation::MetaRig &metaRig, pragma::animation::MetaRigBoneType boneType) -> const pragma::animation::MetaRigBone * {
 		  auto idx = umath::to_integral(boneType);
@@ -1061,6 +1065,7 @@ void Lua::Model::register_class(lua_State *l, luabind::class_<::Model> &classDef
 	defRig.def("GetBone", &pragma::animation::MetaRig::GetBone);
 	defRig.def("FindMetaBoneType", &pragma::animation::MetaRig::FindMetaBoneType);
 	defRig.def("GetBlendShape", &pragma::animation::MetaRig::GetBlendShape);
+	defRig.def("GetReferenceScale", &pragma::animation::MetaRig::GetReferenceScale);
 	defRig.def("DebugPrint", &pragma::animation::MetaRig::DebugPrint);
 	defRig.add_static_constant("RIG_TYPE_BIPED", umath::to_integral(pragma::animation::RigType::Biped));
 	defRig.add_static_constant("RIG_TYPE_QUADRUPED", umath::to_integral(pragma::animation::RigType::Quadruped));
@@ -1147,6 +1152,21 @@ void Lua::Model::register_class(lua_State *l, luabind::class_<::Model> &classDef
 	defRig.add_static_constant("BONE_TYPE_STANDARD_END", umath::to_integral(pragma::animation::MetaRigBoneType::StandardEnd));
 	defRig.add_static_constant("BONE_TYPE_INVALID", umath::to_integral(pragma::animation::MetaRigBoneType::Invalid));
 	static_assert(umath::to_integral(pragma::animation::MetaRigBoneType::Count) == 74, "Update this list when new bone types are addded!");
+
+	defRig.add_static_constant("BODY_PART_LOWER_BODY", umath::to_integral(pragma::animation::BodyPart::LowerBody));
+	defRig.add_static_constant("BODY_PART_UPPER_BODY", umath::to_integral(pragma::animation::BodyPart::UpperBody));
+	defRig.add_static_constant("BODY_PART_HEAD", umath::to_integral(pragma::animation::BodyPart::Head));
+	defRig.add_static_constant("BODY_PART_LEFT_ARM", umath::to_integral(pragma::animation::BodyPart::LeftArm));
+	defRig.add_static_constant("BODY_PART_RIGHT_ARM", umath::to_integral(pragma::animation::BodyPart::RightArm));
+	defRig.add_static_constant("BODY_PART_LEFT_LEG", umath::to_integral(pragma::animation::BodyPart::LeftLeg));
+	defRig.add_static_constant("BODY_PART_RIGHT_LEG", umath::to_integral(pragma::animation::BodyPart::RightLeg));
+	defRig.add_static_constant("BODY_PART_TAIL", umath::to_integral(pragma::animation::BodyPart::Tail));
+	defRig.add_static_constant("BODY_PART_LEFT_WING", umath::to_integral(pragma::animation::BodyPart::LeftWing));
+	defRig.add_static_constant("BODY_PART_RIGHT_WING", umath::to_integral(pragma::animation::BodyPart::RightWing));
+	defRig.add_static_constant("BODY_PART_LEFT_BREAST", umath::to_integral(pragma::animation::BodyPart::LeftBreast));
+	defRig.add_static_constant("BODY_PART_RIGHT_BREAST", umath::to_integral(pragma::animation::BodyPart::RightBreast));
+	static_assert(umath::to_integral(pragma::animation::BodyPart::Count) == 12, "Update this list when new bone types are addded!");
+
 	classDef.scope[defRig];
 
 	// Flex Animation
