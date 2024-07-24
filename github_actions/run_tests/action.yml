@@ -1,0 +1,58 @@
+name: Run Pragma Tests
+description: 'Run a Pragma Test Lua-script.'
+inputs:
+  working-directory:
+    description: 'The location where Pragma resides. If no Pragma installation is found, it will be installed in this location.'
+    required: true
+    default: 'pragma'
+  test-scripts:
+    description: 'The test script(s) to execute.'
+    required: true
+    default: ''
+  state:
+    description: 'Set to "client" for client-side execution, otherwise "server".'
+    required: true
+    default: 'client'
+  version:
+    description: 'The version of Pragma to download (if it not already exists).'
+    required: true
+    default: 'nightly'
+  artifacts-name:
+    description: 'If specified, debug files (e.g. logs) will be uploaded as artifacts under this name.'
+    required: true
+    default: ''
+runs:
+  using: "composite"
+  steps:
+    - name: Convert test scripts to string
+      id: convert-scripts
+      shell: bash
+      run: |
+        test_scripts="${{ inputs.test-scripts }}"
+        test_scripts=$(echo $test_scripts | jq -R 'split(" ") | map(select(length > 0)) | join("\", \"")')
+        test_scripts_string="\\\"${test_scripts}\\\""
+        echo "test_scripts_string=$test_scripts_string" >> $GITHUB_ENV
+
+    - name: Run Tests
+      id: pragma
+      uses: Silverlan/pragma/github_actions/run_lua@main
+      with:
+        state: "${{ inputs.state }}"
+        version: "${{ inputs.version }}"
+        artifacts-name: "${{ inputs.artifacts-name }}"
+        working-directory: "${{ inputs.working-directory }}"
+        lua-code: |
+          include(\"/tests/base.lua\")
+          local scripts = {
+            ${{ env.test_scripts_string }}
+          }
+          for _, script in ipairs(scripts) do
+            tests.load(script)
+            local testName = file.remove_file_extension(file.get_file_name(script), {\"udm\"})
+            tests.queue(testName)
+          end
+          local cbOnTestComplete = tests.add_event_listener(\"OnAllTestsComplete\", function(success, errMsg)
+            file.rename(\"temp/tests\", \"artifacts\")
+            engine.shutdown()
+          end)
+          tests.run()

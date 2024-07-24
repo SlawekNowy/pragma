@@ -18,7 +18,8 @@
 #include "pragma/entities/components/base_transform_component.hpp"
 #include "pragma/entities/components/base_model_component.hpp"
 #include "pragma/entities/components/base_render_component.hpp"
-#include "pragma/entities/components/base_attachable_component.hpp"
+#include "pragma/entities/components/base_attachment_component.hpp"
+#include "pragma/entities/components/action_input_controller_component.hpp"
 #include "pragma/physics/raytraces.h"
 #include "pragma/util/util_game.hpp"
 #include "pragma/logging.hpp"
@@ -145,14 +146,14 @@ void BaseVehicleComponent::InitializeSteeringWheel()
 	umath::set_flag(m_stateFlags, StateFlags::SteeringWheelInitialized);
 	if(m_cbSteeringWheel.IsValid())
 		m_cbSteeringWheel.Remove();
-	auto pAttachableComponent = ent->AddComponent("attachable");
+	auto pAttachableComponent = ent->AddComponent("attachment");
 	if(pAttachableComponent.expired())
 		return;
 	AttachmentInfo attInfo {};
 	attInfo.flags |= FAttachmentMode::SnapToOrigin | FAttachmentMode::UpdateEachFrame;
-	static_cast<BaseAttachableComponent *>(pAttachableComponent.get())->AttachToAttachment(&GetEntity(), "steering_wheel", attInfo);
+	static_cast<BaseAttachmentComponent *>(pAttachableComponent.get())->AttachToAttachment(&GetEntity(), "steering_wheel", attInfo);
 
-	m_cbSteeringWheel = pAttachableComponent->AddEventCallback(BaseAttachableComponent::EVENT_ON_ATTACHMENT_UPDATE, [this, pAttachableComponent](std::reference_wrapper<pragma::ComponentEvent> evData) -> util::EventReply {
+	m_cbSteeringWheel = pAttachableComponent->AddEventCallback(BaseAttachmentComponent::EVENT_ON_ATTACHMENT_UPDATE, [this, pAttachableComponent](std::reference_wrapper<pragma::ComponentEvent> evData) -> util::EventReply {
 		auto pTrComponentSteeringWheel = pAttachableComponent->GetEntity().GetTransformComponent();
 		if(!pTrComponentSteeringWheel)
 			return util::EventReply::Unhandled;
@@ -271,19 +272,20 @@ void BaseVehicleComponent::OnTick(double tDelta)
 	auto plComponent = driver->GetPlayerComponent();
 
 	auto accFactor = 0.f;
-	if(plComponent->GetActionInput(Action::MoveForward))
+	auto *actionC = plComponent->GetActionInputController();
+	if(actionC && actionC->GetActionInput(Action::MoveForward))
 		accFactor += 1.f;
-	if(plComponent->GetActionInput(Action::MoveBackward))
+	if(actionC && actionC->GetActionInput(Action::MoveBackward))
 		accFactor -= 1.f;
 	m_physVehicle->SetAccelerationFactor(accFactor);
 
-	auto brakeFactor = plComponent->GetActionInput(Action::Jump) ? 1.f : 0.f;
+	auto brakeFactor = (actionC && actionC->GetActionInput(Action::Jump)) ? 1.f : 0.f;
 	m_physVehicle->SetBrakeFactor(brakeFactor);
 
 	auto steerFactor = 0.f;
-	if(plComponent->GetActionInput(Action::MoveLeft))
+	if(actionC && actionC->GetActionInput(Action::MoveLeft))
 		steerFactor -= 1.f;
-	if(plComponent->GetActionInput(Action::MoveRight))
+	if(actionC && actionC->GetActionInput(Action::MoveRight))
 		steerFactor += 1.f;
 	m_physVehicle->SetSteerFactor(steerFactor);
 }

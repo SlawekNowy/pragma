@@ -220,7 +220,7 @@ Game::Game(NetworkState *state)
 	RegisterCallback<void, pragma::BasePlayerComponent *, DamageInfo *>("OnPlayerDeath");
 	RegisterCallback<void, pragma::BasePlayerComponent *>("OnPlayerSpawned");
 
-	RegisterCallbackWithOptionalReturn<bool, pragma::BasePlayerComponent *, Action, bool>("OnActionInput");
+	RegisterCallbackWithOptionalReturn<bool, pragma::ActionInputControllerComponent *, Action, bool>("OnActionInput");
 
 	RegisterCallback<void, lua_State *>("OnLuaInitialized");
 	RegisterCallback<void, BaseEntity *>("OnEntitySpawned");
@@ -956,7 +956,7 @@ SurfaceMaterial *Game::GetSurfaceMaterial(UInt32 id)
 		return nullptr;
 	return &materials[id];
 }
-std::vector<SurfaceMaterial> &Game::GetSurfaceMaterials() { return m_surfaceMaterialManager->GetMaterials(); }
+std::vector<SurfaceMaterial> *Game::GetSurfaceMaterials() { return m_surfaceMaterialManager ? &m_surfaceMaterialManager->GetMaterials() : nullptr; }
 
 double &Game::RealTime() { return m_tReal; }
 double &Game::CurTime() { return m_tCur; }

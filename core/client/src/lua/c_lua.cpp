@@ -172,6 +172,46 @@ void CGame::RegisterLua()
 		      auto res = pragma::CParticleSystemComponent::InitializeFromAssetData(ptName, udmData, err);
 		      Lua::PushBool(l, res);
 		      return 1;
+	      }},
+	    {"wait_for_frames",
+	      +[](lua_State *l) -> int32_t {
+		      size_t numFrames = Lua::CheckInt(l, 1);
+		      if(numFrames < 1)
+			      numFrames = 1;
+		      Lua::CheckFunction(l, 2);
+		      auto waitForThink = false;
+		      if(Lua::IsSet(l, 3))
+			      waitForThink = Lua::CheckBool(l, 3);
+		      luabind::object func {luabind::from_stack(l, 2)};
+		      auto cb = FunctionCallback<void>::Create(nullptr);
+		      static_cast<Callback<void> *>(cb.get())->SetFunction([l, cb, numFrames, func, waitForThink]() mutable {
+			      --numFrames;
+			      if(numFrames == 0) {
+				      if(waitForThink) {
+					      auto cbThink = FunctionCallback<void>::Create(nullptr);
+					      static_cast<Callback<void> *>(cbThink.get())->SetFunction([l, cbThink, func]() mutable {
+						      Lua::CallFunction(l, [&func](lua_State *l) -> Lua::StatusCode {
+							      func.push(l);
+							      return Lua::StatusCode::Ok;
+						      });
+						      if(cbThink.IsValid())
+							      cbThink.Remove();
+					      });
+					      c_game->AddCallback("Think", cbThink);
+				      }
+				      else {
+					      Lua::CallFunction(l, [&func](lua_State *l) -> Lua::StatusCode {
+						      func.push(l);
+						      return Lua::StatusCode::Ok;
+					      });
+				      }
+				      if(cb.IsValid())
+					      cb.Remove();
+			      }
+		      });
+		      cb = c_game->AddCallback("PostRenderScenes", cb);
+		      Lua::Push<CallbackHandle>(l, cb);
+		      return 1;
 	      }}
 
 	    /*{"debug_vehicle",static_cast<int32_t(*)(lua_State*)>([](lua_State *l) -> int32_t {
@@ -409,7 +449,7 @@ void CGame::LoadLuaShader(std::string file)
 }
 
 std::string CGame::GetLuaNetworkDirectoryName() const { return "client"; }
-std::string CGame::GetLuaNetworkFileName() const { return "cl_init" +Lua::DOT_FILE_EXTENSION; }
+std::string CGame::GetLuaNetworkFileName() const { return "cl_init" + Lua::DOT_FILE_EXTENSION; }
 
 //////////////////////////////////////////////
 

@@ -23,6 +23,7 @@
 #include "pragma/entities/components/s_name_component.hpp"
 #include "pragma/entities/components/s_networked_component.hpp"
 #include "pragma/entities/components/s_observable_component.hpp"
+#include "pragma/entities/components/s_observer_component.hpp"
 #include "pragma/entities/components/s_physics_component.hpp"
 #include "pragma/entities/components/s_radius_component.hpp"
 #include "pragma/entities/components/s_field_angle_component.hpp"
@@ -99,8 +100,8 @@
 #include "pragma/entities/components/s_io_component.hpp"
 #include "pragma/entities/components/s_time_scale_component.hpp"
 #include "pragma/entities/info/s_info_landmark.hpp"
-#include "pragma/entities/components/s_attachable_component.hpp"
-#include "pragma/entities/components/s_parent_component.hpp"
+#include "pragma/entities/components/s_attachment_component.hpp"
+#include "pragma/entities/components/s_child_component.hpp"
 #include "pragma/entities/components/s_generic_component.hpp"
 #include "pragma/entities/components/s_point_at_target_component.hpp"
 #include "pragma/entities/components/s_gamemode_component.hpp"
@@ -128,6 +129,7 @@ void SGame::InitializeEntityComponents(pragma::EntityComponentManager &component
 	componentManager.RegisterComponentType<pragma::SNameComponent>("name");
 	componentManager.RegisterComponentType<pragma::SNetworkedComponent>("networked");
 	componentManager.RegisterComponentType<pragma::SObservableComponent>("observable");
+	componentManager.RegisterComponentType<pragma::SObserverComponent>("observer");
 	componentManager.RegisterComponentType<pragma::SPhysicsComponent>("physics");
 	componentManager.RegisterComponentType<pragma::SPlayerComponent>("player");
 	componentManager.RegisterComponentType<pragma::SRadiusComponent>("radius");
@@ -204,8 +206,8 @@ void SGame::InitializeEntityComponents(pragma::EntityComponentManager &component
 	componentManager.RegisterComponentType<pragma::SIOComponent>("io");
 	componentManager.RegisterComponentType<pragma::STimeScaleComponent>("time_scale");
 	componentManager.RegisterComponentType<pragma::SInfoLandmarkComponent>("info_landmark");
-	componentManager.RegisterComponentType<pragma::SAttachableComponent>("attachable");
-	componentManager.RegisterComponentType<pragma::SParentComponent>("parent");
+	componentManager.RegisterComponentType<pragma::SAttachmentComponent>("attachment");
+	componentManager.RegisterComponentType<pragma::SChildComponent>("child");
 	componentManager.RegisterComponentType<pragma::SOwnableComponent>("ownable");
 	componentManager.RegisterComponentType<pragma::SDebugTextComponent>("debug_text");
 	componentManager.RegisterComponentType<pragma::SDebugPointComponent>("debug_point");

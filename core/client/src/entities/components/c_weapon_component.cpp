@@ -11,15 +11,17 @@
 #include "pragma/console/c_cvar.h"
 #include "pragma/entities/components/c_player_component.hpp"
 #include "pragma/entities/components/c_character_component.hpp"
-#include "pragma/entities/components/c_attachable_component.hpp"
+#include "pragma/entities/components/c_attachment_component.hpp"
 #include "pragma/entities/components/c_model_component.hpp"
-#include "pragma/entities/components/c_parent_component.hpp"
 #include "pragma/entities/components/c_animated_component.hpp"
+#include "pragma/entities/components/c_observable_component.hpp"
+#include "pragma/entities/components/c_observer_component.hpp"
 #include "pragma/lua/c_lentity_handles.hpp"
 #include "pragma/entities/components/c_render_component.hpp"
 #include "pragma/entities/components/c_ownable_component.hpp"
 #include <pragma/lua/converters/game_type_converters_t.hpp>
 #include <pragma/entities/components/base_transform_component.hpp>
+#include "pragma/entities/components/parent_component.hpp"
 #include <pragma/entities/observermode.h>
 #include <pragma/entities/entity_component_system_t.hpp>
 
@@ -113,6 +115,15 @@ void CWeaponComponent::SetViewFOV(umath::Degree fov)
 		return;
 	vm->SetViewFOV(fov);
 }
+void CWeaponComponent::UpdateObserver(BaseObserverComponent *observer)
+{
+	if(m_cbOnOwnerObserverModeChanged.IsValid())
+		m_cbOnOwnerObserverModeChanged.Remove();
+	if(observer) {
+		m_cbOnOwnerObserverModeChanged = observer->GetObserverModeProperty()->AddCallback([this](const std::reference_wrapper<const ObserverMode> oldObserverMode, const std::reference_wrapper<const ObserverMode> observerMode) { UpdateOwnerAttachment(); });
+		FlagCallbackForRemoval(m_cbOnOwnerObserverModeChanged, CallbackType::Component);
+	}
+}
 void CWeaponComponent::Initialize()
 {
 	BaseWeaponComponent::Initialize();
@@ -159,8 +170,15 @@ void CWeaponComponent::Initialize()
 		auto &ownerChangedData = static_cast<pragma::CEOnOwnerChanged &>(evData.get());
 		if(ownerChangedData.newOwner != nullptr && ownerChangedData.newOwner->IsPlayer() == true && static_cast<CPlayerComponent *>(ownerChangedData.newOwner->GetPlayerComponent().get())->IsLocalPlayer() == true) {
 			auto plComponent = ownerChangedData.newOwner->GetPlayerComponent();
-			m_cbOnOwnerObserverModeChanged = plComponent->GetObserverModeProperty()->AddCallback([this](const std::reference_wrapper<const OBSERVERMODE> oldObserverMode, const std::reference_wrapper<const OBSERVERMODE> observerMode) { UpdateOwnerAttachment(); });
-			FlagCallbackForRemoval(m_cbOnOwnerObserverModeChanged, CallbackType::Component);
+			auto *observableC = plComponent->GetObservableComponent();
+			if(observableC) {
+				m_cbOnObserverChanged = observableC->AddEventCallback(CObservableComponent::EVENT_ON_OBSERVER_CHANGED, [this, observableC](std::reference_wrapper<pragma::ComponentEvent> evData) -> util::EventReply {
+					UpdateObserver(observableC->GetObserver());
+					return util::EventReply::Unhandled;
+				});
+				FlagCallbackForRemoval(m_cbOnObserverChanged, CallbackType::Component);
+				UpdateObserver(observableC->GetObserver());
+			}
 		}
 	});
 	BindEventUnhandled(EVENT_ON_DEPLOY, [this](std::reference_wrapper<pragma::ComponentEvent> evData) {
@@ -238,9 +256,10 @@ void CWeaponComponent::OnFireBullets(const BulletInfo &bulletInfo, Vector3 &bull
 
 void CWeaponComponent::ClearOwnerCallbacks()
 {
-	if(m_cbOnOwnerObserverModeChanged.IsValid() == false)
-		return;
-	m_cbOnOwnerObserverModeChanged.Remove();
+	if(m_cbOnObserverChanged.IsValid())
+		m_cbOnObserverChanged.Remove();
+	if(m_cbOnOwnerObserverModeChanged.IsValid())
+		m_cbOnOwnerObserverModeChanged.Remove();
 }
 
 void CWeaponComponent::UpdateOwnerAttachment()
@@ -250,7 +269,7 @@ void CWeaponComponent::UpdateOwnerAttachment()
 	auto &ent = GetEntity();
 	auto *owner = m_whOwnerComponent.valid() ? m_whOwnerComponent->GetOwner() : nullptr;
 	if(owner == nullptr) {
-		auto pAttComponent = ent.GetComponent<CAttachableComponent>();
+		auto pAttComponent = ent.GetComponent<CAttachmentComponent>();
 		if(pAttComponent.valid())
 			pAttComponent->ClearAttachment();
 		return;
@@ -278,7 +297,7 @@ void CWeaponComponent::UpdateOwnerAttachment()
 			pTransformComponent->SetRotation(pTransformComponentParent->GetRotation());
 		}
 
-		auto pAttComponent = ent.AddComponent<CAttachableComponent>();
+		auto pAttComponent = ent.AddComponent<CAttachmentComponent>();
 		if(pAttComponent.valid()) {
 			auto pMdlComponent = parent->GetModelComponent();
 			auto attId = pMdlComponent ? pMdlComponent->LookupAttachment("weapon") : -1;
@@ -291,10 +310,10 @@ void CWeaponComponent::UpdateOwnerAttachment()
 		}
 	}
 
-	auto attC = GetEntity().GetComponent<CAttachableComponent>();
+	auto attC = GetEntity().GetComponent<CAttachmentComponent>();
 	if(attC.valid()) {
 		auto *parent = attC->GetParent();
-		m_hTarget = parent ? parent->GetEntity().GetHandle() : EntityHandle {};
+		m_hTarget = parent ? parent->GetHandle() : EntityHandle {};
 	}
 	//SetParent(parent,FPARENT_BONEMERGE | FPARENT_UPDATE_EACH_FRAME);
 	//SetAnimated(true);

@@ -32,14 +32,6 @@ jobs:
         config:
           - os: windows-latest
             name: "Windows x64 MSVC"
-            artifact: "Windows-MSVC.tar.xz"
-            build_type: "RelWithDebInfo"
-            environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-            cc: "cl"
-            cxx: "cl"
-            archiver: "7z a"
-            generators: "Visual Studio 17 2022"
-            build_dir: 'build'
     steps:
       - name: Setup Pragma
         uses: Silverlan/pragma/github_actions/setup@main
@@ -159,19 +151,11 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           files: "debug_pdb.zip"
 
-#      - name: Run Server Tests
-#        uses: benc-uk/workflow-dispatch@v1
-#        timeout-minutes: 10
-#        with:
-#          workflow: pragma-server-tests-ci.yml
-#          inputs: '{ "os": "windows" }'
-
-#      - name: Run Tests
-#        uses: benc-uk/workflow-dispatch@v1
-#        timeout-minutes: 10
-#        with:
-#          workflow: pragma-tests-ci.yml
-#          inputs: '{ "os": "windows" }'
+      - name: Run Tests
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: pragma-tests-ci.yml
+          inputs: '{ "os": "windows" }'
 
       - name: Generate File Lists
         shell: bash
@@ -203,6 +187,13 @@ jobs:
           cp -u "files_pragma_build.txt" artifacts/
           cp -u "files_pragma_deps.txt" artifacts/
           cp -u "files_pragma_install.txt" artifacts/
+
+      - name: Discord Notifcation
+        uses: benc-uk/workflow-dispatch@v1
+        if: ${{ github.repository == 'Silverlan/pragma' }}
+        with:
+          workflow: discord-notification.yml
+          inputs: '{ "webhook": "${{ secrets.PRAGMA_RELEASE_DISCORD_WEBHOOK }}", "message": "A new nightly pre-release build has been generated! It is available for download here:\n<https://github.com/Silverlan/pragma/releases/tag/nightly>\n\nThis is NOT a stable release, use with caution! Only use this version for testing!" }'
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4

@@ -825,7 +825,7 @@ if with_pfm:
 		)
 		add_pragma_module(
 			name="pr_unirender",
-			commitSha="93cfe334a2d28062a235aae1ff5b97abde588857",
+			commitSha="f5038116d47105cfd79ad93a25d2547e1896470c",
 			repositoryUrl="https://github.com/SlawekNowy/pr_cycles.git"
 		)
 		add_pragma_module(
@@ -854,7 +854,7 @@ if with_pfm:
 if with_vr:
 	add_pragma_module(
 		name="pr_openvr",
-		commitSha="54ab920d9ab71c57ce6d2c059187af0c6a99928f",
+		commitSha="91840de8725f59bd7b4b203d15f607c20ffac1cf",
 		repositoryUrl="https://github.com/Silverlan/pr_openvr.git"
 	)
 
@@ -1070,11 +1070,11 @@ def download_addon(name,addonName,url,commitId=None):
 curDir = os.getcwd()
 if not skip_repository_updates:
 	if with_pfm:
-		download_addon("PFM","filmmaker","https://github.com/Silverlan/pfm.git","049d43ba6da3c85b0ac522685bd09e82fdc25dc4")
+		download_addon("PFM","filmmaker","https://github.com/Silverlan/pfm.git","627f4f89649d2826e0115fad5e7b5f26b0afe44e")
 		download_addon("model editor","tool_model_editor","https://github.com/Silverlan/pragma_model_editor.git","56d46dacb398fa7540e794359eaf1081c9df1edd")
 
 	if with_vr:
-		download_addon("VR","virtual_reality","https://github.com/Silverlan/PragmaVR.git","271d264ffcc2373ccfd197c5a1a7aacb557726c3")
+		download_addon("VR","virtual_reality","https://github.com/Silverlan/PragmaVR.git","8eed4f4b5466d794ef8fa316ec4c9cbae65df576")
 
 	if with_pfm:
 		download_addon("PFM Living Room Demo","pfm_demo_living_room","https://github.com/Silverlan/pfm_demo_living_room.git","4cbecad4a2d6f502b6d9709178883678101f7e2c")
@@ -1082,8 +1082,8 @@ if not skip_repository_updates:
 		download_addon("PFM Tutorials","pfm_tutorials","https://github.com/Silverlan/pfm_tutorials.git","49928e6db5ae661e20568718f834e29483cf5e5c")
 
 	if with_common_entities:
-		download_addon("HL","pragma_hl","https://github.com/Silverlan/pragma_hl.git","f652b19")
-		download_addon("TF2","pragma_tf2","https://github.com/Silverlan/pragma_tf2.git","eddee1f")
+		download_addon("HL","pragma_hl","https://github.com/Silverlan/pragma_hl.git","b077005a3b8f924c475823a6cc39b9d041ca5bdb")
+		download_addon("TF2","pragma_tf2","https://github.com/Silverlan/pragma_tf2.git","c489e0d9346e94c65e3e352ae765cbfaa0844cf5")
 
 os.chdir(curDir)
 
