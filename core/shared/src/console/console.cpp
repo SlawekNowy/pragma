@@ -65,6 +65,7 @@ void DebugConsole::open()
 		HANDLE m_stdOut = handleOut;
 		SetConsoleCP(65001);
 		SetConsoleOutputCP(65001);
+		//TODO: Consider using FR_PRIVATE. (Only the caller can use this.)
 		auto numFontsAdded = AddFontResourceEx(fontPath.c_str(), FR_NOT_ENUM, 0);
 		if(numFontsAdded > 0) {
 			SendNotifyMessage(HWND_BROADCAST, WM_FONTCHANGE, 0, 0);
