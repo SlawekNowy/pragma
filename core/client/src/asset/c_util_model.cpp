@@ -240,20 +240,15 @@ static bool load_image(tinygltf::Image *image, const int imageIdx, std::string *
 	}
 	auto &inputData = *static_cast<GLTFInputData *>(userData);
 	auto imgPath = inputData.path + image->uri;
-	auto relImgPath = util::Path::CreateFile(imgPath);
-	relImgPath.MakeRelative(util::get_program_path());
+	auto f = FileManager::OpenSystemFile(imgPath.c_str(), "rb");
+	if(f == nullptr)
+		return false;
 	auto &texManager = static_cast<msys::CMaterialManager &>(client->GetMaterialManager()).GetTextureManager();
-	auto texture = texManager.LoadAsset(relImgPath.GetString(), util::AssetLoadFlags::AbsolutePath | util::AssetLoadFlags::DontCache);
-	if(texture == nullptr) {
-		if(outErr)
-			*outErr = "Failed to load texture '" + relImgPath.GetString() + "'!";
+	auto texture = texManager.LoadAsset(image->uri, util::AssetLoadFlags::DontCache);
+	if(texture == nullptr)
 		return false;
-	}
-	if(texture->HasValidVkTexture() == false) {
-		if(outErr)
-			*outErr = "Texture '" + relImgPath.GetString() + "' has no valid VK texture!";
+	if(texture->HasValidVkTexture() == false)
 		return false;
-	}
 	if(imageIdx >= inputData.textures.size())
 		inputData.textures.resize(imageIdx + 1);
 	inputData.textures.at(imageIdx) = std::static_pointer_cast<Texture>(texture)->GetVkTexture();

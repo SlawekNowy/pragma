@@ -102,7 +102,7 @@ void BaseColorComponent::Initialize()
 void BaseColorComponent::Save(udm::LinkedPropertyWrapperArg udm)
 {
 	BaseEntityComponent::Save(udm);
-	udm["color"] = m_color->GetValue();
+	udm["color"] = *m_color;
 }
 void BaseColorComponent::Load(udm::LinkedPropertyWrapperArg udm, uint32_t version)
 {

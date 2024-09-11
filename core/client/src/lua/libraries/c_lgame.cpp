@@ -31,6 +31,7 @@
 #include <buffers/prosper_buffer.hpp>
 #include <prosper_descriptor_set_group.hpp>
 #include <prosper_util.hpp>
+#include <util_timeline_impl.hpp>
 #include <pragma/entities/entity_iterator.hpp>
 #include <pragma/lua/converters/game_type_converters_t.hpp>
 #include <cmaterial.h>
@@ -63,6 +64,7 @@ static btSoftBody *createSoftBody(btSoftRigidDynamicsWorld *world, btSoftBodyWor
 }
 #endif
 #include "pragma/cinematic/choreographic_scene.hpp"
+#include <se_scene.hpp>
 
 #ifdef ENABLE_DEPRECATED_PHYSICS
 #include <pragma/buss_ik/Node.h>
@@ -629,11 +631,11 @@ int Lua::game::Client::test(lua_State *l)
 		auto scene = choreography::Scene::Create<choreography::Scene>();
 		auto channel = scene->AddChannel<choreography::Channel>("Test");
 
-		se_script::SceneScriptValue ssv {};
+		se::SceneScriptValue ssv {};
 		auto f = FileManager::OpenFile("scenes/sdk_barney1.vcd","r");//sdk_barney1.vcd","r");
 		if(f != nullptr)
 		{
-			if(se_script::read_scene(f,ssv) == se_script::ResultCode::Ok)
+			if(se::read_scene(f,ssv) == se::ResultCode::Ok)
 			{
 				for(auto &child : ssv.subValues)
 				{
@@ -759,7 +761,7 @@ int Lua::game::Client::test(lua_State *l)
 			}
 			f = nullptr;
 		}
-		//se_script::
+		//se::
 
 		scene->Play();
 		c_game->AddCallback("Think",FunctionCallback<void>::Create([scene,channel]() {

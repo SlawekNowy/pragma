@@ -34,6 +34,7 @@
 #include <pragma/model/c_modelmesh.h>
 #include <cctype>
 #include <sharedutils/util_debug.h>
+#include <util_zip.h>
 #include <pragma/input/inputhelper.h>
 #include <fsys/directory_watcher.h>
 #include <pragma/game/game_resources.hpp>
@@ -71,8 +72,6 @@
 #pragma comment(lib, "dwmapi.lib")
 
 #endif
-
-import util_zip;
 
 extern "C" {
 void DLLCLIENT RunCEngine(int argc, char *argv[])
@@ -166,7 +165,7 @@ pragma::debug::ProfilingStageManager<pragma::debug::ProfilingStage> *CEngine::Ge
 static auto cvGPUProfiling = GetClientConVar("cl_gpu_timer_queries_enabled");
 bool CEngine::IsGPUProfilingEnabled() const { return cvGPUProfiling->GetBool(); }
 
-void CEngine::DumpDebugInformation(uzip::ZIPFile &zip) const
+void CEngine::DumpDebugInformation(ZIPFile &zip) const
 {
 	Engine::DumpDebugInformation(zip);
 

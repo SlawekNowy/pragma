@@ -116,22 +116,6 @@ rerun = args["rerun"]
 update = args["update"]
 modules_prebuilt = []
 
-root = normalize_path(os.getcwd())
-build_dir = normalize_path(build_directory)
-deps_dir = normalize_path(deps_directory)
-install_dir = install_directory
-tools = root +"/tools"
-
-if not os.path.isabs(build_dir):
-	build_dir = os.getcwd() +"/" +build_dir
-
-if not os.path.isabs(deps_dir):
-	deps_dir = os.getcwd() +"/" +deps_dir
-deps_dir_fs = deps_dir.replace("\\", "/")
-
-if not os.path.isabs(install_dir):
-	install_dir = build_dir +"/" +install_dir
-
 print("Inputs:")
 if platform == "linux":
 	print("cxx_compiler: " +cxx_compiler)
@@ -161,6 +145,26 @@ if platform == "linux":
 print("cmake_args: " +', '.join(additional_cmake_args))
 print("modules: " +', '.join(modules))
 
+if platform == "linux":
+	os.environ["CC"] = c_compiler
+	os.environ["CXX"] = cxx_compiler
+
+root = normalize_path(os.getcwd())
+build_dir = normalize_path(build_directory)
+deps_dir = normalize_path(deps_directory)
+install_dir = install_directory
+tools = root +"/tools"
+
+if not os.path.isabs(build_dir):
+	build_dir = os.getcwd() +"/" +build_dir
+
+if not os.path.isabs(deps_dir):
+	deps_dir = os.getcwd() +"/" +deps_dir
+deps_dir_fs = deps_dir.replace("\\", "/")
+
+if not os.path.isabs(install_dir):
+	install_dir = build_dir +"/" +install_dir
+
 if update:
 	os.chdir(root)
 
@@ -180,27 +184,6 @@ mkpath(build_dir)
 mkpath(deps_dir)
 mkpath(install_dir)
 mkpath(tools)
-
-########## clang-19 ##########
-# Due to a compiler bug with C++20 Modules in clang, we have to use clang-19 for now,
-# which has not been released yet, so we use the latest release candidate for now.
-# Once clang-19 has been released officially, this should be removed!
-if platform == "linux":
-	curDir = os.getcwd()
-	os.chdir(deps_dir)
-	clang19_root = os.getcwd() +"/LLVM-19.1.0-rc3-Linux-X64"
-	if not Path(clang19_root).is_dir():
-		print_msg("Downloading clang-19...")
-		http_extract("https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.0-rc3/LLVM-19.1.0-rc3-Linux-X64.tar.xz",format="tar.xz")
-	c_compiler = clang19_root +"/bin/clang"
-	cxx_compiler = clang19_root +"/bin/clang++"
-	print_msg("Setting c_compiler override to '" +c_compiler +"'")
-	print_msg("Setting cxx_compiler override to '" +cxx_compiler +"'")
-	os.chdir(curDir)
-
-if platform == "linux":
-	os.environ["CC"] = c_compiler
-	os.environ["CXX"] = cxx_compiler
 
 def execscript(filepath):
 	global generator
@@ -798,7 +781,7 @@ execfile(scripts_dir +"/user_modules.py",g,l)
 if with_essential_client_modules:
 	add_pragma_module(
 		name="pr_prosper_vulkan",
-		commitSha="931374499f4a07bdb016ec616158dbdc1d4da6f3",
+		commitSha="32b40a82978503b917d6d6b26f37aadc79ffd0f5",
 		repositoryUrl="https://github.com/Silverlan/pr_prosper_vulkan.git"
 	)
 
@@ -1087,7 +1070,7 @@ def download_addon(name,addonName,url,commitId=None):
 curDir = os.getcwd()
 if not skip_repository_updates:
 	if with_pfm:
-		download_addon("PFM","filmmaker","https://github.com/Silverlan/pfm.git","b03ef04029a5be72a3a1db67ab92db4d6b659255")
+		download_addon("PFM","filmmaker","https://github.com/Silverlan/pfm.git","44c57d4dff740ac6477c2cfcb0e9c06c5426470d")
 		download_addon("model editor","tool_model_editor","https://github.com/Silverlan/pragma_model_editor.git","583587dafd49f30679b2326008e2a758e33dbda2")
 
 	if with_vr:
@@ -1096,7 +1079,7 @@ if not skip_repository_updates:
 	if with_pfm:
 		download_addon("PFM Living Room Demo","pfm_demo_living_room","https://github.com/Silverlan/pfm_demo_living_room.git","4cbecad4a2d6f502b6d9709178883678101f7e2c")
 		download_addon("PFM Bedroom Demo","pfm_demo_bedroom","https://github.com/Silverlan/pfm_demo_bedroom.git","0fed1d5b54a25c3ded2ce906e7da80ca8dd2fb0d")
-		download_addon("PFM Tutorials","pfm_tutorials","https://github.com/Silverlan/pfm_tutorials.git","3798414ad461f7e306bbd91f1015b4589fc085b6")
+		download_addon("PFM Tutorials","pfm_tutorials","https://github.com/Silverlan/pfm_tutorials.git","49928e6db5ae661e20568718f834e29483cf5e5c")
 
 	if with_common_entities:
 		download_addon("HL","pragma_hl","https://github.com/Silverlan/pragma_hl.git","b077005a3b8f924c475823a6cc39b9d041ca5bdb")
