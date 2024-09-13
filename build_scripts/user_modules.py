@@ -1,6 +1,7 @@
 # You can add custom Pragma modules here.
 # Examples:
 
+from sys import platform
 # Add module from repository:
 # add_pragma_module(
 #     name = "pr_opencv",
@@ -18,6 +19,8 @@
 add_pragma_module(
      name = "pr_mount_external"
 )
-add_pragma_module(
-     name = "pr_luadoc"
-)
+
+if platform == "windows":
+     add_pragma_module(
+          name = "pr_luadoc"
+     )

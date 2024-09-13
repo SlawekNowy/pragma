@@ -53,14 +53,25 @@ function(pr_install_targets)
     endif()
 
     foreach(TARGET ${PA_UNPARSED_ARGUMENTS})
+
+
         set(FILE_PATH "$<TARGET_FILE:${TARGET}>")
         string(REPLACE "\\" "/" FILE_PATH ${FILE_PATH})
         message("Adding install rule for target \"${TARGET}\" (\"${FILE_PATH}\") to \"${PA_INSTALL_DIR}\"...")
-        install(
-            FILES "${FILE_PATH}"
-            DESTINATION "${PA_INSTALL_DIR}"
-            OPTIONAL
-            COMPONENT ${PRAGMA_INSTALL_COMPONENT})
+        get_property(target_type TARGET ${TARGET} PROPERTY TYPE)
+        if (target_type STREQUAL "EXECUTABLE")
+            install(
+                PROGRAMS "${FILE_PATH}"
+                DESTINATION "${PA_INSTALL_DIR}"
+                OPTIONAL
+                COMPONENT ${PRAGMA_INSTALL_COMPONENT})
+        else()
+            install(
+                FILES "${FILE_PATH}"
+                DESTINATION "${PA_INSTALL_DIR}"
+                OPTIONAL
+                COMPONENT ${PRAGMA_INSTALL_COMPONENT})
+        endif()
     endforeach()
 endfunction(pr_install_targets)
 
