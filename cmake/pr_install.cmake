@@ -1,3 +1,4 @@
+
 function(pr_install_files)
     set(options)
     set(oneValueArgs INSTALL_DIR)
@@ -56,6 +57,7 @@ function(pr_install_targets)
 
 
         set(FILE_PATH "$<TARGET_FILE:${TARGET}>")
+        set(FILE_DIR "$<TARGET_FILE_DIR:${TARGET}>")
         string(REPLACE "\\" "/" FILE_PATH ${FILE_PATH})
         message("Adding install rule for target \"${TARGET}\" (\"${FILE_PATH}\") to \"${PA_INSTALL_DIR}\"...")
         get_property(target_type TARGET ${TARGET} PROPERTY TYPE)
@@ -66,11 +68,27 @@ function(pr_install_targets)
                 OPTIONAL
                 COMPONENT ${PRAGMA_INSTALL_COMPONENT})
         else()
+        #TODO: If FILE_PATH dir contains symlinks, copy them too.
+        if(LINUX)
+            set(SOFILE_PATH "$<TARGET_SONAME_FILE:${TARGET}>")
+            set(FILE_LIST "")
+                install(
+                    TARGETS "${TARGET}"
+                    DESTINATION "${PA_INSTALL_DIR}"
+                    OPTIONAL
+                    COMPONENT ${PRAGMA_INSTALL_COMPONENT}
+                    PUBLIC_HEADER DESTINATION "${PA_INSTALL_DIR}/../dump/"
+                    ARCHIVE DESTINATION "${PA_INSTALL_DIR}/../dump/"
+                    )
+
+            #file(GENERATE OUTPUT sofile_${TARGET}_$<CONFIG> CONTENT ${SOFILE_PATH})
+        else()
             install(
                 FILES "${FILE_PATH}"
                 DESTINATION "${PA_INSTALL_DIR}"
                 OPTIONAL
                 COMPONENT ${PRAGMA_INSTALL_COMPONENT})
+        endif()
         endif()
     endforeach()
 endfunction(pr_install_targets)
