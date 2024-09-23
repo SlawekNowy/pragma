@@ -566,8 +566,8 @@ if platform == "win32":
 
 
 ########## compressonator deps ##########
-if platform == "linux":
-	execfile(root+"/external_libs/util_image/third_party_libs/compressonator/build/fetch_dependencies.py")
+#if platform == "linux":
+execfile(root+"/external_libs/util_image/third_party_libs/compressonator/build/fetch_dependencies.py")
 
 
 ########## freetype (built in win32, sys in linux (set in cmake)) ##########
