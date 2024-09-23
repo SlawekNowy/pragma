@@ -10,12 +10,14 @@
 #include "pragma/debug/mdump.h"
 #include <tchar.h>
 #include <fsys/filesystem.h>
-#include <util_zip.h>
 #include <sharedutils/util_debug.h>
+#include <sharedutils/util_clock.hpp>
 #include <sharedutils/util.h>
 #include <sharedutils/util_file.h>
 #include "pragma/engine_info.hpp"
 #include "pragma/logging.hpp"
+
+import util_zip;
 
 extern DLLNETWORK Engine *engine;
 
@@ -83,7 +85,7 @@ LONG MiniDumper::TopLevelFilter(struct _EXCEPTION_POINTERS *pExceptionInfo)
 
 	LPCTSTR szResult = NULL;
 
-	auto shouldShowMsBox = (util::get_subsystem() == util::SubSystem::GUI);
+	auto shouldShowMsBox = (util::get_subsystem() == util::SubSystem::GUI && !engine->IsNonInteractiveMode());
 	if(hDll) {
 		MINIDUMPWRITEDUMP pDump = (MINIDUMPWRITEDUMP)::GetProcAddress(hDll, "MiniDumpWriteDump");
 		if(pDump) {

@@ -60,28 +60,31 @@ function gui.DebugRenderStats:OnInitialize()
 	self.m_tNextUpdate = time.real_time()
 
 	local pl = ents.get_local_player()
-	self.m_cbActionInput = pl:AddEventCallback(
-		ents.PlayerComponent.EVENT_HANDLE_ACTION_INPUT,
-		function(action, bPressed, magnitude)
-			if action == input.ACTION_ATTACK2 and bPressed then
-				if self:HasFocus() then
-					self:TrapFocus(false)
-					self:KillFocus()
+	local actionInputC = pl:GetEntity():GetComponent(ents.COMPONENT_ACTION_INPUT_CONTROLLER)
+	if actionInputC ~= nil then
+		self.m_cbActionInput = actionInputC:AddEventCallback(
+			ents.ActionInputControllerComponent.EVENT_HANDLE_ACTION_INPUT,
+			function(action, bPressed, magnitude)
+				if action == input.ACTION_ATTACK2 and bPressed then
+					if self:HasFocus() then
+						self:TrapFocus(false)
+						self:KillFocus()
 
-					local windowSize = gui.get_window_size()
-					input.set_cursor_pos(Vector2(windowSize.x * 0.5, windowSize.y * 0.5)) -- Reset mouse cursor to center of screen
-				else
-					self:TrapFocus()
-					self:RequestFocus()
+						local windowSize = gui.get_window_size()
+						input.set_cursor_pos(Vector2(windowSize.x * 0.5, windowSize.y * 0.5)) -- Reset mouse cursor to center of screen
+					else
+						self:TrapFocus()
+						self:RequestFocus()
+					end
+					return util.EVENT_REPLY_HANDLED
 				end
-				return util.EVENT_REPLY_HANDLED
+				if action == input.ACTION_JUMP and bPressed then
+					self:SetLocked(not self:IsLocked())
+					return util.EVENT_REPLY_HANDLED
+				end
 			end
-			if action == input.ACTION_JUMP and bPressed then
-				self:SetLocked(not self:IsLocked())
-				return util.EVENT_REPLY_HANDLED
-			end
-		end
-	)
+		)
+	end
 
 	self:AddSlider({ self.m_tree:GetRoot(), self.m_data }, "Scenes:", function(stats)
 		return self.m_numScenes
@@ -99,6 +102,11 @@ function gui.DebugRenderStats:OnInitialize()
 	self:AddSlider({ self.m_tree:GetRoot(), self.m_data }, "[GPU] Present Time:", function(stats)
 		return self.m_engineGpuRenderTimes["present"] or 0
 	end, true)
+	if openvr ~= nil then
+		self:AddSlider({ self.m_tree:GetRoot(), self.m_data }, "[VR] Pose Wait Time:", function(stats)
+			return openvr.get_smoothed_pose_wait_time()
+		end, true)
+	end
 	-- self:AddSlider({self.m_tree:GetRoot(),self.m_data},"Total CPU Execution Time:",function(stats) return end,true)
 end
 function gui.DebugRenderStats:SetLocked(locked)
@@ -261,11 +269,32 @@ function gui.DebugRenderStats:AddScene(statsData)
 		self:AddSlider(sceneCat, "[CPU] Execution Time:", function(stats)
 			return self.m_sceneNameToStats[sceneName] and self.m_sceneNameToStats[sceneName].cpuExecTime or 0.0
 		end, true)
+		self:AddSlider(sceneCat, "[CPU] Render Time:", function(stats)
+			return self:GetTime(sceneName, game.RenderStats.TIMER_RENDER_SCENE_CPU)
+		end, true)
 		self:AddSlider(sceneCat, "[GPU] Execution Time:", function(stats)
 			return self.m_sceneNameToStats[sceneName] and self.m_sceneNameToStats[sceneName].gpuExecTime or 0.0
 		end, true)
 		self:AddSlider(sceneCat, "[GPU] Light Culling GPU Execution Time:", function(stats)
 			return self:GetTime(sceneName, game.RenderStats.TIMER_LIGHT_CULLING_GPU)
+		end, true)
+		self:AddSlider(sceneCat, "[GPU] Render Time:", function(stats)
+			return self:GetTime(sceneName, game.RenderStats.TIMER_RENDER_SCENE_GPU)
+		end, true)
+		self:AddSlider(sceneCat, "[GPU] Renderer:", function(stats)
+			return self:GetTime(sceneName, game.RenderStats.TIMER_RENDERER_GPU)
+		end, true)
+		self:AddSlider(sceneCat, "[GPU] Update Render Buffers:", function(stats)
+			return self:GetTime(sceneName, game.RenderStats.TIMER_UPDATE_RENDER_BUFFERS_GPU)
+		end, true)
+		self:AddSlider(sceneCat, "[GPU] Update Prepass Render Buffers:", function(stats)
+			return self:GetTime(sceneName, game.RenderStats.TIMER_UPDATE_PREPASS_RENDER_BUFFERS_GPU)
+		end, true)
+		self:AddSlider(sceneCat, "[GPU] Render Shadows:", function(stats)
+			return self:GetTime(sceneName, game.RenderStats.TIMER_RENDER_SHADOWS_GPU)
+		end, true)
+		self:AddSlider(sceneCat, "[GPU] Render Particles:", function(stats)
+			return self:GetTime(sceneName, game.RenderStats.TIMER_RENDER_PARTICLES_GPU)
 		end, true)
 		local pp = self:AddSlider(sceneCat, "[GPU] Post-processing GPU Execution Time:", function(stats)
 			local t = self:GetTime(sceneName, game.RenderStats.TIMER_POST_PROCESSING_GPU)

@@ -32,14 +32,6 @@ jobs:
         config:
           - os: windows-latest
             name: "Windows x64 MSVC"
-            artifact: "Windows-MSVC.tar.xz"
-            build_type: "RelWithDebInfo"
-            environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-            cc: "cl"
-            cxx: "cl"
-            archiver: "7z a"
-            generators: "Visual Studio 17 2022"
-            build_dir: 'build'
     steps:
       - name: Setup Pragma
         uses: Silverlan/pragma/github_actions/setup@main
@@ -69,7 +61,7 @@ jobs:
         uses: ./pragma/github_actions/build
         id: build-pragma
         with:
-          build-args: "--with-pfm --with-all-pfm-modules --with-vr --with-networking --with-lua-debugger=0 --with-swiftshader --cmake-arg=\"-DCMAKE_SYSTEM_VERSION=10.0.22621.0\" --vcvars \"C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat\""
+          build-args: "--with-pfm --with-all-pfm-modules --with-vr --with-networking --with-lua-debugger=0 --with-swiftshader"
 
       - name: Create Release Archive
         shell: bash
@@ -111,43 +103,16 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           files: "pragma-win64.zip"
           
-      # Publish debug PDB files
+      - name: Collect PDB files
+        uses: ./pragma/github_actions/collect_pdb_files
+        with:
+          source-directory: "${{ steps.build-pragma.outputs.build-dir }}"
+          target-directory: "${{ github.workspace }}/pdb"
+
       - name: Create PDB Archive
         shell: bash
         run: |
           curDir="$PWD"
-          mkdir pdb
-          
-          source_directory="${{ steps.build-pragma.outputs.build-dir }}"
-          target_directory="$curDir/pdb"
-
-          move_file() {
-            local source_file="$1"
-            local destination_dir
-            local base_name
-            local destination_file
-            local counter=1
-
-            base_name=$(basename "$source_file")
-            destination_dir="$target_directory"
-            destination_file="$destination_dir/$base_name"
-
-            # Check if the destination file already exists
-            while [[ -e "$destination_file" ]]; do
-              # Append a number to the destination file name
-              destination_file="${destination_dir}/${base_name}_${counter}"
-              counter=$((counter + 1))
-            done
-
-            mv "$source_file" "$destination_file"
-            echo "Moved: $source_file -> $destination_file"
-          }
-
-          find "$source_directory" -type f -name "*.pdb" -print0 | while IFS= read -r -d '' file; do
-            move_file "$file"
-          done
-
-          cd "$curDir"
           # 7z expects a standard windows path
           winPath=$(echo "$curDir" | sed -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/')
           7z a debug_pdb.zip "$winPath/pdb/**"
@@ -161,9 +126,8 @@ jobs:
 
       - name: Run Tests
         uses: benc-uk/workflow-dispatch@v1
-        timeout-minutes: 10
         with:
-          workflow: pragma-server-tests-ci.yml
+          workflow: pragma-tests-ci.yml
           inputs: '{ "os": "windows" }'
 
       - name: Generate File Lists
@@ -196,6 +160,13 @@ jobs:
           cp -u "files_pragma_build.txt" artifacts/
           cp -u "files_pragma_deps.txt" artifacts/
           cp -u "files_pragma_install.txt" artifacts/
+
+      - name: Discord Notifcation
+        uses: benc-uk/workflow-dispatch@v1
+        if: ${{ github.repository == 'Silverlan/pragma' }}
+        with:
+          workflow: discord-notification.yml
+          inputs: '{ "webhook": "${{ secrets.PRAGMA_RELEASE_DISCORD_WEBHOOK }}", "message": "A new nightly pre-release build has been generated! It is available for download here:\n<https://github.com/Silverlan/pragma/releases/tag/nightly>\n\nThis is NOT a stable release, use with caution! Only use this version for testing!" }'
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4

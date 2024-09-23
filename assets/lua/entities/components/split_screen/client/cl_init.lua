@@ -53,7 +53,7 @@ function ents.SplitScreen:CreateScene(idx)
 	scene:Link(gameScene)
 	scene:GetEntity():SetName("split_screen_" .. ((idx == ents.SplitScreen.SCREEN_LEFT) and "left" or "right"))
 
-	local entRenderer = ents.create("rasterization_renderer")
+	local entRenderer = self:GetEntity():CreateChild("rasterization_renderer")
 	local renderer = entRenderer:GetComponent(ents.COMPONENT_RENDERER)
 	local rasterizer = entRenderer:GetComponent(ents.COMPONENT_RASTERIZATION_RENDERER)
 	rasterizer:SetSSAOEnabled(true)
@@ -118,4 +118,4 @@ function ents.SplitScreen:RenderEyes(drawSceneInfo)
 		end
 	end
 end
-ents.COMPONENT_SPLIT_SCREEN = ents.register_component("split_screen", ents.SplitScreen)
+ents.register_component("split_screen", ents.SplitScreen, "util")

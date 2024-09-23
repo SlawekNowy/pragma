@@ -16,7 +16,6 @@
 #include "pragma/debug/mdump.h"
 #include "pragma/input/key_state.hpp"
 #include "pragma/engine_info.hpp"
-#include "pragma/debug/debug_performance_profiler.hpp"
 #include "pragma/iserverstate.hpp"
 #include "pragma/types.hpp"
 #include <materialmanager.h>
@@ -38,7 +37,9 @@ class ServerState;
 class VFilePtrInternalReal;
 class PtrConVar;
 class NetPacket;
-class ZIPFile;
+namespace uzip {
+	class ZIPFile;
+};
 class ConVarMap;
 struct Color;
 namespace Con {
@@ -53,6 +54,12 @@ namespace util {
 };
 namespace pragma::asset {
 	class AssetManager;
+};
+namespace pragma::debug {
+	class CPUProfiler;
+	template<class TProfilingStage>
+	class ProfilingStageManager;
+	class ProfilingStage;
 };
 enum class NwStateType : uint8_t { Client = 0, Server, Count };
 class DLLNETWORK Engine : public CVarHandler, public CallbackHandler {
@@ -123,22 +130,17 @@ class DLLNETWORK Engine : public CVarHandler, public CallbackHandler {
 		Closed = DeveloperMode << 1u,
 		MultiThreadedAssetLoadingEnabled = Closed << 1u,
 		RunUpdaterOnClose = MultiThreadedAssetLoadingEnabled << 1u,
-	};
-
-	enum class CPUProfilingPhase : uint32_t {
-		Think = 0u,
-		Tick,
-		ServerTick,
-
-		Count
+		ConsoleSubsystem = RunUpdaterOnClose << 1u,
+		CLIOnly = ConsoleSubsystem << 1u,
+		NonInteractiveMode = CLIOnly << 1u,
 	};
   public:
 	DEBUGCONSOLE;
 	virtual bool Initialize(int argc, char *argv[]);
 	virtual void Start();
 	void AddLaunchConVar(std::string cvar, std::string val);
-	virtual void DumpDebugInformation(ZIPFile &zip) const;
-	static std::unique_ptr<ZIPFile> GenerateEngineDump(const std::string &baseName, std::string &outZipFileName, std::string &outErr);
+	virtual void DumpDebugInformation(uzip::ZIPFile &zip) const;
+	static std::unique_ptr<uzip::ZIPFile> GenerateEngineDump(const std::string &baseName, std::string &outZipFileName, std::string &outErr);
 	virtual void Close();
 	virtual void Release();
 	virtual void ClearConsole();
@@ -154,19 +156,28 @@ class DLLNETWORK Engine : public CVarHandler, public CallbackHandler {
 
 	// Debug
 	pragma::debug::CPUProfiler &GetProfiler() const;
-	pragma::debug::ProfilingStageManager<pragma::debug::ProfilingStage, CPUProfilingPhase> *GetProfilingStageManager();
+	pragma::debug::ProfilingStageManager<pragma::debug::ProfilingStage> *GetProfilingStageManager();
 	CallbackHandle AddProfilingHandler(const std::function<void(bool)> &handler);
 	void SetProfilingEnabled(bool bEnabled);
-	bool StartProfilingStage(CPUProfilingPhase stage);
-	bool StopProfilingStage(CPUProfilingPhase stage);
+	bool StartProfilingStage(const char *stage);
+	bool StopProfilingStage();
 
 	upad::PackageManager *GetPADPackageManager() const;
 
 	void SetVerbose(bool bVerbose);
 	bool IsVerbose() const;
 
+	void SetConsoleSubsystem(bool consoleSubsystem);
+	bool IsConsoleSubsystem() const;
+
 	void SetDeveloperMode(bool devMode);
 	bool IsDeveloperModeEnabled() const;
+
+	void SetNonInteractiveMode(bool nonInteractiveMode);
+	bool IsNonInteractiveMode() const;
+
+	void SetCLIOnly(bool cliOnly);
+	bool IsCLIOnly() const;
 
 	// Console
 	void ConsoleInput(const std::string_view &line);
@@ -335,7 +346,7 @@ class DLLNETWORK Engine : public CVarHandler, public CallbackHandler {
 	std::mutex m_tickEventQueueMutex;
 	StateFlags m_stateFlags;
 	mutable upad::PackageManager *m_padPackageManager = nullptr;
-	std::unique_ptr<pragma::debug::ProfilingStageManager<pragma::debug::ProfilingStage, CPUProfilingPhase>> m_profilingStageManager = nullptr;
+	std::unique_ptr<pragma::debug::ProfilingStageManager<pragma::debug::ProfilingStage>> m_profilingStageManager;
 
 	std::unordered_map<std::string, std::function<void(int, char *[])>> m_launchOptions;
 

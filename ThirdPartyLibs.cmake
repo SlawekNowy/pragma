@@ -1,4 +1,7 @@
 # Luabind
+set(BUILD_SHARED_LIBS
+    ON
+    CACHE BOOL ".." FORCE)
 set(LUA_INCLUDE_DIR ${DEPENDENCY_LUAJIT_INCLUDE} CACHE STRING "" FORCE)
 set(LUA_LIBRARY ${DEPENDENCY_LUA_LIBRARY} CACHE STRING "" FORCE)
 set(LUA_FOUND ON CACHE BOOL ON FORCE)
@@ -7,6 +10,7 @@ pr_include_third_party_library(luabind INC "${CMAKE_CURRENT_LIST_DIR}/third_part
 pr_set_target_folder(luabind third_party_libs)
 target_include_directories(luabind PUBLIC ${LUA_INCLUDE_DIR})
 target_include_directories(luabind PUBLIC "${CMAKE_CURRENT_LIST_DIR}/third_party_libs/luabind")
+unset(BUILD_SHARED_LIBS CACHE)
 #
 
 # mpaheader
@@ -146,6 +150,7 @@ pr_include_third_party_library(ogg)
 pr_set_target_folder(ogg third_party_libs)
 set(OGG_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/third_party_libs/ogg/include" CACHE STRING "" FORCE)
 set(OGG_LIBRARIES "$<TARGET_LINKER_FILE:ogg>" CACHE STRING "" FORCE)
+target_include_directories(ogg INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/third_party_libs/ogg/include>")
 #
 
 # libvorbis
@@ -157,6 +162,7 @@ pr_set_target_folder(vorbisfile third_party_libs/vorbis)
 
 target_include_directories(vorbis PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/third_party_libs/vorbis/include>")
 target_include_directories(vorbis PUBLIC "$<BUILD_INTERFACE:${OGG_INCLUDE_DIRS}>")
+target_include_directories(vorbis PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/third_party_libs/ogg/include>")
 
 add_dependencies(vorbis ogg)
 #

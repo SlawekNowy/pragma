@@ -59,18 +59,31 @@
 #include <sharedutils/util_file.h>
 #include <sharedutils/scope_guard.h>
 #include <luainterface.hpp>
-#include <se_scene.hpp>
 #include <pragma/math/intersection.h>
 #include <pragma/model/modelmesh.h>
 #include "pragma/model/animation/skeleton.hpp"
 #include <luabind/class_info.hpp>
-#include <util_zip.h>
 #include <fsys/ifile.hpp>
+#include <sharedutils/util_markup_file.hpp>
+
+import se_script;
+import util_zip;
 
 extern DLLNETWORK Engine *engine;
 
 static auto s_bIgnoreIncludeCache = false;
 void Lua::set_ignore_include_cache(bool b) { s_bIgnoreIncludeCache = b; }
+
+std::optional<std::string> Lua::find_script_file(const std::string &fileName)
+{
+	auto raw = fileName + Lua::DOT_FILE_EXTENSION;
+	if(filemanager::exists(Lua::SCRIPT_DIRECTORY_SLASH + raw))
+		return raw;
+	auto precompiled = fileName + Lua::DOT_FILE_EXTENSION_PRECOMPILED;
+	if(filemanager::exists(Lua::SCRIPT_DIRECTORY_SLASH + precompiled))
+		return precompiled;
+	return {};
+}
 
 luabind::detail::class_rep *Lua::get_crep(luabind::object o)
 {
@@ -211,9 +224,27 @@ static std::unique_ptr<util::HairStrandData> generate_hair_file(const util::Hair
 void Lua::util::register_world_data(lua_State *l, luabind::module_ &mod)
 {
 	auto defWorldData = luabind::class_<pragma::asset::WorldData>("WorldData");
+	defWorldData.def(luabind::tostring(luabind::self));
+	defWorldData.scope[luabind::def(
+	  "load", +[](NetworkState &nw, const std::string &fileName) -> std::pair<std::shared_ptr<pragma::asset::WorldData>, std::optional<std::string>> {
+		  std::string err;
+		  auto worldData = pragma::asset::WorldData::load(nw, fileName, err);
+		  if(!worldData)
+			  return {worldData, err};
+		  return {worldData, {}};
+	  })];
+	defWorldData.scope[luabind::def(
+	  "load_from_udm_data", +[](NetworkState &nw, udm::LinkedPropertyWrapper &prop) -> std::pair<std::shared_ptr<pragma::asset::WorldData>, std::optional<std::string>> {
+		  std::string err;
+		  auto worldData = pragma::asset::WorldData::load_from_udm_data(nw, prop, err);
+		  if(!worldData)
+			  return {worldData, err};
+		  return {worldData, {}};
+	  })];
 
 	auto defOutput = luabind::class_<pragma::asset::Output>("Output");
 	defOutput.def(luabind::constructor<>());
+	defOutput.def(luabind::tostring(luabind::self));
 	defOutput.def_readwrite("name", &pragma::asset::Output::name);
 	defOutput.def_readwrite("target", &pragma::asset::Output::target);
 	defOutput.def_readwrite("input", &pragma::asset::Output::input);
@@ -223,6 +254,7 @@ void Lua::util::register_world_data(lua_State *l, luabind::module_ &mod)
 	defWorldData.scope[defOutput];
 
 	auto defComponentData = luabind::class_<pragma::asset::ComponentData>("ComponentData");
+	defComponentData.def(luabind::tostring(luabind::self));
 	defComponentData.add_static_constant("FLAG_NONE", umath::to_integral(pragma::asset::ComponentData::Flags::None));
 	defComponentData.add_static_constant("FLAG_CLIENTSIDE_ONLY_BIT", umath::to_integral(pragma::asset::ComponentData::Flags::ClientsideOnly));
 	defComponentData.def("GetFlags", &pragma::asset::ComponentData::GetFlags);
@@ -232,6 +264,7 @@ void Lua::util::register_world_data(lua_State *l, luabind::module_ &mod)
 	defWorldData.scope[defComponentData];
 
 	auto defEntityData = luabind::class_<pragma::asset::EntityData>("EntityData");
+	defEntityData.def(luabind::tostring(luabind::self));
 	defEntityData.add_static_constant("FLAG_NONE", umath::to_integral(pragma::asset::EntityData::Flags::None));
 	defEntityData.add_static_constant("FLAG_CLIENTSIDE_ONLY_BIT", umath::to_integral(pragma::asset::EntityData::Flags::ClientsideOnly));
 	defEntityData.def("IsWorld", &pragma::asset::EntityData::IsWorld);
@@ -288,6 +321,14 @@ void Lua::util::register_world_data(lua_State *l, luabind::module_ &mod)
 			  return luabind::object {l, true};
 		  return luabind::object {l, std::pair<bool, std::string> {false, err}};
 	  });
+	defWorldData.def(
+	  "Save", +[](lua_State *l, pragma::asset::WorldData &worldData, const std::string &fileName, const std::string &mapName) -> Lua::mult<bool, Lua::opt<std::string>> {
+		  std::string err;
+		  auto result = worldData.Save(fileName, mapName, err);
+		  if(result)
+			  return luabind::object {l, true};
+		  return luabind::object {l, std::pair<bool, std::string> {false, err}};
+	  });
 	mod[defWorldData];
 	pragma::lua::define_custom_constructor<pragma::asset::ComponentData, []() -> std::shared_ptr<pragma::asset::ComponentData> { return pragma::asset::ComponentData::Create(); }>(l);
 	pragma::lua::define_custom_constructor<pragma::asset::EntityData, []() -> std::shared_ptr<pragma::asset::EntityData> { return pragma::asset::EntityData::Create(); }>(l);
@@ -296,13 +337,13 @@ void Lua::util::register_world_data(lua_State *l, luabind::module_ &mod)
 
 void Lua::util::register_os(lua_State *l, luabind::module_ &mod) { mod[luabind::def("set_prevent_os_sleep_mode", &::util::set_prevent_os_sleep_mode)]; }
 
-static Lua::var<bool, Lua::opt<std::string>, ::util::FunctionalParallelWorker> extract_files(lua_State *l, Game &game, const Lua::type<ZIPFile> &ozip, const std::string &outputPath, bool runInBackground = false)
+static Lua::var<bool, Lua::opt<std::string>, ::util::FunctionalParallelWorker> extract_files(lua_State *l, Game &game, const Lua::type<uzip::ZIPFile> &ozip, const std::string &outputPath, bool runInBackground = false)
 {
 	auto path = ::util::Path::CreateFile(outputPath);
 	path.Canonicalize();
 	path = ::util::Path::CreatePath(::util::get_program_path()) + path;
 
-	auto &zip = *luabind::object_cast<ZIPFile *>(ozip);
+	auto &zip = *luabind::object_cast<uzip::ZIPFile *>(ozip);
 	if(runInBackground) {
 		auto job = ::util::create_parallel_job<::util::FunctionalParallelWorker>(false);
 		auto cpyOzip = ozip;
@@ -479,29 +520,29 @@ void Lua::util::register_shared_generic(lua_State *l, luabind::module_ &mod)
 	auto defHairData = luabind::class_<::util::HairData>("HairData");
 	mod[defHairData];
 
-	auto defZip = luabind::class_<ZIPFile>("ZipFile");
-	defZip.add_static_constant("OPEN_MODE_READ", umath::to_integral(ZIPFile::OpenMode::Read));
-	defZip.add_static_constant("OPEN_MODE_WRITE", umath::to_integral(ZIPFile::OpenMode::Write));
+	auto defZip = luabind::class_<uzip::ZIPFile>("ZipFile");
+	defZip.add_static_constant("OPEN_MODE_READ", umath::to_integral(uzip::ZIPFile::OpenMode::Read));
+	defZip.add_static_constant("OPEN_MODE_WRITE", umath::to_integral(uzip::ZIPFile::OpenMode::Write));
 
 	defZip.scope[luabind::def(
-	  "open", +[](const std::string &filePath, ZIPFile::OpenMode openMode) -> std::shared_ptr<ZIPFile> {
+	  "open", +[](const std::string &filePath, uzip::ZIPFile::OpenMode openMode) -> std::shared_ptr<uzip::ZIPFile> {
 		  auto path = ::util::Path::CreateFile(filePath);
 		  path.Canonicalize();
 		  path = ::util::Path::CreatePath(::util::get_program_path()) + path;
-		  auto zipFile = ZIPFile::Open(path.GetString(), openMode);
+		  auto zipFile = uzip::ZIPFile::Open(path.GetString(), openMode);
 		  if(!zipFile)
 			  return nullptr;
 		  return zipFile;
 	  })];
 	defZip.scope[luabind::def(
-	  "open", +[](LFile &f, ZIPFile::OpenMode openMode) -> std::shared_ptr<ZIPFile> {
+	  "open", +[](LFile &f, uzip::ZIPFile::OpenMode openMode) -> std::shared_ptr<uzip::ZIPFile> {
 		  auto ptr = f.GetHandle();
 		  if(!ptr)
 			  return nullptr;
 		  auto filePath = ptr->GetFileName();
 		  if(!filePath.has_value())
 			  return nullptr;
-		  auto zipFile = ZIPFile::Open(*filePath, openMode);
+		  auto zipFile = uzip::ZIPFile::Open(*filePath, openMode);
 		  if(!zipFile)
 			  return nullptr;
 		  return zipFile;
@@ -512,7 +553,7 @@ void Lua::util::register_shared_generic(lua_State *l, luabind::module_ &mod)
 		    "7z"};
 	  })];
 	defZip.def(
-	  "GetFileList", +[](ZIPFile &zip) -> std::optional<std::vector<std::string>> {
+	  "GetFileList", +[](uzip::ZIPFile &zip) -> std::optional<std::vector<std::string>> {
 		  std::vector<std::string> files;
 		  if(!zip.GetFileList(files))
 			  return {};
@@ -521,7 +562,7 @@ void Lua::util::register_shared_generic(lua_State *l, luabind::module_ &mod)
 	defZip.def("ExtractFiles", &extract_files);
 	defZip.def("ExtractFiles", &extract_files, luabind::default_parameter_policy<5, false> {});
 	defZip.def(
-	  "ExtractFile", +[](ZIPFile &zip, const std::string &zipFileName, const std::string &outputZipFileName) -> std::pair<bool, std::optional<std::string>> {
+	  "ExtractFile", +[](uzip::ZIPFile &zip, const std::string &zipFileName, const std::string &outputZipFileName) -> std::pair<bool, std::optional<std::string>> {
 		  std::vector<uint8_t> data;
 		  std::string err;
 		  if(!zip.ReadFile(zipFileName, data, err))
@@ -569,6 +610,11 @@ DEFINE_OSTREAM_OPERATOR_NAMESPACE_ALIAS(pragma::ik, pragma::ik::RigConfig);
 DEFINE_OSTREAM_OPERATOR_NAMESPACE_ALIAS(pragma::ik, pragma::ik::RigConfigBone);
 DEFINE_OSTREAM_OPERATOR_NAMESPACE_ALIAS(pragma::ik, pragma::ik::RigConfigControl);
 DEFINE_OSTREAM_OPERATOR_NAMESPACE_ALIAS(pragma::ik, pragma::ik::RigConfigConstraint);
+
+DEFINE_OSTREAM_OPERATOR_NAMESPACE_ALIAS(pragma::asset, pragma::asset::Output);
+DEFINE_OSTREAM_OPERATOR_NAMESPACE_ALIAS(pragma::asset, pragma::asset::ComponentData);
+DEFINE_OSTREAM_OPERATOR_NAMESPACE_ALIAS(pragma::asset, pragma::asset::EntityData);
+DEFINE_OSTREAM_OPERATOR_NAMESPACE_ALIAS(pragma::asset, pragma::asset::WorldData);
 #endif
 void Lua::util::register_library(lua_State *l)
 {
@@ -643,11 +689,13 @@ void Lua::util::register_library(lua_State *l)
 	auto defRigControl = luabind::class_<pragma::ik::RigConfigControl>("Control");
 	defRigControl.def(luabind::tostring(luabind::self));
 	defRigControl.add_static_constant("TYPE_DRAG", umath::to_integral(pragma::ik::RigConfigControl::Type::Drag));
+	defRigControl.add_static_constant("TYPE_ANGULAR_PLANE", umath::to_integral(pragma::ik::RigConfigControl::Type::AngularPlane));
 	defRigControl.add_static_constant("TYPE_STATE", umath::to_integral(pragma::ik::RigConfigControl::Type::State));
 	defRigControl.add_static_constant("TYPE_ORIENTED_DRAG", umath::to_integral(pragma::ik::RigConfigControl::Type::OrientedDrag));
 	defRigControl.add_static_constant("TYPE_REVOLUTE", umath::to_integral(pragma::ik::RigConfigControl::Type::Revolute));
 	defRigControl.add_static_constant("TYPE_AXIS", umath::to_integral(pragma::ik::RigConfigControl::Type::Axis));
-	static_assert(umath::to_integral(pragma::ik::RigConfigControl::Type::Count) == 5u, "Update this list when new types are added!");
+	defRigControl.add_static_constant("TYPE_POLE_TARGET", umath::to_integral(pragma::ik::RigConfigControl::Type::PoleTarget));
+	static_assert(umath::to_integral(pragma::ik::RigConfigControl::Type::Count) == 7u, "Update this list when new types are added!");
 	defRigControl.def_readwrite("bone", &pragma::ik::RigConfigControl::bone);
 	defRigControl.def_readwrite("type", &pragma::ik::RigConfigControl::type);
 	defRigControl.def_readwrite("maxForce", &pragma::ik::RigConfigControl::maxForce);
@@ -829,7 +877,12 @@ luabind::object Lua::global::include(lua_State *l, const std::string &f, std::ve
 			Lua::HandleSyntaxError(l, r, fileName);
 			break;
 		case Lua::StatusCode::Ok:
-			return luabind::object {luabind::from_stack {l, Lua::GetStackTop(l) - n}};
+			{
+				auto t = Lua::GetStackTop(l);
+				if(t <= n)
+					return Lua::nil;
+				return luabind::object {luabind::from_stack {l, t - n}};
+			}
 		}
 	}
 	return {};
@@ -1444,11 +1497,11 @@ luabind::object Lua::util::read_scene_file(lua_State *l, const std::string &file
 	auto f = FileManager::OpenFile(fname.c_str(), "r");
 	if(f == nullptr)
 		return {};
-	se::SceneScriptValue root {};
-	if(se::read_scene(f, root) != ::util::MarkupFile::ResultCode::Ok)
+	source_engine::script::SceneScriptValue root {};
+	if(source_engine::script::read_scene(f, root) != ::util::MarkupFile::ResultCode::Ok)
 		return {};
-	std::function<void(const se::SceneScriptValue &)> fPushValue = nullptr;
-	fPushValue = [l, &fPushValue](const se::SceneScriptValue &val) {
+	std::function<void(const source_engine::script::SceneScriptValue &)> fPushValue = nullptr;
+	fPushValue = [l, &fPushValue](const source_engine::script::SceneScriptValue &val) {
 		auto t = Lua::CreateTable(l);
 
 		Lua::PushString(l, "identifier");
@@ -1680,10 +1733,10 @@ Lua::var<bool, ::util::ParallelJob<luabind::object>> Lua::util::pack_zip_archive
 		}
 	}
 
-	auto zip = ZIPFile::Open(zipFileName, ZIPFile::OpenMode::Write);
+	auto zip = uzip::ZIPFile::Open(zipFileName, uzip::ZIPFile::OpenMode::Write);
 	if(zip == nullptr)
 		return luabind::object {l, false};
-	auto pzip = std::shared_ptr<ZIPFile> {std::move(zip)};
+	auto pzip = std::shared_ptr<uzip::ZIPFile> {std::move(zip)};
 
 	struct ResultData {
 		std::vector<std::string> notFound;

@@ -28,7 +28,6 @@
 #include <sharedutils/util.h>
 #include <sharedutils/util_clock.hpp>
 #include <sharedutils/util_parallel_job.hpp>
-#include <util_zip.h>
 #include <pragma/game/game_resources.hpp>
 #include <pragma/util/resource_watcher.h>
 #include <util_pad.hpp>
@@ -40,13 +39,15 @@
 #include <sharedutils/util_library.hpp>
 #include <sharedutils/util_path.hpp>
 #include <sharedutils/util_debug.h>
-#include <util_zip.h>
 #include <fsys/filesystem.h>
+#include <spdlog/pattern_formatter.h>
 
 #ifdef __linux__
 #include <pthread.h>
 #include <fcntl.h>
 #endif
+
+import util_zip;
 
 const pragma::IServerState &Engine::GetServerStateInterface() const
 {
@@ -119,13 +120,13 @@ Engine::Engine(int, char *[]) : CVarHandler(), m_logFile(nullptr), m_tickRate(En
 	engine = this;
 
 #ifdef __linux__
-    //setup fork handler
-    //The fork will dupe the process id, and by extension the std streams. Disable async stdin to children.
-    pthread_atfork(nullptr,nullptr,[](){
+	//setup fork handler
+	//The fork will dupe the process id, and by extension the std streams. Disable async stdin to children.
+	pthread_atfork(nullptr, nullptr, []() {
 		//child, after fork.
-    int flags = fcntl(0, F_GETFL, 0);
-    fcntl(0, F_SETFL, flags & ~O_NONBLOCK);
-    });
+		int flags = fcntl(0, F_GETFL, 0);
+		fcntl(0, F_SETFL, flags & ~O_NONBLOCK);
+	});
 #endif
 
 	// Link package system to file system
@@ -140,10 +141,8 @@ Engine::Engine(int, char *[]) : CVarHandler(), m_logFile(nullptr), m_tickRate(En
 			m_profilingStageManager = nullptr;
 			return;
 		}
-		auto stageFrame = pragma::debug::ProfilingStage::Create(*m_cpuProfiler, "Frame");
-		m_profilingStageManager = std::make_unique<pragma::debug::ProfilingStageManager<pragma::debug::ProfilingStage, CPUProfilingPhase>>();
-		m_profilingStageManager->InitializeProfilingStageManager(*m_cpuProfiler, {stageFrame, pragma::debug::ProfilingStage::Create(*m_cpuProfiler, "Think", stageFrame.get()), pragma::debug::ProfilingStage::Create(*m_cpuProfiler, "Tick", stageFrame.get())});
-		static_assert(umath::to_integral(CPUProfilingPhase::Count) == 3u, "Added new profiling phase, but did not create associated profiling stage!");
+		m_profilingStageManager = std::make_unique<pragma::debug::ProfilingStageManager<pragma::debug::ProfilingStage>>();
+		m_profilingStageManager->InitializeProfilingStageManager(*m_cpuProfiler);
 	});
 }
 
@@ -496,9 +495,9 @@ void Engine::SetMountExternalGameResources(bool b)
 bool Engine::ShouldMountExternalGameResources() const { return m_bMountExternalGameResources; }
 
 pragma::debug::CPUProfiler &Engine::GetProfiler() const { return *m_cpuProfiler; }
-pragma::debug::ProfilingStageManager<pragma::debug::ProfilingStage, Engine::CPUProfilingPhase> *Engine::GetProfilingStageManager() { return m_profilingStageManager.get(); }
-bool Engine::StartProfilingStage(CPUProfilingPhase stage) { return m_profilingStageManager && m_profilingStageManager->StartProfilerStage(stage); }
-bool Engine::StopProfilingStage(CPUProfilingPhase stage) { return m_profilingStageManager && m_profilingStageManager->StopProfilerStage(stage); }
+pragma::debug::ProfilingStageManager<pragma::debug::ProfilingStage> *Engine::GetProfilingStageManager() { return m_profilingStageManager.get(); }
+bool Engine::StartProfilingStage(const char *stage) { return m_profilingStageManager && m_profilingStageManager->StartProfilerStage(stage); }
+bool Engine::StopProfilingStage() { return m_profilingStageManager && m_profilingStageManager->StopProfilerStage(); }
 
 void Engine::RunTickEvents()
 {
@@ -530,13 +529,13 @@ void Engine::Tick()
 	ProcessConsoleInput();
 	RunTickEvents();
 
-	StartProfilingStage(CPUProfilingPhase::Tick);
-	StartProfilingStage(CPUProfilingPhase::ServerTick);
+	StartProfilingStage("Tick");
+	StartProfilingStage("ServerTick");
 	auto *sv = GetServerNetworkState();
 	if(sv != NULL)
 		sv->Tick();
-	StopProfilingStage(CPUProfilingPhase::ServerTick);
-	StopProfilingStage(CPUProfilingPhase::Tick);
+	StopProfilingStage(); // ServerTick
+	StopProfilingStage(); // Tick
 
 	UpdateParallelJobs();
 }
@@ -591,8 +590,17 @@ Engine::StateInstance &Engine::GetServerStateInstance() { return *m_svInstance; 
 void Engine::SetVerbose(bool bVerbose) { umath::set_flag(m_stateFlags, StateFlags::Verbose, bVerbose); }
 bool Engine::IsVerbose() const { return umath::is_flag_set(m_stateFlags, StateFlags::Verbose); }
 
+void Engine::SetConsoleSubsystem(bool consoleSubsystem) { umath::set_flag(m_stateFlags, StateFlags::ConsoleSubsystem, consoleSubsystem); }
+bool Engine::IsConsoleSubsystem() const { return umath::is_flag_set(m_stateFlags, StateFlags::ConsoleSubsystem); }
+
 void Engine::SetDeveloperMode(bool devMode) { umath::set_flag(m_stateFlags, StateFlags::DeveloperMode, devMode); }
 bool Engine::IsDeveloperModeEnabled() const { return umath::is_flag_set(m_stateFlags, StateFlags::DeveloperMode); }
+
+void Engine::SetNonInteractiveMode(bool nonInteractiveMode) { umath::set_flag(m_stateFlags, StateFlags::NonInteractiveMode, nonInteractiveMode); }
+bool Engine::IsNonInteractiveMode() const { return umath::is_flag_set(m_stateFlags, StateFlags::NonInteractiveMode); }
+
+void Engine::SetCLIOnly(bool cliOnly) { umath::set_flag(m_stateFlags, StateFlags::CLIOnly, cliOnly); }
+bool Engine::IsCLIOnly() const { return umath::is_flag_set(m_stateFlags, StateFlags::CLIOnly); }
 
 void Engine::Release() { Close(); }
 
@@ -605,7 +613,9 @@ bool Engine::Initialize(int argc, char *argv[])
 	auto f = filemanager::open_file("git_info.txt", filemanager::FileMode::Read, fsys::SearchFlags::Local | fsys::SearchFlags::NoMounts);
 	if(f) {
 		spdlog::info("Git Info:");
-		spdlog::info(f->ReadString());
+		auto str = f->ReadString();
+		ustring::replace(str, "\n", spdlog::details::os::default_eol);
+		spdlog::info(str);
 	}
 
 #if 0
@@ -731,8 +741,10 @@ void Engine::InitializeExternalArchiveManager() { util::initialize_external_arch
 
 void Engine::RunLaunchCommands()
 {
+	spdlog::info("Running launch commands...");
 	for(auto it = m_launchCommands.rbegin(); it != m_launchCommands.rend(); ++it) {
 		auto &cmd = *it;
+		spdlog::debug("Running launch command '{}'...", cmd.command);
 		RunConsoleCommand(cmd.command, cmd.args);
 		if(ustring::compare(cmd.command.c_str(), "map", false)) {
 			// We'll delay all remaining commands until after the map has been loaded
@@ -748,6 +760,7 @@ void Engine::RunLaunchCommands()
 			if(!nw)
 				nw = GetServerState();
 			if(nw) {
+				spdlog::info("{} game commands will be executed after map load.", remainingCommands.size());
 				auto cbOnGameStart = FunctionCallback<void>::Create(nullptr);
 				cbOnGameStart.get<Callback<void>>()->SetFunction([this, cbOnGameStart, nw, remainingCommands = std::move(remainingCommands)]() mutable {
 					auto cmds0 = std::move(remainingCommands);
@@ -762,8 +775,9 @@ void Engine::RunLaunchCommands()
 							if(cbOnGameReady.IsValid())
 								cbOnGameReady.Remove();
 
-							for(auto it = cmds1.rbegin(); it != cmds1.rend(); ++it) {
-								auto &cmd = *it;
+							spdlog::info("Executing game commands...");
+							for(auto &cmd : cmds1) {
+								spdlog::debug("Executing game command '{}'...", cmd.command);
 								pThis->RunConsoleCommand(cmd.command, cmd.args);
 							}
 						});
@@ -885,15 +899,16 @@ void Engine::Start()
 
 	InvokeConVarChangeCallbacks("steam_steamworks_enabled");
 
+	spdlog::debug("Starting main game loop...");
 	//const double FRAMES_PER_SECOND = GetTickRate();
 	//const double SKIP_TICKS = 1000 /FRAMES_PER_SECOND;
 	const int MAX_FRAMESKIP = 5;
 	long long nextTick = GetTickCount();
 	int loops;
 	do {
-		StartProfilingStage(CPUProfilingPhase::Think);
+		StartProfilingStage("Think");
 		Think();
-		StopProfilingStage(CPUProfilingPhase::Think);
+		StopProfilingStage();
 
 		loops = 0;
 		auto tickRate = GetTickRate();
@@ -918,12 +933,12 @@ void Engine::UpdateTickCount() { m_ctTick.Update(); }
 #ifdef _WIN32
 extern std::string g_crashExceptionMessage;
 #endif
-std::unique_ptr<ZIPFile> Engine::GenerateEngineDump(const std::string &baseName, std::string &outZipFileName, std::string &outErr)
+std::unique_ptr<uzip::ZIPFile> Engine::GenerateEngineDump(const std::string &baseName, std::string &outZipFileName, std::string &outErr)
 {
 	auto programPath = util::Path::CreatePath(util::get_program_path());
 	outZipFileName = util::get_date_time(baseName + "_%Y-%m-%d_%H-%M-%S.zip");
 	auto zipName = programPath + outZipFileName;
-	auto zipFile = ZIPFile::Open(zipName.GetString(), ZIPFile::OpenMode::Write);
+	auto zipFile = uzip::ZIPFile::Open(zipName.GetString(), uzip::ZIPFile::OpenMode::Write);
 	if(!zipFile) {
 		outErr = "Failed to create dump file '" + zipName.GetString() + "'";
 		return nullptr;
@@ -944,7 +959,7 @@ std::unique_ptr<ZIPFile> Engine::GenerateEngineDump(const std::string &baseName,
 	return zipFile;
 }
 
-void Engine::DumpDebugInformation(ZIPFile &zip) const
+void Engine::DumpDebugInformation(uzip::ZIPFile &zip) const
 {
 	std::stringstream engineInfo;
 	engineInfo << "System: ";

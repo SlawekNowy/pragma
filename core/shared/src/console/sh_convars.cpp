@@ -7,6 +7,10 @@
 
 #include "stdafx_shared.h"
 #include "pragma/physics/environment.hpp"
+#include "pragma/entities/components/parent_component.hpp"
+#include "pragma/entities/components/base_child_component.hpp"
+#include "pragma/entities/entity_component_system_t.hpp"
+#include "pragma/debug/debug_performance_profiler.hpp"
 #include <pragma/engine.h>
 #include <pragma/console/convars.h>
 #include <pragma/console/s_convars.h>
@@ -44,8 +48,9 @@ REGISTER_ENGINE_CONCOMMAND(
   },
   ConVarFlags::None, "Deletes all cache files.");
 REGISTER_ENGINE_CONVAR(cache_version, udm::Type::String, "", ConVarFlags::Archive, "The engine version that the cache files are associated with. If this version doesn't match the current engine version, the cache will be cleared.");
-REGISTER_ENGINE_CONVAR(cache_version_target, udm::Type::UInt32, "12", ConVarFlags::None, "If cache_version does not match this value, the cache files will be cleared and it will be set to it.");
+REGISTER_ENGINE_CONVAR(cache_version_target, udm::Type::UInt32, "15", ConVarFlags::None, "If cache_version does not match this value, the cache files will be cleared and it will be set to it.");
 REGISTER_ENGINE_CONVAR(debug_profiling_enabled, udm::Type::Boolean, "0", ConVarFlags::None, "Enables profiling timers.");
+REGISTER_ENGINE_CONVAR(debug_disable_animation_updates, udm::Type::Boolean, "0", ConVarFlags::None, "Disables animation updates.");
 REGISTER_ENGINE_CONVAR(sh_mount_external_game_resources, udm::Type::Boolean, "1", ConVarFlags::Archive, "If set to 1, the game will attempt to load missing resources from external games.");
 REGISTER_ENGINE_CONVAR(sh_lua_remote_debugging, udm::Type::UInt8, "0", ConVarFlags::Archive,
   "0 = Remote debugging is disabled; 1 = Remote debugging is enabled serverside; 2 = Remote debugging is enabled clientside.\nCannot be changed during an active game. Also requires the \"-luaext\" launch parameter.\nRemote debugging cannot be enabled clientside and serverside at the same time.");
@@ -292,26 +297,53 @@ REGISTER_ENGINE_CONCOMMAND(
 static void debug_profiling_print(NetworkState *, pragma::BasePlayerComponent *, std::vector<std::string> &)
 {
 	Con::cout << "-------- CPU-Profiler Query Results --------" << Con::endl;
+	Con::cout << std::left << std::setw(30) << "Stage Name" << std::setw(20) << "Time (ms)" << std::setw(20) << "Time (ns)" << std::setw(10) << "Count" << std::setw(10) << "Thread" << Con::endl;
+	Con::cout << "--------------------------------------------" << Con::endl;
+
 	std::function<void(pragma::debug::ProfilingStage &, const std::string &, bool)> fPrintResults = nullptr;
-	fPrintResults = [&fPrintResults](pragma::debug::ProfilingStage &stage, const std::string &t, bool bRoot) {
+	fPrintResults = [&fPrintResults](pragma::debug::ProfilingStage &stage, const std::string &indent, bool bRoot) {
 		if(bRoot == false) {
-			std::string sTime = "Pending";
+
+			std::string sTimeMs = "Pending";
+			std::string sTimeNs = "-";
+			std::string sCount = "-";
+			std::string sThread = "-";
+
 			auto result = stage.GetResult();
 			if(result && result->duration.has_value()) {
-				auto t = util::clock::to_milliseconds(*result->duration);
-				sTime = util::round_string(t, 2) + " ms";
-				sTime += " (" + std::to_string(result->duration->count()) + " ns)";
+				std::chrono::steady_clock::duration accDur {};
+				for(auto &hChild : stage.GetChildren()) {
+					if(hChild.expired())
+						continue;
+					auto childRes = hChild.lock()->GetResult();
+					if(!childRes || !childRes->duration)
+						continue;
+					accDur += *childRes->duration;
+				}
+				auto tMsAcc = util::clock::to_milliseconds(accDur);
+				auto tMs = util::clock::to_milliseconds(*result->duration);
+				sTimeMs = util::round_string(tMs, 2) + "ms (" + util::round_string(tMsAcc, 2) + "ms)";
+				sTimeNs = std::to_string(result->duration->count()) + "ns";
+				sCount = std::to_string(stage.GetCount());
+
+				std::stringstream ss;
+				ss << stage.GetThreadId();
+				sThread = ss.str();
 			}
-			Con::cout << t << stage.GetName() << ": " << sTime << Con::endl;
+
+			Con::cout << std::left << std::setw(30) << (indent + stage.GetName()) << std::setw(20) << sTimeMs << std::setw(20) << sTimeNs << std::setw(10) << sCount << std::setw(10) << sThread << Con::endl;
 		}
+
 		for(auto &wpChild : stage.GetChildren()) {
 			if(wpChild.expired())
 				continue;
-			fPrintResults(*wpChild.lock(), t + (bRoot ? "" : "\t"), false);
+			fPrintResults(*wpChild.lock(), indent + (bRoot ? "" : "  "), false);
 		}
 	};
+
 	auto &profiler = engine->GetProfiler();
 	fPrintResults(profiler.GetRootStage(), "", true);
+
 	Con::cout << "--------------------------------------------" << Con::endl;
 }
 REGISTER_ENGINE_CONCOMMAND(debug_profiling_print, debug_profiling_print, ConVarFlags::None, "Prints the last profiled times.");
@@ -335,6 +367,67 @@ static void debug_profiling_physics_end(NetworkState *nw, pragma::BasePlayerComp
 	physEnv->EndProfiling();
 }
 REGISTER_ENGINE_CONCOMMAND(debug_profiling_physics_end, debug_profiling_physics_end, ConVarFlags::None, "Prints physics profiling information for the last simulation step.");
+
+static void debug_dump_scene_graph(NetworkState *nw)
+{
+	auto *game = nw->GetGameState();
+	if(!game)
+		return;
+	std::vector<BaseEntity *> *ents;
+	game->GetEntities(&ents);
+
+	std::vector<BaseEntity *> rootEnts;
+	rootEnts.reserve(ents->size());
+	for(auto *ent : *ents) {
+		if(!ent)
+			continue;
+		auto *childC = ent->GetChildComponent();
+		if(!childC || !childC->HasParent())
+			rootEnts.push_back(ent);
+	}
+
+	std::function<void(BaseEntity &, const std::string &, bool)> printGraph = nullptr;
+	printGraph = [&printGraph](BaseEntity &ent, const std::string &prefix, bool isLast) {
+		Con::cout << prefix;
+		if(isLast)
+			Con::cout << "\\-- ";
+		else
+			Con::cout << "+-- ";
+		ent.print(Con::cout);
+		Con::cout << Con::endl;
+
+		auto parentC = ent.GetComponent<pragma::ParentComponent>();
+		if(parentC.expired())
+			return;
+		auto &children = parentC->GetChildren();
+		for(size_t i = 0; i < children.size(); ++i) {
+			if(children[i].expired())
+				continue;
+			bool isLastChild = (i == children.size() - 1);
+			printGraph(children[i].get()->GetEntity(), prefix + (isLast ? "    " : "|   "), isLastChild);
+		}
+	};
+
+	Con::cout << (game->IsClient() ? "Client " : "Server ");
+	Con::cout << "Scene Graph:" << Con::endl;
+	for(size_t i = 0; i < rootEnts.size(); ++i) {
+		bool isLastRoot = (i == rootEnts.size() - 1);
+		printGraph(*rootEnts[i], "", isLastRoot);
+	}
+	Con::cout << Con::endl;
+}
+
+static void debug_dump_scene_graph(NetworkState *nw, pragma::BasePlayerComponent *, std::vector<std::string> &)
+{
+	auto *sv = engine->GetServerNetworkState();
+	if(sv)
+		debug_dump_scene_graph(sv);
+
+	auto *cl = engine->GetClientState();
+	if(cl)
+		debug_dump_scene_graph(cl);
+}
+REGISTER_ENGINE_CONCOMMAND(debug_dump_scene_graph, debug_dump_scene_graph, ConVarFlags::None, "Prints the game scene graph.");
 
 //////////////// SERVER ////////////////
 

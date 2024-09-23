@@ -1,0 +1,64 @@
+name: Run Common Pragma Tests
+description: 'Runs all common Pragma tests.'
+inputs:
+  working-directory:
+    description: 'The location where Pragma resides. If no Pragma installation is found, it will be installed in this location.'
+    required: true
+    default: 'pragma'
+  import-tests-token:
+    required: false
+    default: ""
+runs:
+  using: "composite"
+  steps:
+    - name: Serverside Tests
+      uses: Silverlan/pragma/github_actions/run_tests@main
+      with:
+        test-scripts: |
+          "tests/assets.udm"
+          "tests/game.udm"
+        working-directory: "${{ inputs.working-directory }}"
+        artifacts-name: "server-tests"
+        state: "server"
+
+    - name: Base Tests
+      uses: Silverlan/pragma/github_actions/run_tests@main
+      with:
+        test-scripts: |
+          "tests/assets.udm"
+          "tests/game.udm"
+        working-directory: "${{ inputs.working-directory }}"
+        artifacts-name: "base-tests"
+
+    - name: PFM Tests
+      uses: Silverlan/pragma/github_actions/run_tests@main
+      with:
+        test-scripts: |
+          "tests/pfm.udm"
+        working-directory: "${{ inputs.working-directory }}"
+        artifacts-name: "pfm-tests"
+
+    - name: Checkout Import Tests
+      uses: actions/checkout@v4
+      if: ${{ inputs.import-tests-token }} != ""
+      with:
+        repository: Silverlan/pragma_tests_import
+        token: ${{ inputs.import-tests-token }}
+        path: "pragma_tests_import"
+        ref: "226f5978a0cd3962aa4133dc1eee9e0c044dfee9"
+
+    - name: Copy Import Tests files
+      shell: bash
+      if: ${{ inputs.import-tests-token }} != ""
+      run: |
+        cp -rf pragma_tests_import/* ${{ inputs.working-directory }}/
+        rm -rf pragma_tests_import
+
+    - name: Import Tests
+      uses: Silverlan/pragma/github_actions/run_tests@main
+      if: ${{ inputs.import-tests-token }} != ""
+      with:
+        test-scripts: |
+          "tests/import_assets.udm"
+        working-directory: "${{ inputs.working-directory }}"
+        artifacts-name: "import-tests"

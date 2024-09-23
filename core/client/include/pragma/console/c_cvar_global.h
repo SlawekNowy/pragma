@@ -15,9 +15,11 @@
 REGISTER_CONCOMMAND_CL(cl_entities, CMD_entities_cl, ConVarFlags::None, "Prints a list of all current clientside entities in the world.");
 REGISTER_CONCOMMAND_CL(setpos, CMD_setpos, ConVarFlags::None, "Changes the position of the local player. Requires cheats to be enabled. Usage: setpos <x> <y> <z>");
 REGISTER_CONCOMMAND_CL(getpos, CMD_getpos, ConVarFlags::None, "Prints the current position of the local player to the console.");
+REGISTER_CONCOMMAND_CL(setcampos, CMD_setcampos, ConVarFlags::None, "Changes the current position of the camera.");
 REGISTER_CONCOMMAND_CL(getcampos, CMD_getcampos, ConVarFlags::None, "Prints the current position of the camera.");
 REGISTER_CONCOMMAND_CL(setang, CMD_setang, ConVarFlags::None, "Changes the angles of the local player. Requires cheats to be enabled. Usage: setang <pitch> <yaw> <roll>");
 REGISTER_CONCOMMAND_CL(getang, CMD_getang, ConVarFlags::None, "Prints the current angles of the local player to the console.");
+REGISTER_CONCOMMAND_CL(setcamang, CMD_setcamang, ConVarFlags::None, "Changes the current angles of the camera to the console.");
 REGISTER_CONCOMMAND_CL(getcamang, CMD_getcamang, ConVarFlags::None, "Prints the current angles of the camera to the console.");
 REGISTER_CONCOMMAND_CL(sound_play, CMD_sound_play, ConVarFlags::None, "Precaches and immediately plays the given sound file. Usage: sound_play <soundFile>");
 REGISTER_CONCOMMAND_CL(sound_stop, CMD_sound_stop, ConVarFlags::None, "Stops all sounds that are currently playing.");
@@ -99,7 +101,6 @@ REGISTER_CONCOMMAND_CL(cl_steam_audio_reload_scene, Console::commands::cl_steam_
 REGISTER_CONCOMMAND_CL(map_build_reflection_probes, Console::commands::map_build_reflection_probes, ConVarFlags::None,
   "Build all reflection probes in the map. Use the '-rebuild' argument to clear all current IBL textures first. Use 'debug_pbr_ibl' to check the probes after they have been built.");
 REGISTER_CONCOMMAND_CL(map_rebuild_lightmaps, Console::commands::map_rebuild_lightmaps, ConVarFlags::None, "Rebuilds the lightmaps for the current map. Note that this will only work if the map was compiled with lightmap uvs.");
-REGISTER_CONCOMMAND_CL(debug_lightmaps, Console::commands::debug_lightmaps, ConVarFlags::None, "Displays the lightmaps for the loaded level.");
 
 REGISTER_CONCOMMAND_CL(util_convert_cubemap_to_equirectangular_image, Console::commands::util_convert_cubemap_to_equirectangular_image, ConVarFlags::None, "Converts a cubemap to a equirectangular image.");
 REGISTER_CONCOMMAND_CL(util_convert_equirectangular_image_to_cubemap, Console::commands::util_convert_equirectangular_image_to_cubemap, ConVarFlags::None, "Converts a equirectangular image to a cubemap.");

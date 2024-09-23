@@ -59,13 +59,26 @@ namespace pragma {
 		// in the past.
 		MakeNetworked = Networked << 1u,
 
-		LuaBased = MakeNetworked << 1u
+		LuaBased = MakeNetworked << 1u,
+		HideInEditor = LuaBased << 1u,
 	};
 	class DLLNETWORK BaseNetComponent {
 	  public:
 		virtual bool ShouldTransmitNetData() const = 0;
 	  protected:
 		BaseNetComponent() = default;
+	};
+
+	struct DLLNETWORK ComponentRegInfo {
+		enum class Flags : uint8_t {
+			None = 0,
+			HideInEditor = 1,
+		};
+		pragma::GString categoryPath = "";
+		Flags flags = Flags::None;
+
+		ComponentRegInfo(pragma::GString category = "", Flags flags = Flags::None);
+		ComponentRegInfo(Flags flags);
 	};
 
 	struct DLLNETWORK ComponentInfo {
@@ -75,6 +88,7 @@ namespace pragma {
 		ComponentInfo &operator=(const ComponentInfo &other);
 		ComponentInfo &operator=(ComponentInfo &&other);
 		pragma::GString name = "";
+		pragma::GString category = "";
 		std::function<util::TSharedHandle<BaseEntityComponent>(BaseEntity &)> factory = nullptr;
 		mutable std::unique_ptr<std::vector<CallbackHandle>> onCreateCallbacks = nullptr;
 		ComponentId id = std::numeric_limits<uint32_t>::max();
@@ -95,16 +109,16 @@ namespace pragma {
 		util::TSharedHandle<BaseEntityComponent> CreateComponent(const std::string &name, BaseEntity &ent) const;
 		util::TSharedHandle<BaseEntityComponent> CreateComponent(ComponentId componentId, BaseEntity &ent) const;
 		ComponentId PreRegisterComponentType(const std::string &name);
-		ComponentId RegisterComponentType(const std::string &name, const std::function<util::TSharedHandle<BaseEntityComponent>(BaseEntity &)> &factory, ComponentFlags flags, std::type_index typeIndex);
-		ComponentId RegisterComponentType(const std::string &name, const std::function<util::TSharedHandle<BaseEntityComponent>(BaseEntity &)> &factory, ComponentFlags flags);
+		ComponentId RegisterComponentType(const std::string &name, const std::function<util::TSharedHandle<BaseEntityComponent>(BaseEntity &)> &factory, const ComponentRegInfo &regInfo, ComponentFlags flags, std::type_index typeIndex);
+		ComponentId RegisterComponentType(const std::string &name, const std::function<util::TSharedHandle<BaseEntityComponent>(BaseEntity &)> &factory, const ComponentRegInfo &regInfo, ComponentFlags flags);
 		template<class TComponent, typename = std::enable_if_t<std::is_final<TComponent>::value && std::is_base_of<BaseEntityComponent, TComponent>::value>>
-		ComponentId RegisterComponentType(const std::string &name);
+		ComponentId RegisterComponentType(const std::string &name, const ComponentRegInfo &regInfo);
 		bool GetComponentTypeId(const std::string &name, ComponentId &outId, bool bIncludePreregistered = true) const;
 		template<class TComponent, typename = std::enable_if_t<std::is_final<TComponent>::value && std::is_base_of<BaseEntityComponent, TComponent>::value>>
 		bool GetComponentTypeId(ComponentId &outId) const;
 		bool GetComponentTypeIndex(ComponentId componentId, std::type_index &typeIndex) const;
 		bool GetComponentId(std::type_index typeIndex, ComponentId &componentId) const;
-		const std::vector<ComponentInfo> &GetRegisteredComponentTypes() const;
+		const std::vector<std::unique_ptr<ComponentInfo>> &GetRegisteredComponentTypes() const;
 		ComponentMemberIndex RegisterMember(ComponentInfo &componentInfo, ComponentMemberInfo &&memberInfo);
 
 		void LinkComponentType(ComponentId linkFrom, ComponentId linkTo);
@@ -151,15 +165,15 @@ namespace pragma {
 		// Automatically called when a component was removed; Don't call this manually!
 		void DeregisterComponent(BaseEntityComponent &component);
 	  private:
-		ComponentId RegisterComponentType(const std::string &name, const std::function<util::TSharedHandle<BaseEntityComponent>(BaseEntity &)> &factory, ComponentFlags flags, const std::type_index *typeIndex);
+		ComponentId RegisterComponentType(const std::string &name, const std::function<util::TSharedHandle<BaseEntityComponent>(BaseEntity &)> &factory, const ComponentRegInfo &regInfo, ComponentFlags flags, const std::type_index *typeIndex);
 		virtual void OnComponentTypeRegistered(const ComponentInfo &componentInfo);
 
 		struct ComponentTypeLinkInfo {
 			ComponentId targetType;
 			CallbackHandle onCreateCallback;
 		};
-		std::vector<ComponentInfo> m_preRegistered;
-		std::vector<ComponentInfo> m_componentInfos;
+		std::vector<std::unique_ptr<ComponentInfo>> m_preRegistered;
+		std::vector<std::unique_ptr<ComponentInfo>> m_componentInfos;
 		std::unordered_map<std::type_index, ComponentId> m_typeIndexToComponentId;
 		std::unordered_map<ComponentId, std::vector<ComponentTypeLinkInfo>> m_linkedComponentTypes;
 		std::vector<std::shared_ptr<std::type_index>> m_componentIdToTypeIndex;
@@ -174,7 +188,7 @@ namespace pragma {
 REGISTER_BASIC_BITWISE_OPERATORS(pragma::ComponentFlags);
 
 template<class TComponent, typename>
-pragma::ComponentId pragma::EntityComponentManager::RegisterComponentType(const std::string &name)
+pragma::ComponentId pragma::EntityComponentManager::RegisterComponentType(const std::string &name, const ComponentRegInfo &regInfo)
 {
 	auto flags = ComponentFlags::None;
 	if(std::is_base_of<pragma::BaseNetComponent, TComponent>::value)
@@ -192,8 +206,8 @@ pragma::ComponentId pragma::EntityComponentManager::RegisterComponentType(const 
 	  [](BaseEntity &ent) {
 		  return util::TSharedHandle<BaseEntityComponent> {new TComponent {ent}, [](pragma::BaseEntityComponent *c) { delete c; }};
 	  },
-	  flags, std::type_index(typeid(TComponent)));
-	auto &componentInfo = m_componentInfos[componentId];
+	  regInfo, flags, std::type_index(typeid(TComponent)));
+	auto &componentInfo = *m_componentInfos[componentId];
 	TComponent::RegisterMembers(*this, [this, &componentInfo](ComponentMemberInfo &&memberInfo) -> ComponentMemberIndex { return RegisterMember(componentInfo, std::move(memberInfo)); });
 	return componentId;
 }

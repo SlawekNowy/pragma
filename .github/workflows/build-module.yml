@@ -1,0 +1,105 @@
+name: Build Pragma Module
+on:
+  workflow_call:
+    inputs:
+      repository:
+        type: string
+        default: '${{ github.repository }}'
+      branch:
+        type: string
+        default: '${{ github.ref_name }}'
+      os:
+        type: string
+        required: true
+    secrets:
+      repository_token:
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: environment-${{ inputs.os }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build - ${{ matrix.config.os }}
+    if: github.repository != 'Silverlan/pr_module_template'
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - os: ${{ inputs.os == 'windows' && 'windows-latest' || 'ubuntu-24.04' }}
+    steps:
+      - name: Get Module Info
+        id: module-info
+        uses: Silverlan/pr_module_template/github_actions/get_module_info@main
+        with:
+          repo_access_token: '${{ secrets.repository_token || github.token }}'
+          repository: '${{ inputs.repository }}/${{ inputs.branch }}'
+
+      - name: Build Module
+        id: build-module
+        uses: Silverlan/pragma/github_actions/build_generic_module@main
+        with:
+          module: '${{ steps.module-info.outputs.module_name }}'
+          repository: '${{ inputs.repository }}'
+          token: '${{ secrets.repository_token || github.token }}'
+          ref: '${{ inputs.branch }}'
+          debug-artifact-token: '${{ secrets.GITHUB_TOKEN }}'
+
+      - name: Create Release Files
+        shell: bash
+        run: |
+          if [ "${{ steps.module-info.outputs.release_directory }}" != "DEFAULT" ]; then
+            mkdir -p "release/${{ steps.module-info.outputs.release_directory }}"
+            cp -a "${{ steps.build-module.outputs.install-dir }}/${{ steps.module-info.outputs.release_directory }}." "release/${{ steps.module-info.outputs.release_directory }}"
+          else
+            mkdir -p "release/${{ steps.module-info.outputs.install_directory }}"
+            if [[ "$RUNNER_OS" == "Linux" ]]; then
+              fileName="lib${{ steps.module-info.outputs.module_name }}.so"
+            elif [[ "$RUNNER_OS" == "Windows" ]]; then
+              fileName="${{ steps.module-info.outputs.module_name }}.dll"
+            fi
+            cp "${{ steps.build-module.outputs.install-dir }}/${{ steps.module-info.outputs.install_directory }}$fileName" "release/${{ steps.module-info.outputs.install_directory }}"
+          fi
+
+      - name: Release Binaries
+        uses: Silverlan/common_actions/release_nightly_binaries@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit: ${{ github.ref_name }}
+
+      - name: Check for PDB File
+        id: check-pdb
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          moduleName="${{ steps.module-info.outputs.module_name }}"
+          pdbFilePath="${{ steps.build-module.outputs.build-dir }}/modules/$moduleName/RelWithDebInfo/$moduleName.pdb"
+          echo "Checking for PDB file $pdbFilePath"
+          if [ -f "$pdbFilePath" ]; then
+            echo "PDB file exists"
+            echo "::set-output name=exists::true"
+          else
+            echo "PDB file does not exist"
+            echo "::set-output name=exists::false"
+          fi
+
+      - name: Generate debug_pdb.zip
+        if: runner.os == 'Windows' && steps.check-pdb.outputs.exists == 'true'
+        shell: bash
+        run: |
+          moduleName="${{ steps.module-info.outputs.module_name }}"
+          pdbFilePath="${{ steps.build-module.outputs.build-dir }}/modules/$moduleName/RelWithDebInfo/$moduleName.pdb"
+          7z a debug_pdb.zip "$pdbFilePath"
+
+      - name: Update PDB release
+        if: runner.os == 'Windows' && steps.check-pdb.outputs.exists == 'true'
+        uses: Silverlan/Releaser/releaser/composite@main
+        with:
+          tag: latest
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: "debug_pdb.zip"

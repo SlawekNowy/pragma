@@ -21,6 +21,7 @@
 #include <sharedutils/util_file.h>
 #include <sharedutils/util_ifile.hpp>
 #include <udm.hpp>
+#include <set>
 #include "pragma/model/animation/skeleton.hpp"
 #include "pragma/model/animation/bone.hpp"
 
@@ -867,7 +868,6 @@ bool Model::Save(Game &game, udm::AssetDataArg outData, std::string &outErr)
 
 	auto &colMeshes = GetCollisionMeshes();
 	auto udmColMeshes = udm.AddArray("collisionMeshes", colMeshes.size());
-	auto &surfaceMaterials = game.GetSurfaceMaterials();
 	for(auto i = decltype(colMeshes.size()) {0u}; i < colMeshes.size(); ++i) {
 		auto &colMesh = colMeshes[i];
 		if(colMesh->Save(game, *this, udm::AssetData {udmColMeshes[i]}, outErr) == false)
@@ -1392,7 +1392,7 @@ bool Model::SaveLegacy(Game *game, const std::string &name, const std::string &r
 		f->Write<float>(mdl.GetMass());
 		f->Write<uint32_t>(collisionMeshes.size());
 
-		auto &surfaceMaterials = game->GetSurfaceMaterials();
+		auto *surfaceMaterials = game->GetSurfaceMaterials();
 		for(auto i = decltype(collisionMeshes.size()) {0}; i < collisionMeshes.size(); ++i) {
 			auto &mesh = collisionMeshes[i];
 			uint64_t flags = 0;
@@ -1443,8 +1443,12 @@ bool Model::SaveLegacy(Game *game, const std::string &name, const std::string &r
 			f->Write<Vector3>(mesh->GetOrigin());
 			//
 			// Version 0x0003
-			auto &matSurface = surfaceMaterials[mesh->GetSurfaceMaterial()];
-			f->WriteString(matSurface.GetIdentifier());
+			if(surfaceMaterials) {
+				auto &matSurface = (*surfaceMaterials)[mesh->GetSurfaceMaterial()];
+				f->WriteString(matSurface.GetIdentifier());
+			}
+			else
+				f->WriteString("");
 			//
 			Vector3 min, max;
 			mesh->GetAABB(&min, &max);

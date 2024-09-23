@@ -30,13 +30,16 @@ function ents.ClickComponent:Initialize()
 	if ents.ClickComponent.impl.numClickComponents == 0 then
 		local pl = ents.get_local_player()
 		if pl ~= nil then
-			ents.ClickComponent.cbClick = pl:AddEventCallback(
-				ents.PlayerComponent.EVENT_HANDLE_ACTION_INPUT,
-				function(action, pressed, magnitude)
-					local handled = ents.ClickComponent.inject_click_input(action, pressed)
-					return handled
-				end
-			)
+			local actionInputC = pl:GetEntity():GetComponent(ents.COMPONENT_ACTION_INPUT_CONTROLLER)
+			if actionInputC ~= nil then
+				ents.ClickComponent.cbClick = actionInputC:AddEventCallback(
+					ents.ActionInputControllerComponent.EVENT_HANDLE_ACTION_INPUT,
+					function(action, pressed, magnitude)
+						local handled = ents.ClickComponent.inject_click_input(action, pressed)
+						return handled
+					end
+				)
+			end
 		end
 	end
 	ents.ClickComponent.impl.numClickComponents = ents.ClickComponent.impl.numClickComponents + 1
@@ -432,5 +435,5 @@ function ents.ClickComponent:OnRemove()
 		end
 	end
 end
-ents.COMPONENT_CLICK = ents.register_component("click", ents.ClickComponent)
+ents.register_component("click", ents.ClickComponent, "ui")
 ents.ClickComponent.EVENT_ON_CLICK = ents.register_component_event(ents.COMPONENT_CLICK, "on_clicked")

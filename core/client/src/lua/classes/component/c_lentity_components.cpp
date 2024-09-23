@@ -54,6 +54,7 @@
 #include "pragma/entities/components/c_name_component.hpp"
 #include "pragma/entities/components/c_networked_component.hpp"
 #include "pragma/entities/components/c_observable_component.hpp"
+#include "pragma/entities/components/c_observer_component.hpp"
 #include "pragma/entities/components/c_physics_component.hpp"
 #include "pragma/entities/components/c_radius_component.hpp"
 #include "pragma/entities/components/c_field_angle_component.hpp"
@@ -66,6 +67,7 @@
 #include "pragma/entities/components/c_player_component.hpp"
 #include "pragma/entities/components/c_raytracing_component.hpp"
 #include "pragma/entities/components/c_surface_component.hpp"
+#include "pragma/entities/components/c_input_component.hpp"
 #include "pragma/entities/components/liquid/c_liquid_surface_component.hpp"
 #include "pragma/entities/components/liquid/c_liquid_volume_component.hpp"
 #include "pragma/entities/components/liquid/c_buoyancy_component.hpp"
@@ -130,8 +132,8 @@
 #include "pragma/entities/components/c_entity_component.hpp"
 #include "pragma/entities/components/c_io_component.hpp"
 #include "pragma/entities/components/c_time_scale_component.hpp"
-#include "pragma/entities/components/c_attachable_component.hpp"
-#include "pragma/entities/components/c_parent_component.hpp"
+#include "pragma/entities/components/c_attachment_component.hpp"
+#include "pragma/entities/components/c_child_component.hpp"
 #include "pragma/entities/components/c_generic_component.hpp"
 #include "pragma/entities/components/c_point_at_target_component.hpp"
 #include "pragma/entities/components/c_gamemode_component.hpp"
@@ -159,6 +161,7 @@
 #include "pragma/entities/c_filter_entity_class.h"
 #include "pragma/entities/c_filter_entity_name.h"
 #include "pragma/entities/components/c_ownable_component.hpp"
+#include <pragma/entities/components/parent_component.hpp>
 #include <pragma/lua/lua_util_component_stream.hpp>
 #include <pragma/lua/converters/game_type_converters_t.hpp>
 #include <util_image_buffer.hpp>
@@ -406,7 +409,7 @@ namespace pragma {
 	      || std::is_same_v<T, pragma::CLiquidComponent> || std::is_same_v<T, pragma::CWaterSurfaceComponent>)
 	static std::ostream &operator<<(std::ostream &os, const T &component)
 	{
-		return operator<<(os, static_cast<const pragma::BaseEntityComponent &>(component));
+		return ::operator<<(os, static_cast<const pragma::BaseEntityComponent &>(component));
 	}
 };
 
@@ -426,6 +429,11 @@ void CGame::RegisterLuaEntityComponents(luabind::module_ &entsMod)
 
 	auto defCGame = pragma::lua::create_entity_component_class<pragma::CGameComponent, pragma::BaseGameComponent>("GameComponent");
 	entsMod[defCGame];
+
+	auto defCInput = pragma::lua::create_entity_component_class<pragma::CInputComponent, pragma::BaseEntityComponent>("InputComponent");
+	defCInput.def("GetMouseDeltaX", &pragma::CInputComponent::GetMouseDeltaX);
+	defCInput.def("GetMouseDeltaY", &pragma::CInputComponent::GetMouseDeltaY);
+	entsMod[defCInput];
 
 	auto defCColor = pragma::lua::create_entity_component_class<pragma::CColorComponent, pragma::BaseColorComponent>("ColorComponent");
 	entsMod[defCColor];
@@ -447,6 +455,9 @@ void CGame::RegisterLuaEntityComponents(luabind::module_ &entsMod)
 
 	auto defCObservable = pragma::lua::create_entity_component_class<pragma::CObservableComponent, pragma::BaseObservableComponent>("ObservableComponent");
 	entsMod[defCObservable];
+
+	auto defCObserver = pragma::lua::create_entity_component_class<pragma::CObserverComponent, pragma::BaseObserverComponent>("ObserverComponent");
+	entsMod[defCObserver];
 
 	auto defCShooter = pragma::lua::create_entity_component_class<pragma::CShooterComponent, pragma::BaseShooterComponent>("ShooterComponent");
 	entsMod[defCShooter];
@@ -693,7 +704,7 @@ void CGame::RegisterLuaEntityComponents(luabind::module_ &entsMod)
 	auto defCDecal = pragma::lua::create_entity_component_class<pragma::CDecalComponent, pragma::BaseEnvDecalComponent>("DecalComponent");
 	defCDecal.def("CreateFromProjection", static_cast<void (*)(lua_State *, pragma::CDecalComponent &, luabind::object, const umath::ScaledTransform &)>(&Lua::Decal::create_from_projection));
 	defCDecal.def("CreateFromProjection", static_cast<void (*)(lua_State *, pragma::CDecalComponent &, luabind::object)>(&Lua::Decal::create_from_projection));
-	defCDecal.def("DebugDraw", static_cast<void (*)(lua_State *, pragma::CDecalComponent &, float)>([](lua_State *l, pragma::CDecalComponent &hEnt, float duration) { hEnt.GetProjector().DebugDraw(duration); }));
+	defCDecal.def("DebugDraw", &pragma::CDecalComponent::DebugDraw);
 	defCDecal.def("ApplyDecal", static_cast<bool (pragma::CDecalComponent::*)()>(&pragma::CDecalComponent::ApplyDecal));
 	entsMod[defCDecal];
 
@@ -929,11 +940,11 @@ void CGame::RegisterLuaEntityComponents(luabind::module_ &entsMod)
 	auto defCTimeScale = pragma::lua::create_entity_component_class<pragma::CTimeScaleComponent, pragma::BaseTimeScaleComponent>("TimeScaleComponent");
 	entsMod[defCTimeScale];
 
-	auto defCAttachable = pragma::lua::create_entity_component_class<pragma::CAttachableComponent, pragma::BaseAttachableComponent>("AttachableComponent");
+	auto defCAttachable = pragma::lua::create_entity_component_class<pragma::CAttachmentComponent, pragma::BaseAttachmentComponent>("AttachmentComponent");
 	entsMod[defCAttachable];
 
-	auto defCParent = pragma::lua::create_entity_component_class<pragma::CParentComponent, pragma::BaseParentComponent>("ParentComponent");
-	entsMod[defCParent];
+	auto defCChild = pragma::lua::create_entity_component_class<pragma::CChildComponent, pragma::BaseChildComponent>("ChildComponent");
+	entsMod[defCChild];
 
 	auto defCOwnable = pragma::lua::create_entity_component_class<pragma::COwnableComponent, pragma::BaseOwnableComponent>("OwnableComponent");
 	entsMod[defCOwnable];

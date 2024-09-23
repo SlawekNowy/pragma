@@ -116,6 +116,22 @@ rerun = args["rerun"]
 update = args["update"]
 modules_prebuilt = []
 
+root = normalize_path(os.getcwd())
+build_dir = normalize_path(build_directory)
+deps_dir = normalize_path(deps_directory)
+install_dir = install_directory
+tools = root +"/tools"
+
+if not os.path.isabs(build_dir):
+	build_dir = os.getcwd() +"/" +build_dir
+
+if not os.path.isabs(deps_dir):
+	deps_dir = os.getcwd() +"/" +deps_dir
+deps_dir_fs = deps_dir.replace("\\", "/")
+
+if not os.path.isabs(install_dir):
+	install_dir = build_dir +"/" +install_dir
+
 print("Inputs:")
 if platform == "linux":
 	print("cxx_compiler: " +cxx_compiler)
@@ -145,26 +161,6 @@ if platform == "linux":
 print("cmake_args: " +', '.join(additional_cmake_args))
 print("modules: " +', '.join(modules))
 
-if platform == "linux":
-	os.environ["CC"] = c_compiler
-	os.environ["CXX"] = cxx_compiler
-
-root = normalize_path(os.getcwd())
-build_dir = normalize_path(build_directory)
-deps_dir = normalize_path(deps_directory)
-install_dir = install_directory
-tools = root +"/tools"
-
-if not os.path.isabs(build_dir):
-	build_dir = os.getcwd() +"/" +build_dir
-
-if not os.path.isabs(deps_dir):
-	deps_dir = os.getcwd() +"/" +deps_dir
-deps_dir_fs = deps_dir.replace("\\", "/")
-
-if not os.path.isabs(install_dir):
-	install_dir = build_dir +"/" +install_dir
-
 if update:
 	os.chdir(root)
 
@@ -184,6 +180,26 @@ mkpath(build_dir)
 mkpath(deps_dir)
 mkpath(install_dir)
 mkpath(tools)
+
+########## clang-19 ##########
+# Due to a compiler bug with C++20 Modules in clang, we have to use clang-19 for now,
+# which is not available in package managers yet.
+if platform == "linux":
+	curDir = os.getcwd()
+	os.chdir(deps_dir)
+	clang19_root = os.getcwd() +"/LLVM-19.1.0-Linux-X64"
+	if not Path(clang19_root).is_dir():
+		print_msg("Downloading clang-19...")
+		http_extract("https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.0/LLVM-19.1.0-Linux-X64.tar.xz",format="tar.xz")
+	c_compiler = clang19_root +"/bin/clang"
+	cxx_compiler = clang19_root +"/bin/clang++"
+	print_msg("Setting c_compiler override to '" +c_compiler +"'")
+	print_msg("Setting cxx_compiler override to '" +cxx_compiler +"'")
+	os.chdir(curDir)
+
+if platform == "linux":
+	os.environ["CC"] = c_compiler
+	os.environ["CXX"] = cxx_compiler
 
 def execscript(filepath):
 	global generator
@@ -369,9 +385,9 @@ if platform == "win32":
 else:
 	cmake_args += [
 		"-DDEPENDENCY_ICU_INCLUDE=" +icu_root +"/icu/usr/local/include/",
-		"-DDEPENDENCY_ICU_ICUUC_LIBRARY=" +icu_root +"/icu/usr/local/lib/libicuuc.so",
-		"-DDEPENDENCY_ICU_ICUUC_BINARY=" +icu_root +"/icu/usr/local/lib/libicuuc.so",
-		"-DDEPENDENCY_ICU_ICUDT_BINARY=" +icu_root +"/icu/usr/local/lib/libicudata.so"
+		"-DDEPENDENCY_ICU_ICUUC_LIBRARY=" +icu_root +"/icu/usr/local/lib/libicuuc.so.75",
+		"-DDEPENDENCY_ICU_ICUUC_BINARY=" +icu_root +"/icu/usr/local/lib/libicuuc.so.75",
+		"-DDEPENDENCY_ICU_ICUDT_BINARY=" +icu_root +"/icu/usr/local/lib/libicudata.so.75"
 	]
 
 ########## boost ##########
@@ -411,13 +427,13 @@ ZLIB_LIBPATH = normalize_path(zlib_lib_path)
 if platform == "linux":
     #do we even need static build?
 	subprocess.run([boost_root +"/bootstrap.sh"],check=True,shell=True)
-	subprocess.run(["./b2","cxxflags=-fPIC","cflags=-fPIC","linkflags=-fPIC","address-model=64","stage","variant=release","link=shared","runtime-link=shared","-j3"],check=True,shell=True)
-	subprocess.run(["./b2","cxxflags=-fPIC","cflags=-fPIC","linkflags=-fPIC","address-model=64","stage","variant=release","link=static","runtime-link=shared","-j3"],check=True,shell=True)
+	subprocess.run(["./b2","--without-python","cxxflags=-fPIC","cflags=-fPIC","linkflags=-fPIC","address-model=64","stage","variant=release","link=shared","runtime-link=shared","-j3"],check=True)
+	subprocess.run(["./b2","--without-python","cxxflags=-fPIC","cflags=-fPIC","linkflags=-fPIC","address-model=64","stage","variant=release","link=static","runtime-link=shared","-j3"],check=True)
 
 	print_msg("Building boost zlib libraries...")
-	subprocess.run(["./b2","cxxflags=-fPIC","cflags=-fPIC","linkflags=-fPIC","address-model=64","stage","variant=release","link=shared","runtime-link=shared","--with-iostreams","-sZLIB_SOURCE=" +ZLIB_SOURCE,"-sZLIB_INCLUDE=" +ZLIB_INCLUDE,"-sZLIB_LIBPATH=" +ZLIB_LIBPATH],check=True,shell=True)
+	subprocess.run(["./b2","cxxflags=-fPIC","cflags=-fPIC","linkflags=-fPIC","address-model=64","stage","variant=release","link=shared","runtime-link=shared","--with-iostreams","-sZLIB_SOURCE=" +ZLIB_SOURCE,"-sZLIB_INCLUDE=" +ZLIB_INCLUDE,"-sZLIB_LIBPATH=" +ZLIB_LIBPATH],check=True)
     
-	subprocess.run(["./b2","cxxflags=-fPIC","cflags=-fPIC","linkflags=-fPIC","address-model=64","stage","variant=release","link=static","runtime-link=shared","--with-iostreams","-sZLIB_SOURCE=" +ZLIB_SOURCE,"-sZLIB_INCLUDE=" +ZLIB_INCLUDE,"-sZLIB_LIBPATH=" +ZLIB_LIBPATH],check=True,shell=True)
+	subprocess.run(["./b2","cxxflags=-fPIC","cflags=-fPIC","linkflags=-fPIC","address-model=64","stage","variant=release","link=static","runtime-link=shared","--with-iostreams","-sZLIB_SOURCE=" +ZLIB_SOURCE,"-sZLIB_INCLUDE=" +ZLIB_INCLUDE,"-sZLIB_LIBPATH=" +ZLIB_LIBPATH],check=True)
 else:
 	mkdir("build",cd=True)
 
@@ -434,7 +450,8 @@ else:
 print_msg("Building LuaJIT...")
 if platform == "linux":
 	os.chdir(root +"/third_party_libs/luajit/src")
-	subprocess.run(["make"],check=True)
+	subprocess.run(["make","amalg","BUILDMODE=dynamic"],check=True)
+	lua_jit_lib = normalize_path(root +"/third_party_libs/luajit/src/libluajit-p.so")
 else:
 	#devcmd_path = determine_vsdevcmd_path(deps_dir)
 	os.chdir(root +"/third_party_libs/luajit/src")
@@ -537,7 +554,7 @@ if not Path(vcpkg_root).is_dir():
 	git_clone("https://github.com/Microsoft/vcpkg.git")
 
 os.chdir("vcpkg")
-reset_to_commit("ad3bae5")
+reset_to_commit("ee2d2a1")
 os.chdir("..")
 if platform == "linux":
 	subprocess.run([vcpkg_root +"/bootstrap-vcpkg.sh","-disableMetrics"],check=True,shell=True)
@@ -780,22 +797,26 @@ execfile(scripts_dir +"/user_modules.py",g,l)
 if with_essential_client_modules:
 	add_pragma_module(
 		name="pr_prosper_vulkan",
-		commitSha="600557a52dd798f1581f55c6cad0efa684ed29c3",
+		commitSha="f7416f9d24e79a6cdac2798d1d064c20816cbfee",
 		repositoryUrl="https://github.com/Silverlan/pr_prosper_vulkan.git"
 	)
 
 if with_common_modules:
 	add_pragma_module(
 		name="pr_bullet",
-		commitSha="e390178e90dbbfc9af828bf4db2dfd08e243f9ed",
+		commitSha="a64c52cf58dc667ae0c0a99ef4aa931e44f94e5e",
 		repositoryUrl="https://github.com/Silverlan/pr_bullet.git"
 	)
 	add_pragma_module(
 		name="pr_audio_soloud",
-		commitSha="99ddd97bf54db2509ae2987bce3a5023f5e335e8",
+		commitSha="73ee6c707e47f41e06148c55aceae8eb43c34842",
 		repositoryUrl="https://github.com/Silverlan/pr_soloud.git"
 	)
-	#add_pragma_module_prebuilt("Silverlan/pr_mount_external_prebuilt")
+	add_pragma_module(
+		name="pr_audio_dummy",
+		commitSha="84e1249c296dfc6cf288c8262142170851286f48",
+		repositoryUrl="https://github.com/Silverlan/pr_audio_dummy.git"
+	)
 	add_pragma_module_prebuilt("Silverlan/pr_rig_prebuilt")
 	add_pragma_module_prebuilt("Silverlan/pr_ik_prebuilt")
 
@@ -803,18 +824,18 @@ if with_pfm:
 	if with_core_pfm_modules or with_all_pfm_modules:
 		add_pragma_module(
 			name="pr_curl",
-			commitSha="8b872b0a6ec64cf27b442a1df933190b780c183e",
+			commitSha="974c67cc76710809a9595fcfbc4167554799cd7f",
 			repositoryUrl="https://github.com/Silverlan/pr_curl.git"
 		)
 		add_pragma_module(
 			name="pr_dmx",
-			commitSha="6a0270b680c94fcdddb681667461e6080694d776",
+			commitSha="e2b0eff826eda999056f182fc15cfb16cbfbe913",
 			repositoryUrl="https://github.com/Silverlan/pr_dmx.git"
 		)
 	if with_all_pfm_modules:
 		add_pragma_module(
 			name="pr_chromium",
-			commitSha="b8cc18419a5bb1ddf62e283224df2cb6b1d78e29",
+			commitSha="b1bd5cdf6c6fda9eb205ba3bfdbd7af01260eba0",
 			repositoryUrl="https://github.com/Silverlan/pr_chromium.git"
 		)
 		add_pragma_module(
@@ -824,38 +845,38 @@ if with_pfm:
 		)
 		add_pragma_module(
 			name="pr_xatlas",
-			commitSha="4c9b1f6ca7ddef17043173f2b249d2d897c20f77",
+			commitSha="b6c7e6c466a3a70183b19b1f329e8bd79544a1e7",
 			repositoryUrl="https://github.com/Silverlan/pr_xatlas.git"
 		)
 		add_pragma_module(
 			name="pr_davinci",
-			commitSha="2a3a616f008423bec1e4efdac632b5e344951789",
+			commitSha="93295d5232134e437c3f009319110dff594d08a2",
 			repositoryUrl="https://github.com/Silverlan/pr_davinci.git"
 		)
 		add_pragma_module(
 			name="pr_opencv",
-			commitSha="02a55d912a1540ad5b92b758b7b57e721c7693ac",
+			commitSha="430e1cc87e741306753d1bdc3091bd04d537d6b1",
 			repositoryUrl="https://github.com/Silverlan/pr_opencv.git"
 		)
 
 if with_pfm:
 	add_pragma_module(
 		name="pr_git",
-		commitSha="35289bb4051e26f31ea0c0613a27592804ad6a31",
+		commitSha="9a5c12b900de8ada6d22689a849ba2c01ba0e4dd",
 		repositoryUrl="https://github.com/Silverlan/pr_git.git"
 	)
 
 if with_vr:
 	add_pragma_module(
 		name="pr_openvr",
-		commitSha="a69d07969a1c57c200cf4d5b0c01ea784e7bd1f8",
+		commitSha="15b090a2c5c6e55cff146d6344bfb03347a3d1d4",
 		repositoryUrl="https://github.com/Silverlan/pr_openvr.git"
 	)
 
 if with_networking:
 	add_pragma_module(
 		name="pr_steam_networking_sockets",
-		commitSha="28f4008616f197b5488117125608b417baa7fdf7",
+		commitSha="4890de55f2bfddbe8a8d838ab8ce12301e1647f9",
 		repositoryUrl="https://github.com/Silverlan/pr_steam_networking_sockets.git",
 		skipBuildTarget=True
 	)
@@ -926,7 +947,9 @@ cmake_args += [
 	"-DBUILD_TESTING=OFF",
 	"-DCMAKE_INSTALL_PREFIX:PATH=" +install_dir +"",
 	"-DDEPENDENCY_FREETYPE_INCLUDE="+freetype_include_dir,
-	"-DDEPENDENCY_FREETYPE_LIBRARY="+freetype_lib
+	"-DDEPENDENCY_FREETYPE_LIBRARY="+freetype_lib,
+	"-DDEPENDENCY_LUAJIT_LIBRARY=" +lua_jit_lib +"",
+	"-DDEPENDENCY_LUA_LIBRARY=" +lua_jit_lib +""
 ]
 
 if platform == "linux":
@@ -951,9 +974,7 @@ else:
 		"-DDEPENDENCY_BOOST_THREAD_LIBRARY=" +boost_root +"/build/lib/Release/boost_thread.lib",
 		"-DBOOST_ROOT=" +boost_root +"",
 		"-DBOOST_LIBRARYDIR=" +boost_root +"/build/lib/Release/",
-		"-DZLIB_INCLUDE_DIRS=" +build_dir +"/third_party_libs/zlib " +zlib_conf_root +"",
-		"-DDEPENDENCY_LUAJIT_LIBRARY=" +lua_jit_lib +"",
-		"-DDEPENDENCY_LUA_LIBRARY=" +lua_jit_lib +""
+		"-DZLIB_INCLUDE_DIRS=" +build_dir +"/third_party_libs/zlib " +zlib_conf_root +""
 	]
 
 cmake_args.append("-DPME_EXTERNAL_LIB_LOCATION=" +external_libs_dir)
@@ -1064,20 +1085,20 @@ def download_addon(name,addonName,url,commitId=None):
 curDir = os.getcwd()
 if not skip_repository_updates:
 	if with_pfm:
-		download_addon("PFM","filmmaker","https://github.com/Silverlan/pfm.git","675a87a79dcade37d32ede335559714aac2b2120")
-		download_addon("model editor","tool_model_editor","https://github.com/Silverlan/pragma_model_editor.git","56d46dacb398fa7540e794359eaf1081c9df1edd")
+		download_addon("PFM","filmmaker","https://github.com/Silverlan/pfm.git","82c7c4aa695bf3ea9306dee325235fd0991e6e45")
+		download_addon("model editor","tool_model_editor","https://github.com/Silverlan/pragma_model_editor.git","4c185ce7533fba1294e7282ae88168e7842e1a2b")
 
 	if with_vr:
-		download_addon("VR","virtual_reality","https://github.com/Silverlan/PragmaVR.git","6dfb9dbb1a87b9bb6903e8af6a8dc4e892d38269")
+		download_addon("VR","virtual_reality","https://github.com/Silverlan/PragmaVR.git","93fe4f849493651c14133ddf1963b0a8b719f836")
 
 	if with_pfm:
 		download_addon("PFM Living Room Demo","pfm_demo_living_room","https://github.com/Silverlan/pfm_demo_living_room.git","4cbecad4a2d6f502b6d9709178883678101f7e2c")
 		download_addon("PFM Bedroom Demo","pfm_demo_bedroom","https://github.com/Silverlan/pfm_demo_bedroom.git","0fed1d5b54a25c3ded2ce906e7da80ca8dd2fb0d")
-		download_addon("PFM Tutorials","pfm_tutorials","https://github.com/Silverlan/pfm_tutorials.git","49928e6db5ae661e20568718f834e29483cf5e5c")
+		download_addon("PFM Tutorials","pfm_tutorials","https://github.com/Silverlan/pfm_tutorials.git","3798414ad461f7e306bbd91f1015b4589fc085b6")
 
 	if with_common_entities:
-		download_addon("HL","pragma_hl","https://github.com/Silverlan/pragma_hl.git","f652b19")
-		download_addon("TF2","pragma_tf2","https://github.com/Silverlan/pragma_tf2.git","eddee1f")
+		download_addon("HL","pragma_hl","https://github.com/Silverlan/pragma_hl.git","7d146f517a9d514e9c22ca918460b85b27694155")
+		download_addon("TF2","pragma_tf2","https://github.com/Silverlan/pragma_tf2.git","9cf3dc9a1a5fef4cc18b85fc2646cf4263134e9b")
 
 os.chdir(curDir)
 

@@ -110,7 +110,7 @@ function Component:GetAnimation()
 	return self.m_animation
 end
 function Component:IsRecording()
-	return self.m_recording
+	return self.m_recording or false
 end
 
 function Component:RecordEntity(channelName, time, entityInfo)
@@ -170,7 +170,7 @@ function Component:InitializeChannels(entityInfo)
 	for componentName, props in pairs(entityInfo.properties) do
 		local c = entityInfo.entity:GetComponent(componentName)
 		if c == nil then
-			self:Log(
+			self:LogInfo(
 				"Unable to add animation channels for component '"
 					.. componentName
 					.. "' of entity "
@@ -181,7 +181,7 @@ function Component:InitializeChannels(entityInfo)
 			for _, propName in ipairs(props) do
 				local idx = c:GetMemberIndex(propName)
 				if idx == nil then
-					self:Log(
+					self:LogInfo(
 						"Unable to add animation channel for property '"
 							.. propName
 							.. "' of component '"
@@ -258,5 +258,8 @@ function Component:StartRecording()
 	end)
 end
 
-ents.COMPONENT_GAME_ANIMATION_RECORDER =
-	ents.register_component("game_animation_recorder", Component, ents.EntityComponent.FREGISTER_BIT_NETWORKED)
+ents.COMPONENT_GAME_ANIMATION_RECORDER = ents.register_component(
+	"game_animation_recorder",
+	Component,
+	bit.bor(ents.EntityComponent.FREGISTER_BIT_NETWORKED, ents.EntityComponent.FREGISTER_BIT_HIDE_IN_EDITOR)
+)

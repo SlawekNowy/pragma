@@ -14,9 +14,11 @@
 DLLCLIENT void CMD_entities_cl(NetworkState *state, pragma::BasePlayerComponent *pl, std::vector<std::string> &);
 DLLCLIENT void CMD_setpos(NetworkState *state, pragma::BasePlayerComponent *pl, std::vector<std::string> &);
 DLLCLIENT void CMD_getpos(NetworkState *state, pragma::BasePlayerComponent *pl, std::vector<std::string> &argv);
+DLLCLIENT void CMD_setcampos(NetworkState *state, pragma::BasePlayerComponent *pl, std::vector<std::string> &argv);
 DLLCLIENT void CMD_getcampos(NetworkState *state, pragma::BasePlayerComponent *pl, std::vector<std::string> &argv);
 DLLCLIENT void CMD_setang(NetworkState *state, pragma::BasePlayerComponent *pl, std::vector<std::string> &argv);
 DLLCLIENT void CMD_getang(NetworkState *state, pragma::BasePlayerComponent *pl, std::vector<std::string> &argv);
+DLLCLIENT void CMD_setcamang(NetworkState *state, pragma::BasePlayerComponent *pl, std::vector<std::string> &argv);
 DLLCLIENT void CMD_getcamang(NetworkState *state, pragma::BasePlayerComponent *pl, std::vector<std::string> &argv);
 DLLCLIENT void CMD_sound_play(NetworkState *state, pragma::BasePlayerComponent *pl, std::vector<std::string> &argv);
 DLLCLIENT void CMD_sound_stop(NetworkState *state, pragma::BasePlayerComponent *pl, std::vector<std::string> &argv);
@@ -76,7 +78,6 @@ namespace Console {
 		DLLCLIENT void debug_gui_cursor(NetworkState *state, pragma::BasePlayerComponent *pl, std::vector<std::string> &argv);
 		DLLCLIENT void debug_entity_render_buffer(NetworkState *state, pragma::BasePlayerComponent *pl, std::vector<std::string> &argv);
 		DLLCLIENT void debug_steam_audio_dump_scene(NetworkState *state, pragma::BasePlayerComponent *pl, std::vector<std::string> &argv);
-		DLLCLIENT void debug_lightmaps(NetworkState *state, pragma::BasePlayerComponent *pl, std::vector<std::string> &argv);
 		DLLCLIENT void debug_particle_alpha_mode(NetworkState *state, pragma::BasePlayerComponent *pl, std::vector<std::string> &argv);
 		DLLCLIENT void debug_font_glyph_map(NetworkState *state, pragma::BasePlayerComponent *pl, std::vector<std::string> &argv);
 		DLLCLIENT void debug_dump_font_glyph_map(NetworkState *state, pragma::BasePlayerComponent *pl, std::vector<std::string> &argv);

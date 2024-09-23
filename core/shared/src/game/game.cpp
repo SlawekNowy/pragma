@@ -48,6 +48,7 @@
 #include "pragma/entities/entity_component_system_t.hpp"
 #include "pragma/level/level_info.hpp"
 #include "pragma/entities/components/logic_component.hpp"
+#include "pragma/debug/debug_performance_profiler.hpp"
 #include "pragma/lua/sh_lua_component.hpp"
 #include "pragma/lua/class_manager.hpp"
 #include "pragma/util/util_bsp_tree.hpp"
@@ -220,7 +221,7 @@ Game::Game(NetworkState *state)
 	RegisterCallback<void, pragma::BasePlayerComponent *, DamageInfo *>("OnPlayerDeath");
 	RegisterCallback<void, pragma::BasePlayerComponent *>("OnPlayerSpawned");
 
-	RegisterCallbackWithOptionalReturn<bool, pragma::BasePlayerComponent *, Action, bool>("OnActionInput");
+	RegisterCallbackWithOptionalReturn<bool, pragma::ActionInputControllerComponent *, Action, bool>("OnActionInput");
 
 	RegisterCallback<void, lua_State *>("OnLuaInitialized");
 	RegisterCallback<void, BaseEntity *>("OnEntitySpawned");
@@ -413,6 +414,14 @@ void Game::OnInitialized()
 
 void Game::SetUp() {}
 
+static bool check_validity(pragma::BasePhysicsComponent &physC) { return !umath::is_flag_set(physC.BaseEntityComponent::GetStateFlags(), pragma::BaseEntityComponent::StateFlags::Removed); }
+static bool check_validity(BaseEntity *ent)
+{
+	if(!ent || ent->IsRemoved())
+		return false;
+	auto physC = ent->GetPhysicsComponent();
+	return (physC != nullptr && check_validity(*physC));
+}
 class PhysEventCallback : public pragma::physics::IEventCallback {
   public:
 	// Called if contact report is enabled for a collision object and it
@@ -424,7 +433,7 @@ class PhysEventCallback : public pragma::physics::IEventCallback {
 		auto *physObj0 = contactInfo.collisionObj0->GetPhysObj();
 		auto *entC0 = physObj0 ? physObj0->GetOwner() : nullptr;
 		auto *touchC0 = entC0 ? static_cast<pragma::BaseTouchComponent *>(entC0->GetEntity().FindComponent("touch").get()) : nullptr;
-		if(touchC0 == nullptr)
+		if(touchC0 == nullptr || check_validity(&entC0->GetEntity()) == false)
 			return;
 		touchC0->Contact(contactInfo);
 	}
@@ -433,7 +442,7 @@ class PhysEventCallback : public pragma::physics::IEventCallback {
 	virtual void OnConstraintBroken(pragma::physics::IConstraint &constraint) override
 	{
 		auto *ent = constraint.GetEntity();
-		if(ent == nullptr)
+		if(check_validity(ent) == false)
 			return;
 		// TODO: Check constraint component
 	}
@@ -449,7 +458,7 @@ class PhysEventCallback : public pragma::physics::IEventCallback {
 
 		auto *physObj1 = o1.GetPhysObj();
 		auto *entC1 = physObj1 ? physObj1->GetOwner() : nullptr;
-		if(touchC0 == nullptr || entC1 == nullptr)
+		if(touchC0 == nullptr || entC1 == nullptr || !check_validity(&entC0->GetEntity()) || !check_validity(&entC1->GetEntity()))
 			return;
 		touchC0->StartTouch(entC1->GetEntity(), *physObj1, o0, o1);
 	}
@@ -463,7 +472,7 @@ class PhysEventCallback : public pragma::physics::IEventCallback {
 
 		auto *physObj1 = o1.GetPhysObj();
 		auto *entC1 = physObj1 ? physObj1->GetOwner() : nullptr;
-		if(touchC0 == nullptr || entC1 == nullptr)
+		if(touchC0 == nullptr || entC1 == nullptr || !check_validity(&entC0->GetEntity()) || !check_validity(&entC1->GetEntity()))
 			return;
 		touchC0->EndTouch(entC1->GetEntity(), *physObj1, o0, o1);
 	}
@@ -473,7 +482,7 @@ class PhysEventCallback : public pragma::physics::IEventCallback {
 		auto *physObj = o.GetPhysObj();
 		auto *ent = physObj ? physObj->GetOwner() : nullptr;
 		auto *physC = ent ? ent->GetEntity().GetPhysicsComponent() : nullptr;
-		if(physC == nullptr)
+		if(physC == nullptr || !check_validity(*physC))
 			return;
 		physC->OnWake();
 	}
@@ -482,7 +491,7 @@ class PhysEventCallback : public pragma::physics::IEventCallback {
 		auto *physObj = o.GetPhysObj();
 		auto *ent = physObj ? physObj->GetOwner() : nullptr;
 		auto *physC = ent ? ent->GetEntity().GetPhysicsComponent() : nullptr;
-		if(physC == nullptr)
+		if(physC == nullptr || !check_validity(*physC))
 			return;
 		physC->OnSleep();
 	}
@@ -542,13 +551,8 @@ void Game::InitializeGame()
 		}
 		std::string postFix = IsClient() ? " (CL)" : " (SV)";
 		auto &cpuProfiler = engine->GetProfiler();
-		m_profilingStageManager = std::make_unique<pragma::debug::ProfilingStageManager<pragma::debug::ProfilingStage, CPUProfilingPhase>>();
-		auto stageTick = pragma::debug::ProfilingStage::Create(cpuProfiler, "Tick" + postFix, &engine->GetProfilingStageManager()->GetProfilerStage(Engine::CPUProfilingPhase::Tick));
-		auto stagePhysics = pragma::debug::ProfilingStage::Create(cpuProfiler, "Physics" + postFix, stageTick.get());
-		m_profilingStageManager->InitializeProfilingStageManager(cpuProfiler,
-		  {stageTick, stagePhysics, pragma::debug::ProfilingStage::Create(cpuProfiler, "PhysicsSimulation" + postFix, stagePhysics.get()), pragma::debug::ProfilingStage::Create(cpuProfiler, "GameObjectLogic" + postFix, stageTick.get()),
-		    pragma::debug::ProfilingStage::Create(cpuProfiler, "Timers" + postFix, stageTick.get()), pragma::debug::ProfilingStage::Create(cpuProfiler, "Animations" + postFix, stageTick.get())});
-		static_assert(umath::to_integral(CPUProfilingPhase::Count) == 6u, "Added new profiling phase, but did not create associated profiling stage!");
+		m_profilingStageManager = std::make_unique<pragma::debug::ProfilingStageManager<pragma::debug::ProfilingStage>>();
+		m_profilingStageManager->InitializeProfilingStageManager(cpuProfiler);
 	});
 }
 
@@ -591,20 +595,20 @@ void Game::PostThink()
 double &Game::GetLastThink() { return m_tLast; }
 double &Game::GetLastTick() { return m_tLastTick; }
 
-pragma::debug::ProfilingStageManager<pragma::debug::ProfilingStage, Game::CPUProfilingPhase> *Game::GetProfilingStageManager() { return m_profilingStageManager.get(); }
-bool Game::StartProfilingStage(CPUProfilingPhase stage)
+pragma::debug::ProfilingStageManager<pragma::debug::ProfilingStage> *Game::GetProfilingStageManager() { return m_profilingStageManager.get(); }
+bool Game::StartProfilingStage(const char *stage)
 {
 #ifdef PRAGMA_ENABLE_VTUNE_PROFILING
-	debug::get_domain().BeginTask("stage_" + std::string {magic_enum::enum_name(stage)});
+	debug::get_domain().BeginTask("stage_" + std::string {stage});
 #endif
 	return m_profilingStageManager && m_profilingStageManager->StartProfilerStage(stage);
 }
-bool Game::StopProfilingStage(CPUProfilingPhase stage)
+bool Game::StopProfilingStage()
 {
 #ifdef PRAGMA_ENABLE_VTUNE_PROFILING
 	debug::get_domain().EndTask();
 #endif
-	return m_profilingStageManager && m_profilingStageManager->StopProfilerStage(stage);
+	return m_profilingStageManager && m_profilingStageManager->StopProfilerStage();
 }
 
 std::string Game::GetMapName() { return m_mapInfo.name; }
@@ -619,7 +623,7 @@ void Game::UpdateAnimations(double dt) { m_animUpdateManager->UpdateAnimations(d
 
 void Game::Tick()
 {
-	StartProfilingStage(CPUProfilingPhase::Tick);
+	StartProfilingStage("Tick");
 	if((m_flags & GameFlags::InitialTick) != GameFlags::None) {
 		m_flags &= ~GameFlags::InitialTick;
 		m_tDeltaTick = 0.0f; // First tick is essentially 'skipped' to avoid physics errors after the world has been loaded
@@ -637,11 +641,11 @@ void Game::Tick()
 	// - They may generate logic-based animation events
 	// TODO: This is current inefficient because we're not really doing anything
 	// while the animations are being calculated, resulting in wasted CPU cycles.
-	StartProfilingStage(CPUProfilingPhase::Animations);
+	StartProfilingStage("Animations");
 	UpdateAnimations(m_tDeltaTick);
-	StopProfilingStage(CPUProfilingPhase::Animations);
+	StopProfilingStage(); // Animations
 
-	StartProfilingStage(CPUProfilingPhase::Physics);
+	StartProfilingStage("Physics");
 
 	auto &awakePhysics = GetAwakePhysicsComponents();
 	for(auto &hPhysC : awakePhysics) {
@@ -658,12 +662,12 @@ void Game::Tick()
 
 	CallCallbacks("PrePhysicsSimulate");
 	CallLuaCallbacks("PrePhysicsSimulate");
-	StartProfilingStage(CPUProfilingPhase::PhysicsSimulation);
+	StartProfilingStage("PhysicsSimulation");
 	if(IsPhysicsSimulationEnabled() == true && m_physEnvironment) {
 		static int maxSteps = 1;
 		m_tPhysDeltaRemainder = m_physEnvironment->StepSimulation(CFloat(m_tDeltaTick + m_tPhysDeltaRemainder), maxSteps, CFloat(m_tDeltaTick));
 	}
-	StopProfilingStage(CPUProfilingPhase::PhysicsSimulation);
+	StopProfilingStage(); // PhysicsSimulation
 	CallCallbacks("PostPhysicsSimulate");
 	CallLuaCallbacks("PostPhysicsSimulate");
 
@@ -681,7 +685,7 @@ void Game::Tick()
 			++it;
 	}
 
-	StopProfilingStage(CPUProfilingPhase::Physics);
+	StopProfilingStage(); // Physics
 
 	while(m_entsScheduledForRemoval.empty() == false) {
 		auto &hEnt = m_entsScheduledForRemoval.front();
@@ -691,7 +695,7 @@ void Game::Tick()
 		m_entsScheduledForRemoval.pop();
 	}
 
-	StartProfilingStage(CPUProfilingPhase::GameObjectLogic);
+	StartProfilingStage("GameObjectLogic");
 
 	// Perform some cleanup
 	pragma::BaseEntityComponentSystem::Cleanup();
@@ -699,6 +703,7 @@ void Game::Tick()
 	auto &logicComponents = GetEntityTickComponents();
 	// Note: During the loop, new items may be appended to the end of logicComponents, but no elements
 	// may be erased from outside sources. If an element is removed, it's set to nullptr.
+	auto shouldProfile = (m_profilingStageManager != nullptr);
 	for(auto i = decltype(logicComponents.size()) {0u}; i < logicComponents.size();) {
 		auto *c = logicComponents[i];
 		if(c == nullptr) {
@@ -709,21 +714,28 @@ void Game::Tick()
 			++i;
 			continue;
 		}
-		if(c->Tick(m_tDeltaTick) == false) {
+		if(shouldProfile) {
+			auto *cInfo = c->GetComponentInfo();
+			StartProfilingStage(cInfo->name.str);
+		}
+		auto res = c->Tick(m_tDeltaTick);
+		if(shouldProfile)
+			StopProfilingStage();
+		if(res == false) {
 			logicComponents.erase(logicComponents.begin() + i);
 			continue;
 		}
 		++i;
 	}
 
-	StopProfilingStage(CPUProfilingPhase::GameObjectLogic);
+	StopProfilingStage(); // GameObjectLogic
 
-	StartProfilingStage(CPUProfilingPhase::Timers);
+	StartProfilingStage("Timers");
 	UpdateTimers();
-	StopProfilingStage(CPUProfilingPhase::Timers);
+	StopProfilingStage(); // Timers
 	//if(GetNetworkState()->IsClient())
 	//	return;
-	StopProfilingStage(CPUProfilingPhase::Tick);
+	StopProfilingStage(); // Tick
 }
 void Game::PostTick() { m_tLastTick = m_tCur; }
 
@@ -892,11 +904,13 @@ bool Game::PrecacheModel(const std::string &mdl)
 }
 std::shared_ptr<Model> Game::LoadModel(const std::string &mdl, bool bReload)
 {
+	if(mdl.empty())
+		return nullptr;
 #ifdef PRAGMA_ENABLE_VTUNE_PROFILING
 	debug::get_domain().BeginTask("load_model");
 	util::ScopeGuard sgVtune {[]() { debug::get_domain().EndTask(); }};
 #endif
-	spdlog::info("Loading model '{}'...", mdl);
+	spdlog::debug("Loading model '{}'...", mdl);
 	auto *asset = GetNetworkState()->GetModelManager().FindCachedAsset(mdl);
 	if(asset)
 		return pragma::asset::ModelManager::GetAssetObject(*asset);
@@ -956,7 +970,7 @@ SurfaceMaterial *Game::GetSurfaceMaterial(UInt32 id)
 		return nullptr;
 	return &materials[id];
 }
-std::vector<SurfaceMaterial> &Game::GetSurfaceMaterials() { return m_surfaceMaterialManager->GetMaterials(); }
+std::vector<SurfaceMaterial> *Game::GetSurfaceMaterials() { return m_surfaceMaterialManager ? &m_surfaceMaterialManager->GetMaterials() : nullptr; }
 
 double &Game::RealTime() { return m_tReal; }
 double &Game::CurTime() { return m_tCur; }
