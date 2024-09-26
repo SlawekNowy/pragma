@@ -66,8 +66,32 @@ endfunction()
 
 function(pr_add_modules TARGET_NAME MODULE_LOCATION)
     message("[PR] Adding modules in location directory \"${CMAKE_SOURCE_DIR}/${MODULE_LOCATION}\"...")
-    file(GLOB_RECURSE MODULE_LIST "${MODULE_LOCATION}/*.cppm")
-    pr_add_module_list(${TARGET_NAME} "${MODULE_LIST}")
+
+    # 1. Get all .cppm files in ${MODULE_LOCATION}/implementation recursively and add as PRIVATE
+    file(GLOB_RECURSE IMPLEMENTATION_MODULE_LIST "${MODULE_LOCATION}/implementation/*.cppm")
+    if (IMPLEMENTATION_MODULE_LIST)
+        pr_add_module_list(${TARGET_NAME} cxx_modules_impl PRIVATE "${IMPLEMENTATION_MODULE_LIST}")
+    endif()
+
+    # 2. Get all .cppm files in ${MODULE_LOCATION} recursively excluding the ones in ${MODULE_LOCATION}/implementation/
+    file(GLOB_RECURSE ALL_MODULE_LIST "${MODULE_LOCATION}/*.cppm")
+
+    # Filter out the implementation files from ALL_MODULE_LIST
+    set(PUBLIC_MODULE_LIST "")
+    foreach(MODULE_FILE ${ALL_MODULE_LIST})
+        string(FIND ${MODULE_FILE} "/implementation/" FOUND)
+        if (FOUND EQUAL -1) # If "/implementation/" is not found in the path
+            list(APPEND PUBLIC_MODULE_LIST ${MODULE_FILE})
+        endif()
+    endforeach()
+
+    # Combine the lists for the PUBLIC module files
+    list(APPEND PUBLIC_MODULE_LIST ${ROOT_MODULE_LIST} ${INTERFACE_MODULE_LIST})
+
+    # Add the PUBLIC modules to the target
+    if (PUBLIC_MODULE_LIST)
+        pr_add_module_list(${TARGET_NAME} cxx_modules PUBLIC ${PUBLIC_MODULE_LIST})
+    endif()
 endfunction()
 
 function(pr_add_source_list TARGET_NAME SOURCE_LIST)
