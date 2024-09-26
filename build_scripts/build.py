@@ -116,6 +116,22 @@ rerun = args["rerun"]
 update = args["update"]
 modules_prebuilt = []
 
+root = normalize_path(os.getcwd())
+build_dir = normalize_path(build_directory)
+deps_dir = normalize_path(deps_directory)
+install_dir = install_directory
+tools = root +"/tools"
+
+if not os.path.isabs(build_dir):
+	build_dir = os.getcwd() +"/" +build_dir
+
+if not os.path.isabs(deps_dir):
+	deps_dir = os.getcwd() +"/" +deps_dir
+deps_dir_fs = deps_dir.replace("\\", "/")
+
+if not os.path.isabs(install_dir):
+	install_dir = build_dir +"/" +install_dir
+
 print("Inputs:")
 if platform == "linux":
 	print("cxx_compiler: " +cxx_compiler)
@@ -144,26 +160,6 @@ if platform == "linux":
 	print("no_confirm: " +str(no_confirm))
 print("cmake_args: " +', '.join(additional_cmake_args))
 print("modules: " +', '.join(modules))
-
-if platform == "linux":
-	os.environ["CC"] = c_compiler
-	os.environ["CXX"] = cxx_compiler
-
-root = normalize_path(os.getcwd())
-build_dir = normalize_path(build_directory)
-deps_dir = normalize_path(deps_directory)
-install_dir = install_directory
-tools = root +"/tools"
-
-if not os.path.isabs(build_dir):
-	build_dir = os.getcwd() +"/" +build_dir
-
-if not os.path.isabs(deps_dir):
-	deps_dir = os.getcwd() +"/" +deps_dir
-deps_dir_fs = deps_dir.replace("\\", "/")
-
-if not os.path.isabs(install_dir):
-	install_dir = build_dir +"/" +install_dir
 
 if update:
 	os.chdir(root)
