@@ -318,3 +318,33 @@ endif()
 
 pr_set_target_folder(pragma-install core)
 pr_set_target_folder(pragma-install-full core)
+
+
+#Doxygen
+# Require dot, treat the other components as optional
+find_package(Doxygen
+             REQUIRED dot
+             OPTIONAL_COMPONENTS mscgen dia)
+
+
+set(DOXYGEN_HTML_OUTPUT            ${CMAKE_INSTALL_PREFIX}/doc/doxygen)
+set(DOXYGEN_JAVADOC_AUTOBRIEF      YES)
+set(DOXYGEN_GENERATE_HTML          YES)
+set(DOXYGEN_HAVE_DOT               YES)
+set(DOXYGEN_EXCLUDE_PATTERNS
+"*/third_party_libs/*"
+"*/third_party/*"
+"*/external_libs/wgui/external_libs/*") #HACK: handle this properly in wgui.
+set(DOXYGEN_LOOKUP_CACHE_SIZE 1)
+# other DOXYGEN_... options
+
+
+doxygen_add_docs(docs_target
+  ${CMAKE_SOURCE_DIR}/core/client
+  ${CMAKE_SOURCE_DIR}/core/server
+  ${CMAKE_SOURCE_DIR}/core/shared
+  ${CMAKE_SOURCE_DIR}/external_libs/
+  ${CMAKE_SOURCE_DIR}/modules/interfaces
+  ALL  # does not seem to work
+  COMMENT "Generate HTML documentation"
+)
