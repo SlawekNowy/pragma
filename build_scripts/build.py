@@ -868,8 +868,8 @@ if with_pfm:
 		)
 		add_pragma_module(
 			name="pr_unirender",
-			commitSha="dacb41c60f751482bc0943a07d86a979216c6266",
-			repositoryUrl="https://github.com/Silverlan/pr_cycles.git"
+			commitSha="57d7a4fd0444ffc8c1fee09976c74adce58fc572",
+			repositoryUrl="https://github.com/Slaweknowy/pr_cycles.git"
 		)
 		add_pragma_module(
 			name="pr_xatlas",

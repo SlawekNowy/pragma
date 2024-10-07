@@ -334,7 +334,8 @@ set(DOXYGEN_HAVE_DOT               YES)
 set(DOXYGEN_EXCLUDE_PATTERNS
 "*/third_party_libs/*"
 "*/third_party/*"
-"*/external_libs/wgui/external_libs/*") #HACK: handle this properly in wgui.
+"*/external_libs/wgui/external_libs/*"
+"*/modules/pr_unirender/data/*") #HACK: handle this properly in wgui.
 set(DOXYGEN_LOOKUP_CACHE_SIZE 1)
 # other DOXYGEN_... options
 
@@ -344,7 +345,7 @@ doxygen_add_docs(docs_target
   ${CMAKE_SOURCE_DIR}/core/server
   ${CMAKE_SOURCE_DIR}/core/shared
   ${CMAKE_SOURCE_DIR}/external_libs/
-  ${CMAKE_SOURCE_DIR}/modules/interfaces
+  ${CMAKE_SOURCE_DIR}/modules/
   ALL  # does not seem to work
   COMMENT "Generate HTML documentation"
 )
