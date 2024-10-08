@@ -580,6 +580,27 @@ if platform == "win32":
 	cmake_build("Release")
 	cmake_build("Release",["install"])
 
+########## bit7z ##########
+os.chdir(deps_dir)
+bit7z_root = normalize_path(os.getcwd() +"/bit7z")
+if not Path(bit7z_root).is_dir():
+	print_msg("bit7z not found. Downloading...")
+	git_clone("https://github.com/rikyoz/bit7z.git")
+os.chdir("bit7z")
+reset_to_commit("bec6a22")
+
+print_msg("Building bit7z...")
+mkdir("build",cd=True)
+bit7z_cmake_args = ["-DBIT7Z_AUTO_FORMAT=ON"]
+if platform == "linux":
+	bit7z_cmake_args.append("-DCMAKE_CXX_FLAGS=-fPIC")
+cmake_configure("..",generator,bit7z_cmake_args)
+cmake_build("Release")
+if platform == "linux":
+	bit7z_lib_name = "libbit7z.a"
+else:
+	bit7z_lib_name = "bit7z.lib"
+cmake_args += ["-DDEPENDENCY_BIT7Z_INCLUDE=" +bit7z_root +"/include/", "-DDEPENDENCY_BIT7Z_LIBRARY=" +bit7z_root +"/lib/x64/Release/" +bit7z_lib_name]
 
 ########## compressonator deps ##########
 if platform == "linux":
@@ -804,17 +825,17 @@ if with_essential_client_modules:
 if with_common_modules:
 	add_pragma_module(
 		name="pr_bullet",
-		commitSha="a64c52cf58dc667ae0c0a99ef4aa931e44f94e5e",
+		commitSha="be622341b5890ae2f8f1c97481ff52ddbd351cf0",
 		repositoryUrl="https://github.com/Silverlan/pr_bullet.git"
 	)
 	add_pragma_module(
 		name="pr_audio_soloud",
-		commitSha="73ee6c707e47f41e06148c55aceae8eb43c34842",
+		commitSha="7d4361d289ff1527e4783cde65dd7e5852684975",
 		repositoryUrl="https://github.com/Silverlan/pr_soloud.git"
 	)
 	add_pragma_module(
 		name="pr_audio_dummy",
-		commitSha="84e1249c296dfc6cf288c8262142170851286f48",
+		commitSha="1a806a1a7b2283bd8551d07e4f1d680499f68b90",
 		repositoryUrl="https://github.com/Silverlan/pr_audio_dummy.git"
 	)
 	add_pragma_module_prebuilt("Silverlan/pr_rig_prebuilt")
@@ -829,7 +850,7 @@ if with_pfm:
 		)
 		add_pragma_module(
 			name="pr_dmx",
-			commitSha="e2b0eff826eda999056f182fc15cfb16cbfbe913",
+			commitSha="216e2ec2698a4a3125db08ce197ea5158236f882",
 			repositoryUrl="https://github.com/Silverlan/pr_dmx.git"
 		)
 	if with_all_pfm_modules:
@@ -869,7 +890,7 @@ if with_pfm:
 if with_vr:
 	add_pragma_module(
 		name="pr_openvr",
-		commitSha="15b090a2c5c6e55cff146d6344bfb03347a3d1d4",
+		commitSha="2dd977344ebe8cd102cd24aa1ddcb34d696c7dda",
 		repositoryUrl="https://github.com/Silverlan/pr_openvr.git"
 	)
 
@@ -1008,6 +1029,28 @@ if platform == "win32":
 	os.chdir(curDir)
 	#
 
+# 7z binaries (required for bit7z)
+os.chdir(deps_dir)
+sevenz_root = normalize_path(os.getcwd() +"/7z-lib")
+if platform == "win32":
+	if not Path(sevenz_root).is_dir():
+		print_msg("7z-lib not found. Downloading...")
+		git_clone("https://github.com/Silverlan/7z-lib.git")
+	os.chdir("7z-lib")
+	reset_to_commit("1a9ec9a")
+	cp(sevenz_root +"/win-x64/7z.dll",install_dir +"/bin/")
+else:
+	if not Path(sevenz_root).is_dir():
+		print_msg("7z-lib not found. Downloading...")
+		mkdir("7z-lib",cd=True)
+		http_extract("https://7-zip.org/a/7z2408-src.tar.xz",format="tar.xz")
+	os.chdir(sevenz_root)
+	sevenz_so_path = sevenz_root +"/CPP/7zip/Bundles/Format7zF"
+	os.chdir(sevenz_so_path)
+	subprocess.run(["make","-j","-f","../../cmpl_gcc.mak"],check=True)
+	mkpath(install_dir +"/bin")
+	cp(sevenz_so_path +"/b/g/7z.so",install_dir +"/bin/7z.so")
+
 ########## Lua Extensions ##########
 lua_ext_dir = deps_dir +"/lua_extensions"
 mkdir(lua_ext_dir,cd=True)
@@ -1085,7 +1128,7 @@ def download_addon(name,addonName,url,commitId=None):
 curDir = os.getcwd()
 if not skip_repository_updates:
 	if with_pfm:
-		download_addon("PFM","filmmaker","https://github.com/Silverlan/pfm.git","82c7c4aa695bf3ea9306dee325235fd0991e6e45")
+		download_addon("PFM","filmmaker","https://github.com/Silverlan/pfm.git","b4ed38338fd3478f50361bdeed6f433924e932e3")
 		download_addon("model editor","tool_model_editor","https://github.com/Silverlan/pragma_model_editor.git","4c185ce7533fba1294e7282ae88168e7842e1a2b")
 
 	if with_vr:
@@ -1094,7 +1137,7 @@ if not skip_repository_updates:
 	if with_pfm:
 		download_addon("PFM Living Room Demo","pfm_demo_living_room","https://github.com/Silverlan/pfm_demo_living_room.git","4cbecad4a2d6f502b6d9709178883678101f7e2c")
 		download_addon("PFM Bedroom Demo","pfm_demo_bedroom","https://github.com/Silverlan/pfm_demo_bedroom.git","0fed1d5b54a25c3ded2ce906e7da80ca8dd2fb0d")
-		download_addon("PFM Tutorials","pfm_tutorials","https://github.com/Silverlan/pfm_tutorials.git","3798414ad461f7e306bbd91f1015b4589fc085b6")
+		download_addon("PFM Tutorials","pfm_tutorials","https://github.com/Silverlan/pfm_tutorials.git","377d0b94b37c2e369884a532c746dd7c128d9958")
 
 	if with_common_entities:
 		download_addon("HL","pragma_hl","https://github.com/Silverlan/pragma_hl.git","7d146f517a9d514e9c22ca918460b85b27694155")

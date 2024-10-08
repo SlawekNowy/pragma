@@ -33,6 +33,7 @@
 #include <fsys/ifile.hpp>
 #include <pragma/asset_types/world.hpp>
 #include <pragma/engine_version.h>
+#include <pragma/logging.hpp>
 #include <image/prosper_sampler.hpp>
 #include <util_image.hpp>
 #include <cmaterialmanager.h>
@@ -267,8 +268,7 @@ struct OutputData {
 };
 static std::optional<OutputData> import_model(ufile::IFile *optFile, const std::string &optFileName, std::string &outErrMsg, const util::Path &outputPath, bool importAsMap)
 {
-	auto verbose = true; // TODO
-	auto scale = static_cast<float>(util::pragma::metres_to_units(1.f));
+	auto scale = static_cast<float>(pragma::metres_to_units(1.f));
 
 	std::string fileName = optFileName;
 	std::string absPathToFile;
@@ -303,8 +303,7 @@ static std::optional<OutputData> import_model(ufile::IFile *optFile, const std::
 	std::string err;
 	std::string warn;
 
-	if(verbose)
-		Con::cout << "Loading file '" << absPathToFile << "'..." << Con::endl;
+	spdlog::debug("Loading file '{}'...", absPathToFile);
 
 	tinygltf::Model gltfMdl {};
 	auto result = false;
@@ -323,14 +322,12 @@ static std::optional<OutputData> import_model(ufile::IFile *optFile, const std::
 		auto binary = ustring::compare<std::string>(ext, "glb", false);
 		result = binary ? reader.LoadBinaryFromFile(&gltfMdl, &err, &warn, absPathToFile) : reader.LoadASCIIFromFile(&gltfMdl, &err, &warn, absPathToFile);
 	}
-	if(verbose) {
-		if(result)
-			Con::cout << "Successfully loaded file '" << absPathToFile << "'! Creating model..." << Con::endl;
-		else if(err.empty() == false)
-			Con::cwar << "Unable to load file '" << absPathToFile << "': " << err << Con::endl;
-		else
-			Con::cwar << "Unable to load file '" << absPathToFile << "': " << warn << Con::endl;
-	}
+	if(result)
+		spdlog::debug("Successfully loaded file '{}'! Creating model...", absPathToFile);
+	else if(err.empty() == false)
+		spdlog::debug("Unable to load file '{}': {}", absPathToFile, err);
+	else
+		spdlog::debug("Unable to load file '{}': {}", absPathToFile, warn);
 	if(result == false) {
 		if(err.empty() == false)
 			outErrMsg = err;
@@ -1311,8 +1308,8 @@ static std::optional<OutputData> import_model(ufile::IFile *optFile, const std::
 			ent->SetClassName("env_camera");
 
 			ent->SetKeyValue("fov", std::to_string(umath::rad_to_deg(cam.perspective.yfov)));
-			ent->SetKeyValue("farz", std::to_string(util::pragma::metres_to_units(cam.perspective.znear)));
-			ent->SetKeyValue("nearz", std::to_string(util::pragma::metres_to_units(cam.perspective.zfar)));
+			ent->SetKeyValue("farz", std::to_string(pragma::metres_to_units(cam.perspective.znear)));
+			ent->SetKeyValue("nearz", std::to_string(pragma::metres_to_units(cam.perspective.zfar)));
 			ent->SetKeyValue("aspectRatio", std::to_string(cam.perspective.aspectRatio));
 
 			worldData->AddEntity(*ent);
@@ -1524,7 +1521,7 @@ bool pragma::asset::export_map(const std::string &mapName, const ModelExportInfo
 
 			auto radiusC = ent.GetComponent<CRadiusComponent>();
 			if(radiusC.valid())
-				lightScene.range = util::pragma::units_to_metres(radiusC->GetRadius());
+				lightScene.range = pragma::units_to_metres(radiusC->GetRadius());
 
 			auto spotC = ent.GetComponent<CLightSpotComponent>();
 			if(spotC.valid()) {
