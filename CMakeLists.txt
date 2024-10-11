@@ -22,9 +22,7 @@ endif()
 if(WIN32)
     set(BINARY_OUTPUT_DIR "bin")
     set(EXECUTABLE_OUTPUT_DIR "bin")
-
-
-    set(OS_LIB_BIN_EXT ".dll")
+	set(OS_LIB_BIN_EXT ".dll")
     set(OS_LIB_BIN_PRE "")
     set(OS_LIB_SHARED_EXT ".lib")
     set(OS_EXE_EXT ".exe")

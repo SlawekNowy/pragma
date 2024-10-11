@@ -857,8 +857,8 @@ if with_pfm:
 		)
 		add_pragma_module(
 			name="pr_dmx",
-			commitSha="eb6b4c8e0cd45dc27cc7ed46ff50eb5a9cae1fba",
-			repositoryUrl="https://github.com/Silverlan/pr_dmx.git"
+			commitSha="767709b360a5df18c0ca2a15d984db7373bf8189",
+			repositoryUrl="https://github.com/Slaweknowy/pr_dmx.git"
 		)
 	if with_all_pfm_modules:
 		add_pragma_module(
@@ -868,8 +868,8 @@ if with_pfm:
 		)
 		add_pragma_module(
 			name="pr_unirender",
-			commitSha="57d7a4fd0444ffc8c1fee09976c74adce58fc572",
-			repositoryUrl="https://github.com/Slaweknowy/pr_cycles.git"
+			commitSha="3c0d48f78a89406659ea17ce6570889c650fbca4",
+			repositoryUrl="https://github.com/SlawekNowy/pr_cycles.git"
 		)
 		add_pragma_module(
 			name="pr_xatlas",
