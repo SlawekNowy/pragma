@@ -857,7 +857,7 @@ if with_pfm:
 		)
 		add_pragma_module(
 			name="pr_dmx",
-			commitSha="767709b360a5df18c0ca2a15d984db7373bf8189",
+			commitSha="beb8f7546e645680d0226de2f9de9699ee2bb095",
 			repositoryUrl="https://github.com/Slaweknowy/pr_dmx.git"
 		)
 	if with_all_pfm_modules:
