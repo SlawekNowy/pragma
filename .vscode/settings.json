@@ -90,5 +90,6 @@
         "variant": "cpp",
         "ios": "cpp",
         "rope": "cpp"
-    }
+    },
+    "cmake.generator": "Ninja Multi-Config",
 }
