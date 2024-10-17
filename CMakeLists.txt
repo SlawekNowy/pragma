@@ -320,6 +320,7 @@ pr_set_target_folder(pragma-install-full core)
 
 #Doxygen
 # Require dot, treat the other components as optional
+#TODO: demote find package to OPTIONAL and add check for Doxygen_FOUND
 find_package(Doxygen
              REQUIRED dot
              OPTIONAL_COMPONENTS mscgen dia)
@@ -333,7 +334,7 @@ set(DOXYGEN_EXCLUDE_PATTERNS
 "*/third_party_libs/*"
 "*/third_party/*"
 "*/external_libs/wgui/external_libs/*"
-"*/modules/pr_unirender/data/*") #HACK: handle this properly in wgui.
+"*/modules/pr_unirender/data/*") 
 set(DOXYGEN_LOOKUP_CACHE_SIZE 1)
 # other DOXYGEN_... options
 
