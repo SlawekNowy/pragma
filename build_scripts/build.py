@@ -818,7 +818,7 @@ execfile(scripts_dir +"/user_modules.py",g,l)
 if with_essential_client_modules:
 	add_pragma_module(
 		name="pr_prosper_vulkan",
-		commitSha="f7416f9d24e79a6cdac2798d1d064c20816cbfee",
+		commitSha="932a3596e24383accdb03d9f2c16ea5dc5c2ef5e",
 		repositoryUrl="https://github.com/Silverlan/pr_prosper_vulkan.git"
 	)
 
@@ -863,7 +863,7 @@ if with_pfm:
 	if with_all_pfm_modules:
 		add_pragma_module(
 			name="pr_chromium",
-			commitSha="b1bd5cdf6c6fda9eb205ba3bfdbd7af01260eba0",
+			commitSha="707a428772cefddacea9b1fc99a405e95fed323c",
 			repositoryUrl="https://github.com/Silverlan/pr_chromium.git"
 		)
 		add_pragma_module(
@@ -1135,7 +1135,7 @@ def download_addon(name,addonName,url,commitId=None):
 curDir = os.getcwd()
 if not skip_repository_updates:
 	if with_pfm:
-		download_addon("PFM","filmmaker","https://github.com/Silverlan/pfm.git","46ef461311983bb6878169ffa8262b21747b6a02")
+		download_addon("PFM","filmmaker","https://github.com/Silverlan/pfm.git","724ee291537368254ff09f07abb49c99234568cb")
 		download_addon("model editor","tool_model_editor","https://github.com/Silverlan/pragma_model_editor.git","4c185ce7533fba1294e7282ae88168e7842e1a2b")
 
 	if with_vr:
