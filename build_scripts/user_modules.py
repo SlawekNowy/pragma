@@ -19,7 +19,7 @@ from sys import platform
 add_pragma_module(
      name = "pr_mount_external"
 )
-if platform == "windows":
+if platform == "win32":
      add_pragma_module(
           name = "pr_luadoc"
      )
