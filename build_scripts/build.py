@@ -13,8 +13,8 @@ parser = argparse.ArgumentParser(description='Pragma build script', allow_abbrev
 
 # See https://stackoverflow.com/a/43357954/1879228 for boolean args
 if platform == "linux":
-	parser.add_argument('--c-compiler', help='The C-compiler to use.', default='clang-18')
-	parser.add_argument('--cxx-compiler', help='The C++-compiler to use.', default='clang++-18')
+	parser.add_argument('--c-compiler', help='The C-compiler to use.', default='clang-19')
+	parser.add_argument('--cxx-compiler', help='The C++-compiler to use.', default='clang++-19')
 	defaultGenerator = "Ninja Multi-Config"
 else:
 	defaultGenerator = "Visual Studio 17 2022"
@@ -184,15 +184,17 @@ mkpath(tools)
 ########## clang-19 ##########
 # Due to a compiler bug with C++20 Modules in clang, we have to use clang-19 for now,
 # which is not available in package managers yet.
-if platform == "linux":
+if platform == "linux" and (c_compiler == "clang-19" or c_compiler == "clang++-19"):
 	curDir = os.getcwd()
 	os.chdir(deps_dir)
-	clang19_root = os.getcwd() +"/LLVM-19.1.1-Linux-X64"
+	clang19_root = os.getcwd() +"/LLVM-19.1.2-Linux-X64"
 	if not Path(clang19_root).is_dir():
 		print_msg("Downloading clang-19...")
-		http_extract("https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.1/LLVM-19.1.1-Linux-X64.tar.xz",format="tar.xz")
-	c_compiler = clang19_root +"/bin/clang"
-	cxx_compiler = clang19_root +"/bin/clang++"
+		http_extract("https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.2/LLVM-19.1.2-Linux-X64.tar.xz",format="tar.xz")
+	if c_compiler == "clang-19":
+		c_compiler = clang19_root +"/bin/clang"
+	if cxx_compiler == "clang++-19":
+		cxx_compiler = clang19_root +"/bin/clang++"
 	print_msg("Setting c_compiler override to '" +c_compiler +"'")
 	print_msg("Setting cxx_compiler override to '" +cxx_compiler +"'")
 	os.chdir(curDir)
@@ -818,15 +820,10 @@ execfile(scripts_dir +"/user_modules.py",g,l)
 if with_essential_client_modules:
 	add_pragma_module(
 		name="pr_prosper_vulkan",
-		commitSha="7beba02a2df054c8a20d8c81a68dc534e3395ae1",
+		commitSha="31ef246ebcd7ccc5067759bed48cc8d47f9066c0",
 		repositoryUrl="https://github.com/Slaweknowy/pr_prosper_vulkan.git"
 	)
 
-	add_pragma_module(
-		name="pr_prosper_opengl",
-		repositoryUrl="https://github.com/Silverlan/pr_prosper_opengl.git",
-		commitSha="d73bf6dea11b1a79d5dc4715e224aa4cb15d0d48"
-	)
 
 if with_common_modules:
 	add_pragma_module(
@@ -844,7 +841,12 @@ if with_common_modules:
 		commitSha="1a806a1a7b2283bd8551d07e4f1d680499f68b90",
 		repositoryUrl="https://github.com/Silverlan/pr_audio_dummy.git"
 	)
-	#add_pragma_module_prebuilt("Silverlan/pr_mount_external_prebuilt")
+	add_pragma_module(
+		name="pr_prosper_opengl",
+		commitSha="d73bf6dea11b1a79d5dc4715e224aa4cb15d0d48",
+		repositoryUrl="https://github.com/Silverlan/pr_prosper_opengl.git"
+	)
+	#sadd_pragma_module_prebuilt("Silverlan/pr_mount_external_prebuilt")
 	add_pragma_module_prebuilt("Silverlan/pr_rig_prebuilt")
 	add_pragma_module_prebuilt("Silverlan/pr_ik_prebuilt")
 
@@ -868,7 +870,7 @@ if with_pfm:
 		)
 		add_pragma_module(
 			name="pr_unirender",
-			commitSha="3c0d48f78a89406659ea17ce6570889c650fbca4",
+			commitSha="e44ff220a1aaa0a72ae3411dea8fbf30c4b98fe0",
 			repositoryUrl="https://github.com/SlawekNowy/pr_cycles.git"
 		)
 		add_pragma_module(
@@ -1135,8 +1137,8 @@ def download_addon(name,addonName,url,commitId=None):
 curDir = os.getcwd()
 if not skip_repository_updates:
 	if with_pfm:
-		download_addon("PFM","filmmaker","https://github.com/Silverlan/pfm.git","724ee291537368254ff09f07abb49c99234568cb")
-		download_addon("model editor","tool_model_editor","https://github.com/Silverlan/pragma_model_editor.git","4c185ce7533fba1294e7282ae88168e7842e1a2b")
+		download_addon("PFM","filmmaker","https://github.com/Silverlan/pfm.git","20135f7a0fff67acc4bca0bb6e4998e7fd1fdaf4")
+		download_addon("model editor","tool_model_editor","https://github.com/Silverlan/pragma_model_editor.git","bd4844c06b9a42bacd17bb7e52d3381c3fd119e4")
 
 	if with_vr:
 		download_addon("VR","virtual_reality","https://github.com/Silverlan/PragmaVR.git","93fe4f849493651c14133ddf1963b0a8b719f836")
