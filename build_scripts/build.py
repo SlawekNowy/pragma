@@ -818,15 +818,15 @@ execfile(scripts_dir +"/user_modules.py",g,l)
 if with_essential_client_modules:
 	add_pragma_module(
 		name="pr_prosper_vulkan",
-		commitSha="932a3596e24383accdb03d9f2c16ea5dc5c2ef5e",
-		repositoryUrl="https://github.com/Silverlan/pr_prosper_vulkan.git"
+		commitSha="7beba02a2df054c8a20d8c81a68dc534e3395ae1",
+		repositoryUrl="https://github.com/Slaweknowy/pr_prosper_vulkan.git"
 	)
 
-	#add_pragma_module(
-	#	name="pr_prosper_opengl",
-	#	repositoryUrl="https://github.com/Silverlan/pr_prosper_opengl.git",
-	#	commitSha="4dcc3045f37da63456f2a3ddcf66490497b87106"
-	#)
+	add_pragma_module(
+		name="pr_prosper_opengl",
+		repositoryUrl="https://github.com/Silverlan/pr_prosper_opengl.git",
+		commitSha="d73bf6dea11b1a79d5dc4715e224aa4cb15d0d48"
+	)
 
 if with_common_modules:
 	add_pragma_module(
