@@ -62,18 +62,23 @@ function(pr_install_libraries)
         set(FILE_PATH "${DEPENDENCY_${NORMALIZED_IDENTIFIER}_LIBRARY}")
         string(REPLACE "\\" "/" FILE_PATH ${FILE_PATH})
         message("Adding install rule for library \"${TARGET}\" (\"${FILE_PATH}\") to \"${PA_INSTALL_DIR}\"...")
-        install(
-            FILES "${FILE_PATH}"
-            DESTINATION "${PA_INSTALL_DIR}"
-            OPTIONAL
-            COMPONENT ${PRAGMA_INSTALL_COMPONENT})
+        # install(
+            # FILES "${FILE_PATH}"
+            # DESTINATION "${PA_INSTALL_DIR}"
+            # OPTIONAL
+            # COMPONENT ${PRAGMA_INSTALL_COMPONENT})
+			
+		install(
+			TARGETS "${TARGET}"
+			OPTIONAL
+			COMPONENT ${PRAGMA_INSTALL_COMPONENT}
+			RUNTIME DESTINATION "${PA_INSTALL_DIR}")
         if(UNIX)
             install(
                 TARGETS "${TARGET}"
-                RUNTIME DESTINATION "${PA_INSTALL_DIR}"
-                LIBRARY DESTINATION "${PA_INSTALL_DIR}"
                 OPTIONAL
-                COMPONENT ${PRAGMA_INSTALL_COMPONENT})
+                COMPONENT ${PRAGMA_INSTALL_COMPONENT}
+                LIBRARY DESTINATION "${PA_INSTALL_DIR}")
         endif()
     endforeach()
 endfunction(pr_install_libraries)
@@ -93,21 +98,28 @@ function(pr_install_targets)
 
         set(FILE_PATH "$<TARGET_FILE:${TARGET}>")
         set(FILE_DIR "$<TARGET_FILE_DIR:${TARGET}>")
-        string(REPLACE "\\" "/" FILE_PATH ${FILE_PATH})
+        #string(REPLACE "\\" "/" FILE_PATH ${FILE_PATH})
         message("Adding install rule for target \"${TARGET}\" (\"${FILE_PATH}\") to \"${PA_INSTALL_DIR}\"...")
-        install(
-            FILES "${FILE_PATH}"
-            DESTINATION "${PA_INSTALL_DIR}"
-            OPTIONAL
-            COMPONENT ${PRAGMA_INSTALL_COMPONENT})
+        # install(
+            # FILES "${FILE_PATH}"
+            # DESTINATION "${PA_INSTALL_DIR}"
+            # OPTIONAL
+            # COMPONENT ${PRAGMA_INSTALL_COMPONENT})
+        # if(UNIX)
+		#Note to self: Do read a documentation.
+            install(
+			TARGETS "${TARGET}"
+			RUNTIME DESTINATION "${PA_INSTALL_DIR}"
+			OPTIONAL
+			COMPONENT ${PRAGMA_INSTALL_COMPONENT})
         if(UNIX)
             install(
                 TARGETS "${TARGET}"
-                RUNTIME DESTINATION "${PA_INSTALL_DIR}"
                 LIBRARY DESTINATION "${PA_INSTALL_DIR}"
                 OPTIONAL
                 COMPONENT ${PRAGMA_INSTALL_COMPONENT})
         endif()
+        # endif()
     endforeach()
 endfunction(pr_install_targets)
 
