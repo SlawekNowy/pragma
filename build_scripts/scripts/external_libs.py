@@ -1,4 +1,4 @@
-ddimport scripts.shared
+import scripts.shared
 from sys import platform
 
 scripts.shared.init_global_vars()
