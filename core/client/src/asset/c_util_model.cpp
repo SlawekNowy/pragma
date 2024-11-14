@@ -266,6 +266,42 @@ struct OutputData {
 	std::vector<std::string> models;
 	std::string mapName;
 };
+
+uimg::TextureInfo pragma::asset::get_texture_info(bool isGreyScale, bool isNormalMap, AlphaMode alphaMode)
+{
+	uimg::TextureInfo texInfo {};
+	texInfo.containerFormat = uimg::TextureInfo::ContainerFormat::DDS;
+	texInfo.flags |= uimg::TextureInfo::Flags::GenerateMipmaps;
+	if(isGreyScale)
+		texInfo.outputFormat = uimg::TextureInfo::OutputFormat::GradientMap;
+	else {
+		switch(alphaMode) {
+		case AlphaMode::Opaque:
+			texInfo.outputFormat = uimg::TextureInfo::OutputFormat::BC1;
+			break;
+		case AlphaMode::Mask:
+			texInfo.outputFormat = uimg::TextureInfo::OutputFormat::BC1a;
+			break;
+		case AlphaMode::Blend:
+			texInfo.outputFormat = uimg::TextureInfo::OutputFormat::BC3;
+			break;
+		}
+	}
+	if(isNormalMap)
+		texInfo.SetNormalMap();
+	return texInfo;
+}
+
+void pragma::asset::assign_texture(CMaterial &mat, const std::string &textureRootPath, const std::string &matIdentifier, const std::string &texName, prosper::IImage &img, bool greyScale, bool normalMap, AlphaMode alphaMode)
+{
+	auto texInfo = pragma::asset::get_texture_info(greyScale, normalMap, alphaMode);
+	c_game->SaveImage(img, textureRootPath + texName, texInfo);
+
+	auto path = util::FilePath(texName);
+	path.PopFront();
+	mat.SetTexture(matIdentifier, path.GetString());
+}
+
 static std::optional<OutputData> import_model(ufile::IFile *optFile, const std::string &optFileName, std::string &outErrMsg, const util::Path &outputPath, bool importAsMap)
 {
 	auto scale = static_cast<float>(pragma::metres_to_units(1.f));
@@ -389,7 +425,6 @@ static std::optional<OutputData> import_model(ufile::IFile *optFile, const std::
 		if(name.empty())
 			name = "material_" + std::to_string(matIdx);
 
-		enum class AlphaMode : uint8_t { Opaque = 0, Mask, Blend };
 		auto alphaMode = AlphaMode::Opaque;
 		if(gltfMat.alphaMode == "OPAQUE")
 			alphaMode = AlphaMode::Opaque;
@@ -397,30 +432,6 @@ static std::optional<OutputData> import_model(ufile::IFile *optFile, const std::
 			alphaMode = AlphaMode::Mask;
 		else if(gltfMat.alphaMode == "BLEND")
 			alphaMode = AlphaMode::Blend;
-
-		auto fGetTextureInfo = [](bool isGreyScale, bool isNormalMap, AlphaMode alphaMode = AlphaMode::Opaque) -> uimg::TextureInfo {
-			uimg::TextureInfo texInfo {};
-			texInfo.containerFormat = uimg::TextureInfo::ContainerFormat::DDS;
-			texInfo.flags |= uimg::TextureInfo::Flags::GenerateMipmaps;
-			if(isGreyScale)
-				texInfo.outputFormat = uimg::TextureInfo::OutputFormat::GradientMap;
-			else {
-				switch(alphaMode) {
-				case AlphaMode::Opaque:
-					texInfo.outputFormat = uimg::TextureInfo::OutputFormat::BC1;
-					break;
-				case AlphaMode::Mask:
-					texInfo.outputFormat = uimg::TextureInfo::OutputFormat::BC1a;
-					break;
-				case AlphaMode::Blend:
-					texInfo.outputFormat = uimg::TextureInfo::OutputFormat::BC3;
-					break;
-				}
-			}
-			if(isNormalMap)
-				texInfo.SetNormalMap();
-			return texInfo;
-		};
 
 		auto fGetTexture = [&gltfMdl, &inputData](int32_t index) -> std::shared_ptr<prosper::Texture> {
 			if(index == -1)
@@ -445,15 +456,8 @@ static std::optional<OutputData> import_model(ufile::IFile *optFile, const std::
 		dataBlock->AddValue("int", "alpha_mode", std::to_string(umath::to_integral(alphaMode)));
 		dataBlock->AddValue("float", "alpha_cutoff", std::to_string(gltfMat.alphaCutoff));
 
-		std::string textureRootPath = "addons/converted/";
-
-		auto fWriteImage = [cmat, &fGetTextureInfo, &textureRootPath](const std::string &matIdentifier, const std::string &texName, prosper::IImage &img, bool greyScale, bool normalMap, AlphaMode alphaMode = AlphaMode::Opaque) {
-			auto texInfo = fGetTextureInfo(greyScale, normalMap, alphaMode);
-			c_game->SaveImage(img, textureRootPath + texName, texInfo);
-
-			util::Path albedoPath {texName};
-			albedoPath.PopFront();
-			cmat->SetTexture(matIdentifier, albedoPath.GetString());
+		auto fWriteImage = [cmat](const std::string &matIdentifier, const std::string &texName, prosper::IImage &img, bool greyScale, bool normalMap, AlphaMode alphaMode = AlphaMode::Opaque) {
+			pragma::asset::assign_texture(*cmat, ::util::CONVERT_PATH, matIdentifier, texName, img, greyScale, normalMap, alphaMode);
 		};
 
 		auto isHandled = false;
@@ -1360,22 +1364,22 @@ std::shared_ptr<Model> pragma::asset::import_model(const std::string &fileName, 
 		return nullptr;
 	return data->model;
 }
-std::optional<pragma::asset::GltfImportInfo> pragma::asset::import_gltf(ufile::IFile &f, std::string &outErrMsg, const util::Path &outputPath, bool importAsSingleModel)
+std::optional<pragma::asset::AssetImportResult> pragma::asset::import_gltf(ufile::IFile &f, std::string &outErrMsg, const util::Path &outputPath, bool importAsSingleModel)
 {
 	auto data = ::import_model(&f, "", outErrMsg, outputPath, !importAsSingleModel);
 	if(!data)
 		return {};
-	GltfImportInfo importInfo {};
+	AssetImportResult importInfo {};
 	importInfo.models = std::move(data->models);
 	importInfo.mapName = std::move(data->mapName);
 	return importInfo;
 }
-std::optional<pragma::asset::GltfImportInfo> pragma::asset::import_gltf(const std::string &fileName, std::string &outErrMsg, const util::Path &outputPath, bool importAsSingleModel)
+std::optional<pragma::asset::AssetImportResult> pragma::asset::import_gltf(const std::string &fileName, std::string &outErrMsg, const util::Path &outputPath, bool importAsSingleModel)
 {
 	auto data = ::import_model(nullptr, fileName, outErrMsg, outputPath, !importAsSingleModel);
 	if(!data)
 		return {};
-	GltfImportInfo importInfo {};
+	AssetImportResult importInfo {};
 	importInfo.models = std::move(data->models);
 	importInfo.mapName = std::move(data->mapName);
 	return importInfo;
