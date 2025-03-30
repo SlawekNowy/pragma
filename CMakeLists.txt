@@ -322,10 +322,9 @@ pr_set_target_folder(pragma-install-full core)
 # Require dot, treat the other components as optional
 #TODO: demote find package to OPTIONAL and add check for Doxygen_FOUND
 find_package(Doxygen
-             REQUIRED dot
-             OPTIONAL_COMPONENTS mscgen dia)
+             OPTIONAL_COMPONENTS mscgen dia dot)
 
-
+if (Doxygen_FOUND)
 set(DOXYGEN_HTML_OUTPUT            ${CMAKE_INSTALL_PREFIX}/doc/doxygen)
 set(DOXYGEN_JAVADOC_AUTOBRIEF      YES)
 set(DOXYGEN_GENERATE_HTML          YES)
@@ -348,3 +347,4 @@ doxygen_add_docs(docs_target
   ALL  # does not seem to work
   COMMENT "Generate HTML documentation"
 )
+endif()
