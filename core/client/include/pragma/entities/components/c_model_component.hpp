@@ -11,19 +11,22 @@
 #include "pragma/clientdefinitions.h"
 #include "pragma/entities/components/c_entity_component.hpp"
 #include "pragma/rendering/c_model_render_buffer_data.hpp"
+#include "pragma/entities/c_world.h"
 #include <pragma/entities/components/base_model_component.hpp>
 #include <vector>
 #include <optional>
+
+import pragma.client.rendering.material_property_block;
 
 namespace pragma {
 	enum class GameShaderSpecializationConstantFlag : uint32_t;
 	enum class GameShaderSpecialization : uint32_t;
 	class CCameraComponent;
 	class CSceneComponent;
+	class CMaterialOverrideComponent;
 	class DLLCLIENT CModelComponent final : public BaseModelComponent, public CBaseNetComponent {
 	  public:
 		static ComponentEventId EVENT_ON_RENDER_MESHES_UPDATED;
-		static ComponentEventId EVENT_ON_MATERIAL_OVERRIDES_CLEARED;
 		static ComponentEventId EVENT_ON_GAME_SHADER_SPECIALIZATION_CONSTANT_FLAGS_UPDATED;
 
 		enum class StateFlags : uint8_t {
@@ -44,17 +47,16 @@ namespace pragma {
 		virtual bool ShouldTransmitNetData() const override { return true; }
 		virtual void Initialize() override;
 
-		void SetMaterialOverride(uint32_t idx, const std::string &matOverride);
-		void SetMaterialOverride(uint32_t idx, CMaterial &mat);
-		void ClearMaterialOverride(uint32_t idx);
-		void ClearMaterialOverrides();
-		CMaterial *GetMaterialOverride(uint32_t idx) const;
-		const std::vector<msys::MaterialHandle> &GetMaterialOverrides() const;
+		virtual void OnEntityComponentAdded(BaseEntityComponent &component) override;
+		virtual void OnEntityComponentRemoved(BaseEntityComponent &component) override;
+
 		CMaterial *GetRenderMaterial(uint32_t idx) const;
 		CMaterial *GetRenderMaterial(uint32_t idx, uint32_t skin) const;
 
-		virtual void OnEntityComponentAdded(BaseEntityComponent &component) override;
-		virtual void OnEntityComponentRemoved(BaseEntityComponent &component) override;
+		CMaterialOverrideComponent *GetMaterialOverrideComponent();
+		const CMaterialOverrideComponent *GetMaterialOverrideComponent() const { return const_cast<CModelComponent *>(this)->GetMaterialOverrideComponent(); }
+
+		void SetRenderBufferListUpdateRequired();
 
 		bool IsWeighted() const;
 
@@ -109,6 +111,7 @@ namespace pragma {
 		virtual void OnTick(double tDelta) override;
 		void FlushRenderData();
 
+		void UpdateRenderBufferList();
 		void UpdateRenderMeshes(bool requireBoundingVolumeUpdate = true);
 		void ReloadRenderBufferList(bool immediate = false);
 		// Only use if LOD is handled externally!
@@ -116,10 +119,8 @@ namespace pragma {
 	  protected:
 		void UpdateBaseShaderSpecializationFlags();
 		virtual void OnModelChanged(const std::shared_ptr<Model> &model) override;
-		void UpdateRenderBufferList();
 
 		std::unordered_map<const CModelSubMesh *, std::shared_ptr<prosper::IBuffer>> m_lightmapUvBuffers {};
-		std::vector<msys::MaterialHandle> m_materialOverrides = {};
 		uint32_t m_lod = 0u;
 		float m_tNextLodUpdate = 0.f;
 		float m_lastLodCamDistance = 0.f;
@@ -129,6 +130,8 @@ namespace pragma {
 		std::vector<std::shared_ptr<ModelSubMesh>> m_lodRenderMeshes;
 		pragma::GameShaderSpecializationConstantFlag m_baseShaderSpecializationConstantFlags;
 		pragma::GameShaderSpecializationConstantFlag m_staticShaderSpecializationConstantFlags;
+
+		CMaterialOverrideComponent *m_materialOverrideComponent = nullptr;
 
 		std::vector<RenderMeshGroup> m_lodMeshGroups;
 		std::vector<RenderMeshGroup> m_lodRenderMeshGroups;

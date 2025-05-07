@@ -23,9 +23,9 @@
 #include "pragma/engine_version.h"
 #include "pragma/console/cvar.h"
 #include "pragma/debug/debug_performance_profiler.hpp"
-#include "pragma/localization.h"
 #include <pragma/asset/util_asset.hpp>
 #include <sharedutils/util.h>
+#include <sharedutils/util_debug.h>
 #include <sharedutils/util_clock.hpp>
 #include <sharedutils/util_parallel_job.hpp>
 #include <pragma/game/game_resources.hpp>
@@ -48,6 +48,7 @@
 
 import util_zip;
 import pragma.pad;
+import pragma.locale;
 
 const pragma::IServerState &Engine::GetServerStateInterface() const
 {
@@ -112,7 +113,26 @@ Engine::Engine(int, char *[]) : CVarHandler(), m_logFile(nullptr), m_tickRate(En
 #ifdef PRAGMA_ENABLE_VTUNE_PROFILING
 	debug::open_domain();
 #endif
-	Locale::Init();
+
+	util::debug::set_lua_backtrace_function([this]() -> std::string {
+		// We can only get the Lua callstack from the main thread
+		if(std::this_thread::get_id() == GetMainThreadId()) {
+			for(auto *state : {GetClientState(), GetServerNetworkState()}) {
+				if(!state)
+					continue;
+				auto *game = state->GetGameState();
+				auto *l = game ? game->GetLuaState() : nullptr;
+				if(l) {
+					std::stringstream ss;
+					if(Lua::get_callstack(l, ss))
+						return ss.str();
+				}
+			}
+		}
+		return {};
+	});
+
+	pragma::locale::init();
 	// OpenConsole();
 
 	m_mainThreadId = std::this_thread::get_id();
@@ -305,7 +325,7 @@ void Engine::Close()
 	EndLogging();
 
 	Con::set_output_callback(nullptr);
-	Locale::Clear();
+	pragma::locale::clear();
 }
 
 static uint32_t clear_assets(NetworkState *state, pragma::asset::Type type, bool verbose)
@@ -525,7 +545,7 @@ void Engine::AddTickEvent(const std::function<void()> &ev)
 
 void Engine::Tick()
 {
-	Locale::Poll();
+	pragma::locale::poll();
 	m_ctTick.Update();
 	ProcessConsoleInput();
 	RunTickEvents();
@@ -660,7 +680,7 @@ bool Engine::Initialize(int argc, char *argv[])
 
 	// Initialize Server Instance
 	auto matManager = msys::MaterialManager::Create();
-	matManager->SetImportDirectory("addons/converted/materials");
+	matManager->SetImportDirectory("addons/converted/");
 	InitializeAssetManager(*matManager);
 
 	pragma::asset::update_extension_cache(pragma::asset::Type::Map);
@@ -930,7 +950,6 @@ void Engine::Start()
 
 void Engine::UpdateTickCount() { m_ctTick.Update(); }
 
-extern std::string g_crashExceptionMessage;
 std::unique_ptr<uzip::ZIPFile> Engine::GenerateEngineDump(const std::string &baseName, std::string &outZipFileName, std::string &outErr)
 {
 	auto programPath = util::Path::CreatePath(util::get_program_path());
@@ -943,12 +962,12 @@ std::unique_ptr<uzip::ZIPFile> Engine::GenerateEngineDump(const std::string &bas
 	}
 
 	// Write Exception
-	if(g_crashExceptionMessage.empty() == false)
-		zipFile->AddFile("exception.txt", g_crashExceptionMessage);
-#ifdef _WIN32
+	auto &exceptionMsg = pragma::debug::get_exception_message();
+	if(exceptionMsg.empty() == false)
+		zipFile->AddFile("exception.txt", exceptionMsg);
+
 	// Write Stack Backtrace
-	zipFile->AddFile("stack_backtrace.txt", util::get_formatted_stack_backtrace_string());
-#endif
+	zipFile->AddFile("stack_backtrace.txt", util::debug::get_formatted_stack_backtrace_string());
 
 	// Write Info
 	if(engine != nullptr)
@@ -970,6 +989,7 @@ void Engine::DumpDebugInformation(uzip::ZIPFile &zip) const
 		engineInfo << " x86";
 	if(engine != nullptr)
 		engineInfo << "\nEngine Version: " << get_pretty_engine_version();
+
 	auto *nw = static_cast<NetworkState *>(GetServerNetworkState());
 	if(nw == nullptr)
 		nw = GetClientState();
@@ -1034,6 +1054,7 @@ void Engine::DumpDebugInformation(uzip::ZIPFile &zip) const
 			ss << "\n\n" << *strStack;
 		zip.AddFile("lua_traceback_" + identifier + ".txt", ss.str());
 	};
+
 	if(GetClientState()) {
 		fWriteConvars(GetClientState()->GetConVars(), "cvars_cl.txt");
 		fWriteLuaTraceback(GetClientState()->GetLuaState(), "cl");
@@ -1042,6 +1063,8 @@ void Engine::DumpDebugInformation(uzip::ZIPFile &zip) const
 		fWriteConvars(GetServerNetworkState()->GetConVars(), "cvars_sv.txt");
 		fWriteLuaTraceback(GetServerNetworkState()->GetLuaState(), "sv");
 	}
+
+	const_cast<Engine *>(this)->CallCallbacks<void, std::reference_wrapper<uzip::ZIPFile>>("DumpDebugInformation", zip);
 }
 
 const long long &Engine::GetLastTick() const { return m_lastTick; }
@@ -1103,6 +1126,8 @@ Engine::~Engine()
 #ifdef PRAGMA_ENABLE_VTUNE_PROFILING
 	debug::close_domain();
 #endif
+
+	util::debug::set_lua_backtrace_function(nullptr);
 
 	spdlog::info("Closing logger...");
 	pragma::detail::close_logger();

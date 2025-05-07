@@ -77,7 +77,9 @@ namespace pragma {
 	namespace rendering {
 		class RenderQueueBuilder;
 		class RenderQueueWorkerManager;
+		class GlobalShaderInputDataManager;
 		struct GameWorldShaderSettings;
+		struct GlobalRenderSettingsBufferData;
 	};
 	class LuaShaderManager;
 	class LuaParticleModifierManager;
@@ -110,14 +112,6 @@ namespace pragma::string {
 #pragma warning(push)
 #pragma warning(disable : 4251)
 class DLLCLIENT CGame : public Game {
-  public:
-	struct GlobalRenderSettingsBufferData {
-		GlobalRenderSettingsBufferData();
-		std::shared_ptr<prosper::IBuffer> debugBuffer = nullptr;
-		std::shared_ptr<prosper::IBuffer> timeBuffer = nullptr;
-		std::shared_ptr<prosper::IBuffer> csmBuffer = nullptr;
-		std::shared_ptr<prosper::IDescriptorSetGroup> descSetGroup = nullptr;
-	};
   public:
 	CGame(NetworkState *state);
 	virtual ~CGame() override;
@@ -211,13 +205,13 @@ class DLLCLIENT CGame : public Game {
 	bool StopProfilingStage();
 
 	// Config
-	Bool RawMouseInput(GLFW::MouseButton button, GLFW::KeyState state, GLFW::Modifier mods);
-	Bool RawKeyboardInput(GLFW::Key key, int scanCode, GLFW::KeyState state, GLFW::Modifier mods, float magnitude = 1.f);
+	Bool RawMouseInput(pragma::platform::MouseButton button, pragma::platform::KeyState state, pragma::platform::Modifier mods);
+	Bool RawKeyboardInput(pragma::platform::Key key, int scanCode, pragma::platform::KeyState state, pragma::platform::Modifier mods, float magnitude = 1.f);
 	Bool RawCharInput(unsigned int c);
 	Bool RawScrollInput(Vector2 offset);
 
-	Bool MouseInput(GLFW::MouseButton button, GLFW::KeyState state, GLFW::Modifier mods);
-	Bool KeyboardInput(GLFW::Key key, int scanCode, GLFW::KeyState state, GLFW::Modifier mods, float magnitude = 1.f);
+	Bool MouseInput(pragma::platform::MouseButton button, pragma::platform::KeyState state, pragma::platform::Modifier mods);
+	Bool KeyboardInput(pragma::platform::Key key, int scanCode, pragma::platform::KeyState state, pragma::platform::Modifier mods, float magnitude = 1.f);
 	Bool CharInput(unsigned int c);
 	Bool ScrollInput(Vector2 offset);
 	void OnFilesDropped(std::vector<std::string> &files);
@@ -404,10 +398,13 @@ class DLLCLIENT CGame : public Game {
 	void ResetGameplayControlCamera();
 	pragma::CCameraComponent *GetGameplayControlCamera();
 
+	pragma::rendering::GlobalShaderInputDataManager &GetGlobalShaderInputDataManager();
+	const pragma::rendering::GlobalShaderInputDataManager &GetGlobalShaderInputDataManager() const;
+
 	pragma::rendering::RenderQueueBuilder &GetRenderQueueBuilder();
 	pragma::rendering::RenderQueueWorkerManager &GetRenderQueueWorkerManager();
 	prosper::IDescriptorSet &GetGlobalRenderSettingsDescriptorSet();
-	GlobalRenderSettingsBufferData &GetGlobalRenderSettingsBufferData();
+	pragma::rendering::GlobalRenderSettingsBufferData &GetGlobalRenderSettingsBufferData();
 	void ReloadGameWorldShaderPipelines() const;
 	void ReloadPrepassShaderPipelines() const;
 	void OnGameWorldShaderSettingsChanged(const pragma::rendering::GameWorldShaderSettings &newSettings, const pragma::rendering::GameWorldShaderSettings &oldSettings);
@@ -493,6 +490,7 @@ class DLLCLIENT CGame : public Game {
 	std::vector<util::DrawSceneInfo> m_sceneRenderQueue {};
 	std::shared_ptr<pragma::rendering::RenderQueueBuilder> m_renderQueueBuilder = nullptr;
 	std::shared_ptr<pragma::rendering::RenderQueueWorkerManager> m_renderQueueWorkerManager = nullptr;
+	std::unique_ptr<pragma::rendering::GlobalShaderInputDataManager> m_globalShaderInputDataManager;
 	Vector4 m_clipPlane = {};
 	Vector4 m_colScale = {};
 	Material *m_matOverride = nullptr;
@@ -504,7 +502,7 @@ class DLLCLIENT CGame : public Game {
 	StateFlags m_stateFlags = StateFlags::None;
 	void RenderScenePresent(std::shared_ptr<prosper::IPrimaryCommandBuffer> &drawCmd, prosper::Texture &texPostHdr, prosper::IImage *optOutImage, uint32_t layerId = 0u);
 
-	std::unique_ptr<GlobalRenderSettingsBufferData> m_globalRenderSettingsBufferData = nullptr;
+	std::unique_ptr<pragma::rendering::GlobalRenderSettingsBufferData> m_globalRenderSettingsBufferData;
 
 	// Scene
 	util::TWeakSharedHandle<pragma::CSceneComponent> m_scene = util::TWeakSharedHandle<pragma::CSceneComponent> {};

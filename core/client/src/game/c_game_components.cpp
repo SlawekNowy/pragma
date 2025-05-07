@@ -44,6 +44,7 @@
 #include "pragma/entities/components/c_optical_camera_component.hpp"
 #include "pragma/entities/components/c_hitbox_bvh_component.hpp"
 #include "pragma/entities/components/c_input_component.hpp"
+#include "pragma/entities/components/c_global_shader_input.hpp"
 #include "pragma/entities/components/liquid/c_buoyancy_component.hpp"
 #include "pragma/entities/components/liquid/c_liquid_surface_component.hpp"
 #include "pragma/entities/components/liquid/c_liquid_volume_component.hpp"
@@ -141,13 +142,14 @@
 #include "pragma/entities/components/renderers/c_renderer_pp_fog_component.hpp"
 #include "pragma/entities/components/renderers/c_renderer_pp_dof_component.hpp"
 #include "pragma/entities/components/renderers/c_renderer_pp_bloom_component.hpp"
-#include "pragma/entities/components/renderers/c_renderer_pp_glow_component.hpp"
 #include "pragma/entities/components/renderers/c_renderer_pp_tone_mapping_component.hpp"
 #include "pragma/entities/components/renderers/c_renderer_pp_fxaa_component.hpp"
 #include "pragma/entities/components/renderers/c_renderer_pp_motion_blur_component.hpp"
 #include "pragma/entities/components/renderers/c_renderer_pp_volumetric_component.hpp"
 #include "pragma/entities/components/c_motion_blur_data_component.hpp"
 #include <pragma/lua/converters/game_type_converters_t.hpp>
+
+import pragma.client.entities.components;
 
 void CGame::InitializeEntityComponents(pragma::EntityComponentManager &componentManager)
 {
@@ -223,6 +225,7 @@ void CGame::InitializeEntityComponents(pragma::EntityComponentManager &component
 	componentManager.RegisterComponentType<pragma::CWorldComponent>("world", {"world", hideInEditor});
 	componentManager.RegisterComponentType<pragma::CShooterComponent>("shooter", {"gameplay"});
 	componentManager.RegisterComponentType<pragma::CModelComponent>("model", {"rendering/model"});
+	componentManager.RegisterComponentType<pragma::CMaterialOverrideComponent>("material_override", {"rendering/model"});
 	componentManager.RegisterComponentType<pragma::CAnimatedComponent>("animated", {"animation"});
 	componentManager.RegisterComponentType<pragma::CGenericComponent>("entity", {"core", hideInEditor});
 	componentManager.RegisterComponentType<pragma::CIOComponent>("io", {"core", hideInEditor});
@@ -280,7 +283,6 @@ void CGame::InitializeEntityComponents(pragma::EntityComponentManager &component
 	componentManager.RegisterComponentType<pragma::CRendererPpFogComponent>("renderer_pp_fog", {"rendering/post_processing", hideInEditor});
 	componentManager.RegisterComponentType<pragma::CRendererPpDoFComponent>("renderer_pp_dof", {"rendering/post_processing", hideInEditor});
 	componentManager.RegisterComponentType<pragma::CRendererPpBloomComponent>("renderer_pp_bloom", {"rendering/post_processing", hideInEditor});
-	componentManager.RegisterComponentType<pragma::CRendererPpGlowComponent>("renderer_pp_glow", {"rendering/post_processing", hideInEditor});
 	componentManager.RegisterComponentType<pragma::CRendererPpToneMappingComponent>("renderer_pp_tone_mapping", {"rendering/post_processing", hideInEditor});
 	componentManager.RegisterComponentType<pragma::CRendererPpFxaaComponent>("renderer_pp_fxaa", {"rendering/post_processing", hideInEditor});
 	componentManager.RegisterComponentType<pragma::CRendererPpMotionBlurComponent>("renderer_pp_motion_blur", {"rendering/post_processing", hideInEditor});
@@ -296,6 +298,8 @@ void CGame::InitializeEntityComponents(pragma::EntityComponentManager &component
 	componentManager.RegisterComponentType<pragma::CRaytracingRendererComponent>("raytracing_renderer", {"rendering", hideInEditor});
 	componentManager.RegisterComponentType<pragma::CLiquidControlComponent>("liquid_control", {"physics/fluid", hideInEditor});
 	componentManager.RegisterComponentType<pragma::CLiquidSurfaceSimulationComponent>("liquid_surface_simulation", {"physics/fluid", hideInEditor});
+
+	componentManager.RegisterComponentType<pragma::CGlobalShaderInputComponent>("global_shader_input", {"rendering"});
 
 	componentManager.RegisterComponentType<pragma::CDebugHitboxComponent>("debug_hitbox", {"debug"});
 	// --template-component-register-location

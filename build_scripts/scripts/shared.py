@@ -146,14 +146,20 @@ def extract(zipName,removeZip=True,format="zip"):
 		os.remove(zipName)
 
 def http_extract(url,removeZip=True,format="zip"):
+	from scripts.shared import print_msg
+	print_msg("Downloading and extracting " +url +"...")
 	fileName = http_download(url)
 	extract(fileName,removeZip,format)
 
-def install_prebuilt_binaries(baseUrl):
+def install_prebuilt_binaries(baseUrl, fileName = None):
 	if platform == "linux":
-		http_extract(baseUrl +"binaries_linux64.tar.gz",format="tar.gz")
+		if not fileName:
+			fileName = "binaries_linux64.tar.gz"
+		http_extract(baseUrl +fileName,format="tar.gz")
 	else:
-		http_extract(baseUrl +"binaries_windows64.zip")
+		if not fileName:
+			fileName = "binaries_windows64.zip"
+		http_extract(baseUrl +fileName)
 
 
 def cp(src,dst):

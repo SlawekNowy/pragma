@@ -8,6 +8,7 @@
 #include "stdafx_cengine.h"
 #include "pragma/rendering/c_render_context.hpp"
 #include "pragma/rendering/render_apis.hpp"
+#include "pragma/debug/debug_utils.hpp"
 #include <prosper_util.hpp>
 #include <debug/prosper_debug.hpp>
 #include <shader/prosper_shader.hpp>
@@ -28,7 +29,7 @@ static spdlog::logger &LOGGER = pragma::register_logger("prosper");
 static spdlog::logger &LOGGER_VALIDATION = pragma::register_logger("prosper_validation");
 
 RenderContext::RenderContext() : m_monitor(nullptr), m_renderAPI {"vulkan"} {}
-RenderContext::~RenderContext() { m_graphicsAPILib = nullptr; }
+RenderContext::~RenderContext() {}
 DLLNETWORK std::optional<std::string> g_customTitle;
 extern bool g_cpuRendering;
 void RenderContext::InitializeRenderAPI()
@@ -85,7 +86,7 @@ void RenderContext::InitializeRenderAPI()
 		else {
 			std::string errMsg;
 			auto title = g_customTitle.has_value() ? *g_customTitle : engine_info::get_name();
-            auto success = fInitRenderAPI(title, false, m_renderContext, errMsg);
+			auto success = fInitRenderAPI(title, false, m_renderContext, errMsg);
 			if(success == false)
 				err = errMsg;
 		}
@@ -99,6 +100,7 @@ void RenderContext::InitializeRenderAPI()
 	}
 
 	m_renderContext->SetLogHandler(&pragma::log, &pragma::is_log_level_enabled);
+	m_renderContext->SetProfilingHandler([](const char *taskName) { pragma::debug::start_profiling_task(taskName); }, []() { pragma::debug::end_profiling_task(); });
 
 	prosper::Callbacks callbacks {};
 	callbacks.validationCallback = [this](prosper::DebugMessageSeverityFlags severityFlags, const std::string &message) { ValidationCallback(severityFlags, message); };
@@ -130,7 +132,7 @@ void RenderContext::InitializeRenderAPI()
 		LOGGER.warn(msg.str());
 	});
 	prosper::debug::set_debug_validation_callback([](prosper::DebugReportObjectTypeEXT objectType, const std::string &msg) { LOGGER_VALIDATION.error("{}", msg); });
-	GLFW::initialize();
+	pragma::platform::initialize();
 
 	if(GetRenderContext().IsValidationEnabled()) {
 		// A VkImageStencilUsageCreateInfoEXT error is caused due to a bug in Anvil: https://github.com/GPUOpen-LibrariesAndSDKs/Anvil/issues/153
@@ -147,6 +149,13 @@ void RenderContext::Release()
 		return;
 	GetRenderContext().Close();
 	m_renderContext = nullptr;
+
+	if(m_graphicsAPILib) {
+		auto *detach = m_graphicsAPILib->FindSymbolAddress<void (*)()>("pragma_detach");
+		if(detach)
+			detach();
+	}
+	m_graphicsAPILib = nullptr;
 }
 const prosper::IPrContext &RenderContext::GetRenderContext() const { return const_cast<RenderContext *>(this)->GetRenderContext(); }
 prosper::IPrContext &RenderContext::GetRenderContext() { return *m_renderContext; }
@@ -155,7 +164,7 @@ void RenderContext::RegisterShader(const std::string &identifier, const std::fun
 ::util::WeakHandle<prosper::Shader> RenderContext::GetShader(const std::string &identifier) const { return GetRenderContext().GetShader(identifier); }
 
 prosper::Window &RenderContext::GetWindow() { return GetRenderContext().GetWindow(); }
-GLFW::Window &RenderContext::GetGlfwWindow() { return *GetRenderContext().GetWindow(); }
+pragma::platform::Window &RenderContext::GetGlfwWindow() { return *GetRenderContext().GetWindow(); }
 const std::shared_ptr<prosper::IPrimaryCommandBuffer> &RenderContext::GetSetupCommandBuffer() { return GetRenderContext().GetSetupCommandBuffer(); }
 const std::shared_ptr<prosper::IPrimaryCommandBuffer> &RenderContext::GetDrawCommandBuffer() const { return GetRenderContext().GetWindow().GetDrawCommandBuffer(); }
 const std::shared_ptr<prosper::IPrimaryCommandBuffer> &RenderContext::GetDrawCommandBuffer(uint32_t swapchainIdx) const { return GetRenderContext().GetWindow().GetDrawCommandBuffer(swapchainIdx); }
@@ -178,40 +187,41 @@ bool RenderContext::IsValidationErrorDisabled(const std::string &id) const
 }
 void RenderContext::ValidationCallback(prosper::DebugMessageSeverityFlags severityFlags, const std::string &message)
 {
-	if((severityFlags & (prosper::DebugMessageSeverityFlags::ErrorBit | prosper::DebugMessageSeverityFlags::WarningBit)) != prosper::DebugMessageSeverityFlags::None) {
-		std::string strMsg = message;
+	std::string strMsg = message;
 
-		auto p = strMsg.find("[ VUID-");
-		if(p == std::string::npos)
-			p = strMsg.find("[ UNASSIGNED");
-		if(p != std::string::npos) {
-			p += 2;
-			auto pEnd = strMsg.find(" ]", p);
-			auto id = strMsg.substr(p, (pEnd != std::string::npos) ? (pEnd - p) : std::numeric_limits<size_t>::max());
-			if(IsValidationErrorDisabled(id))
-				return;
-		}
+	if(strMsg.find("No optimized version") != std::string::npos)
+		return;
 
-		LOGGER_VALIDATION.error(strMsg);
-		if(std::this_thread::get_id() == c_engine->GetMainThreadId()) {
-			// In many cases the error may have been caused by a Lua script, so we'll print
-			// some information here about the current Lua call stack.
-			auto *cl = c_engine->GetClientState();
-			auto *game = cl ? static_cast<CGame *>(cl->GetGameState()) : nullptr;
-			auto *l = game ? game->GetLuaState() : nullptr;
-			if(l) {
-				std::stringstream ss;
-				if(Lua::get_callstack(l, ss))
-					LOGGER_VALIDATION.error("Lua callstack: {}", ss.str());
-			}
-		}
-#ifdef _WIN32
-		auto stackBacktraceString = util::get_formatted_stack_backtrace_string();
-		if(!stackBacktraceString.empty())
-			LOGGER_VALIDATION.debug("Backtrace: {}", stackBacktraceString);
-#endif
-		pragma::flush_loggers();
+	auto p = strMsg.find("[ VUID-");
+	if(p == std::string::npos)
+		p = strMsg.find("[ UNASSIGNED");
+	if(p != std::string::npos) {
+		p += 2;
+		auto pEnd = strMsg.find(" ]", p);
+		auto id = strMsg.substr(p, (pEnd != std::string::npos) ? (pEnd - p) : std::numeric_limits<size_t>::max());
+		if(IsValidationErrorDisabled(id))
+			return;
 	}
+
+	if(umath::is_flag_set(severityFlags, prosper::DebugMessageSeverityFlags::ErrorBit))
+		LOGGER_VALIDATION.error(strMsg);
+	else if(umath::is_flag_set(severityFlags, prosper::DebugMessageSeverityFlags::WarningBit))
+		LOGGER_VALIDATION.warn(strMsg);
+	else if(umath::is_flag_set(severityFlags, prosper::DebugMessageSeverityFlags::InfoBit))
+		LOGGER_VALIDATION.info(strMsg);
+	else if(umath::is_flag_set(severityFlags, prosper::DebugMessageSeverityFlags::VerboseBit))
+		LOGGER_VALIDATION.debug(strMsg);
+	else
+		LOGGER_VALIDATION.trace(strMsg);
+
+	if(umath::is_flag_set(severityFlags, prosper::DebugMessageSeverityFlags::WarningBit | prosper::DebugMessageSeverityFlags::ErrorBit)) {
+		auto stackBacktraceString = util::debug::get_formatted_stack_backtrace_string();
+		if(!stackBacktraceString.empty()) {
+			ustring::replace(stackBacktraceString, "\n", ::util::LOG_NL);
+			LOGGER_VALIDATION.debug("Backtrace: {}", stackBacktraceString);
+		}
+	}
+	pragma::flush_loggers();
 }
 
 void RenderContext::OnClose() {}
@@ -231,5 +241,9 @@ void RenderContext::SetGfxAPIValidationEnabled(bool b)
 	if(b)
 		spdlog::flush_on(spdlog::level::info); // Immediately flush all messages
 }
+void RenderContext::SetGfxDiagnosticsModeEnabled(bool b) { umath::set_flag(m_stateFlags, StateFlags::GfxDiagnosticsModeEnabled, b); }
+bool RenderContext::IsGfxAPIValidationEnabled() const { return umath::is_flag_set(m_stateFlags, StateFlags::GfxAPIValidationEnabled); }
+bool RenderContext::IsGfxDiagnosticsModeEnabled() const { return umath::is_flag_set(m_stateFlags, StateFlags::GfxDiagnosticsModeEnabled); }
+
 void RenderContext::SetRenderAPI(const std::string &renderAPI) { m_renderAPI = renderAPI; }
 const std::string &RenderContext::GetRenderAPI() const { return m_renderAPI; }

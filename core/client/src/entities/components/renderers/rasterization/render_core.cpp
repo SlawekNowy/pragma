@@ -6,14 +6,13 @@
  */
 
 #include "stdafx_client.h"
+#include "pragma/game/c_game.h"
 #include "pragma/rendering/renderers/rasterization_renderer.hpp"
 #include "pragma/entities/components/renderers/rasterization/culled_mesh_data.hpp"
 #include "pragma/entities/components/renderers/rasterization/hdr_data.hpp"
-#include "pragma/entities/components/renderers/rasterization/glow_data.hpp"
 #include "pragma/entities/components/renderers/c_rasterization_renderer_component.hpp"
 #include "pragma/entities/components/renderers/c_renderer_component.hpp"
 #include "pragma/entities/environment/effects/c_env_particle_system.h"
-#include "pragma/rendering/shaders/post_processing/c_shader_pp_glow.hpp"
 #include "pragma/rendering/shaders/post_processing/c_shader_pp_fog.hpp"
 #include "pragma/rendering/shaders/post_processing/c_shader_pp_fxaa.hpp"
 #include "pragma/rendering/shaders/post_processing/c_shader_pp_hdr.hpp"
@@ -93,6 +92,15 @@ void pragma::CRasterizationRendererComponent::Render(const util::DrawSceneInfo &
 {
 	if(drawSceneInfo.scene.expired())
 		return;
+	if(umath::is_flag_set(m_stateFlags, StateFlags::InitialRender)) {
+		// HACK: For whatever reason the render code causes a crash on the very first frame when using OpenGL.
+		// If we skip the first frame, it doesn't crash, so we just skip the first frame for now.
+		// This is a workaround until the actual issue is found.
+		// Unfortunately the OpenGL debug output doesn't give any useful information.
+		umath::set_flag(m_stateFlags, StateFlags::InitialRender, false);
+		if(c_engine->GetRenderAPI() == "opengl")
+			return;
+	}
 	auto &scene = const_cast<pragma::CSceneComponent &>(*drawSceneInfo.scene);
 	c_game->CallCallbacks<void, std::reference_wrapper<const util::DrawSceneInfo>>("OnPreRender", drawSceneInfo);
 	// c_game->CallLuaCallbacks<void,RasterizationRenderer*>("PrepareRendering",this);

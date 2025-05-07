@@ -15,12 +15,10 @@
 #include "pragma/entities/entity_component_system_t.hpp"
 #include "pragma/entities/entity_component_manager_t.hpp"
 #include "pragma/logging.hpp"
-#include <panima/animation_manager.hpp>
-#include <panima/player.hpp>
-#include <panima/animation.hpp>
-#include <panima/channel.hpp>
 #include <sharedutils/datastream.h>
 #include <udm.hpp>
+
+import panima;
 
 using namespace pragma;
 
@@ -191,6 +189,7 @@ void BaseEntityComponent::OnMembersChanged()
 	}
 }
 void BaseEntityComponent::RegisterMembers(pragma::EntityComponentManager &componentManager, TRegisterComponentMember registerMember) {}
+void BaseEntityComponent::RegisterLuaBindings(lua_State *l, luabind::module_ &modEnts) {}
 static umath::ScaledTransform get_entity_pose(const pragma::BaseEntityComponent &component) { return component.GetEntity().GetPose(); }
 template<typename TValue>
 TValue get_identity_value()
@@ -338,8 +337,7 @@ static bool get_transform_member_value(const pragma::BaseEntityComponent &compon
 template<typename TValue, bool parentSpaceOnly>
 bool get_transform_member_value(const pragma::BaseEntityComponent &component, ComponentMemberIndex idx, umath::CoordinateSpace space, TValue &outValue)
 {
-	return get_transform_member_value<TValue, parentSpaceOnly>(
-	  component, idx, space, outValue, +[](const pragma::ComponentMemberInfo &memberInfo, pragma::BaseEntityComponent &component, void *outData, const void *) { memberInfo.getterFunction(memberInfo, component, outData); });
+	return get_transform_member_value<TValue, parentSpaceOnly>(component, idx, space, outValue, +[](const pragma::ComponentMemberInfo &memberInfo, pragma::BaseEntityComponent &component, void *outData, const void *) { memberInfo.getterFunction(memberInfo, component, outData); });
 }
 
 template<typename TValue>

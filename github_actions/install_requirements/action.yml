@@ -35,12 +35,24 @@ runs:
         sudo update-alternatives --set g++ /usr/bin/g++-11
 
     # For Cycles
-    - name: Install Cuda
+    - name: Install Cuda (Linux)
+      if: ${{ runner.os == 'Linux' && inputs.with_cuda == '1' }}
       uses: Jimver/cuda-toolkit@v0.2.16
-      if: ${{ inputs.with_cuda == '1' }}
       with:
         cuda: '12.2.0'
     # TODO: Install OptiX
+
+    - name: Clone setup_cuda repository (Windows)
+      shell: bash
+      if: ${{ runner.os != 'Linux' }}
+      run: git clone https://github.com/Silverlan/setup_cuda.git
+
+    - name: Install Cuda (Windows)
+      if: ${{ runner.os != 'Linux' }}
+      shell: pwsh
+      run: setup_cuda/setup_cuda.ps1
+      env:
+          INPUT_CUDA_VERSION: "12.5.0"
 
     - name: Set PIP_BREAK_SYSTEM_PACKAGES env variable
       shell: bash
@@ -52,12 +64,38 @@ runs:
       run: |
         pip install numpy
   
-    - name: Maximize build space
+    - name: Print Disk Space
+      shell: bash
       if: runner.os == 'Linux'
+      run: |
+        echo "Available disk space:"
+        df -h
+
+    - name: Free Disk Space
+      if: runner.os == 'Linux'
+      uses: jlumbroso/free-disk-space@main
+      with:
+        tool-cache: false
+        android: true
+        dotnet: true
+        haskell: true
+        large-packages: true
+        docker-images: true
+        swap-storage: true
+
+    - name: Maximize build space
+      if: ${{ runner.os == 'Linux' && !github.event.repository.private }}
       uses: easimon/maximize-build-space@master
       with:
         root-reserve-mb: 512
         swap-size-mb: 1024
         remove-dotnet: 'true'
         
+    - name: Print Disk Space Post-Optimization
+      shell: bash
+      if: runner.os == 'Linux'
+      run: |
+        echo "Available disk space after optimization:"
+        df -h
+
     - uses: Silverlan/common_actions/action_end@main

@@ -11,10 +11,8 @@
 #include "pragma/clientdefinitions.h"
 #include <pragma/entities/components/base_entity_component.hpp>
 #include "pragma/entities/c_baseentity.h"
+#include "pragma/entities/components/c_scene_component.hpp"
 #include "pragma/rendering/renderers/base_renderer.hpp"
-#include "pragma/entities/components/renderers/rasterization/glow_data.hpp"
-#include "pragma/entities/components/renderers/rasterization/hdr_data.hpp"
-#include "pragma/entities/components/renderers/rasterization/glow_data.hpp"
 #include "pragma/entities/components/renderers/rasterization/hdr_data.hpp"
 #include "pragma/rendering/c_rendermode.h"
 #include <unordered_set>
@@ -72,6 +70,7 @@ namespace pragma {
 		static ComponentEventId EVENT_POST_PREPASS;
 		static ComponentEventId EVENT_PRE_LIGHTING_PASS;
 		static ComponentEventId EVENT_POST_LIGHTING_PASS;
+		static ComponentEventId EVENT_UPDATE_RENDER_BUFFERS;
 
 		static ComponentEventId EVENT_MT_BEGIN_RECORD_SKYBOX;
 		static ComponentEventId EVENT_MT_END_RECORD_SKYBOX;
@@ -100,7 +99,9 @@ namespace pragma {
 			RenderResolved = BloomResolved << 1u,
 
 			SSAOEnabled = RenderResolved << 1u,
-			PrepassEnabled = SSAOEnabled << 1u
+			PrepassEnabled = SSAOEnabled << 1u,
+
+			InitialRender = PrepassEnabled << 1u,
 		};
 
 		enum class Stage : uint8_t {
@@ -202,7 +203,6 @@ namespace pragma {
 		// rendering has finished.
 		void SetFrameDepthBufferSamplingRequired();
 
-		prosper::IDescriptorSet *GetLightSourceDescriptorSet() const;
 		prosper::IDescriptorSet *GetLightSourceDescriptorSetCompute() const;
 
 		prosper::Shader *GetWireframeShader() const;
@@ -260,7 +260,7 @@ namespace pragma {
 		std::shared_ptr<prosper::ISwapCommandBufferGroup> m_shadowCommandBufferGroup = nullptr;
 		std::shared_ptr<prosper::ISwapCommandBufferGroup> m_lightingCommandBufferGroup = nullptr;
 
-		StateFlags m_stateFlags = StateFlags::PrepassEnabled;
+		StateFlags m_stateFlags;
 		CRendererComponent *m_rendererComponent = nullptr;
 
 		prosper::SampleCountFlags m_sampleCount = prosper::SampleCountFlags::e1Bit;
@@ -268,7 +268,6 @@ namespace pragma {
 
 		LightMapInfo m_lightMapInfo = {};
 		bool m_bFrameDepthBufferSamplingRequired = false;
-		std::shared_ptr<prosper::IDescriptorSetGroup> m_dsgLights;
 		std::shared_ptr<prosper::IDescriptorSetGroup> m_dsgLightsCompute;
 
 		std::vector<pragma::CLightComponent *> m_visLightSources;
@@ -303,6 +302,12 @@ namespace pragma {
 		virtual void PushArguments(lua_State *l) override;
 		pragma::rendering::DepthStageRenderProcessor &renderProcessor;
 		pragma::ShaderPrepassBase &shader;
+	};
+
+	struct DLLCLIENT CEUpdateRenderBuffers : public ComponentEvent {
+		CEUpdateRenderBuffers(const util::DrawSceneInfo &drawSceneInfo);
+		virtual void PushArguments(lua_State *l) override;
+		const util::DrawSceneInfo &drawSceneInfo;
 	};
 };
 REGISTER_BASIC_BITWISE_OPERATORS(pragma::CRasterizationRendererComponent::StateFlags)

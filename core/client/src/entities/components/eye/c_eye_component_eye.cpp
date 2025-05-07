@@ -6,6 +6,7 @@
  */
 
 #include "stdafx_client.h"
+#include "pragma/game/c_game.h"
 #include "pragma/entities/components/c_eye_component.hpp"
 #include "pragma/entities/components/c_model_component.hpp"
 #include "pragma/entities/components/c_flex_component.hpp"
@@ -205,9 +206,8 @@ void pragma::CEyeComponent::UpdateEyeMaterialData()
 		if(!mat)
 			continue;
 		auto &config = m_eyeballData[eyeballIndex].config;
-		auto &data = mat->GetDataBlock();
-		config.irisScale = data->GetFloat("iris_scale", 1.f);
-		data->GetVector2("iris_uv_clamp_range", &config.irisUvClampRange);
+		config.irisScale = mat->GetProperty("iris_scale", 1.f);
+		mat->GetProperty("iris_uv_clamp_range", &config.irisUvClampRange);
 	}
 }
 void pragma::CEyeComponent::UpdateEyeballMT(const Eyeball &eyeball, uint32_t eyeballIndex)

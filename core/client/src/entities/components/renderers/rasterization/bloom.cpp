@@ -8,7 +8,6 @@
 #include "pragma/rendering/renderers/rasterization_renderer.hpp"
 #include "pragma/entities/components/renderers/rasterization/culled_mesh_data.hpp"
 #include "pragma/entities/components/renderers/c_rasterization_renderer_component.hpp"
-#include "pragma/rendering/shaders/post_processing/c_shader_pp_glow.hpp"
 #include "pragma/rendering/occlusion_culling/c_occlusion_octree_impl.hpp"
 #include "pragma/rendering/scene/util_draw_scene_info.hpp"
 #include "pragma/console/c_cvar.h"
@@ -26,6 +25,7 @@ using namespace pragma::rendering;
 extern DLLCLIENT CEngine *c_engine;
 extern DLLCLIENT ClientState *client;
 extern DLLCLIENT CGame *c_game;
+
 
 void pragma::CRasterizationRendererComponent::RenderGlowObjects(const util::DrawSceneInfo &drawSceneInfo)
 {
@@ -109,7 +109,8 @@ void pragma::CRasterizationRendererComponent::RenderGlowMeshes(std::shared_ptr<p
 	}
 #endif
 }
-
+//
+//
 static void cmd_render_bloom_enabled(NetworkState *, const ConVar &, bool, bool enabled)
 {
 	if(client == nullptr)

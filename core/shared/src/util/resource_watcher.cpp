@@ -6,16 +6,19 @@
  */
 
 #include "stdafx_shared.h"
+#include <material_manager2.hpp>
 #include "pragma/util/resource_watcher.h"
 #include "pragma/lua/lua_script_watcher.h"
 #include "pragma/entities/components/base_model_component.hpp"
 #include "pragma/entities/entity_iterator.hpp"
 #include "pragma/model/modelmanager.h"
 #include "pragma/model/model.h"
-#include "pragma/localization.h"
-#include <material_manager2.hpp>
+#include <material_property_block_view.hpp>
+#include <materialmanager.h>
 #include <sharedutils/util_file.h>
 #include <pragma/asset/util_asset.hpp>
+
+import pragma.locale;
 
 decltype(EResourceWatcherCallbackType::Model) EResourceWatcherCallbackType::Model = EResourceWatcherCallbackType {umath::to_integral(E::Model)};
 decltype(EResourceWatcherCallbackType::Material) EResourceWatcherCallbackType::Material = EResourceWatcherCallbackType {umath::to_integral(E::Material)};
@@ -59,6 +62,8 @@ util::ScopeGuard ResourceWatcherManager::ScopeLock()
 }
 
 bool ResourceWatcherManager::IsLocked() const { return m_lockedCount > 0; }
+
+void ResourceWatcherManager::RegisterTypeHandler(const std::string &ext, const TypeHandler &handler) { m_typeHandlers[ext] = handler; }
 
 void ResourceWatcherManager::ReloadMaterial(const std::string &path)
 {
@@ -140,6 +145,11 @@ void ResourceWatcherManager::OnResourceChanged(const util::Path &rootPath, const
 	auto &strPath = path.GetString();
 	auto *nw = m_networkState;
 	auto *game = nw->GetGameState();
+	auto it = m_typeHandlers.find(ext);
+	if(it != m_typeHandlers.end()) {
+		it->second(path, ext);
+		return;
+	}
 	auto assetType = pragma::asset::determine_type_from_extension(ext);
 	if(assetType.has_value()) {
 		if(*assetType == pragma::asset::Type::Model) {
@@ -198,38 +208,39 @@ void ResourceWatcherManager::OnResourceChanged(const util::Path &rootPath, const
 				if(!hMat)
 					continue;
 				auto *mat = hMat.get();
-				auto &block = mat->GetDataBlock();
-				if(block == nullptr)
-					continue;
+
 				auto canonName = FileManager::GetCanonicalizedPath(strPath);
 				ustring::to_lower(canonName);
 				ufile::remove_extension_from_filename(canonName);
 
-				std::function<bool(const std::shared_ptr<ds::Block> &)> fHasTexture = nullptr;
-				fHasTexture = [&fHasTexture, &canonName](const std::shared_ptr<ds::Block> &block) -> bool {
-					auto *data = block->GetData();
-					if(data != nullptr) {
-						for(auto &pair : *data) {
-							auto v = pair.second;
-							if(v->IsBlock() == true) {
-								if(fHasTexture(std::static_pointer_cast<ds::Block>(v)) == true)
+				std::function<bool(const util::Path &path)> fHasTexture = nullptr;
+				fHasTexture = [mat, &canonName, &fHasTexture](const util::Path &path) -> bool {
+					for(auto &name : msys::MaterialPropertyBlockView {*mat, path}) {
+						auto propType = mat->GetPropertyType(name);
+						switch(propType) {
+						case msys::PropertyType::Block:
+							{
+								if(fHasTexture(util::FilePath(path, name)))
 									return true;
+								break;
 							}
-							else {
-								auto dataTex = std::dynamic_pointer_cast<ds::Texture>(v);
-								if(dataTex != nullptr) {
-									auto texName = FileManager::GetCanonicalizedPath(dataTex->GetString());
+						case msys::PropertyType::Texture:
+							{
+								std::string texName;
+								if(mat->GetProperty(util::FilePath(path, name).GetString(), &texName)) {
+									texName = FileManager::GetCanonicalizedPath(texName);
 									ustring::to_lower(texName);
 									ufile::remove_extension_from_filename(texName);
 									if(canonName == texName)
 										return true;
 								}
+								break;
 							}
 						}
 					}
 					return false;
 				};
-				if(fHasTexture(block) == true) // Material has texture, reload it
+				if(fHasTexture({}) == true) // Material has texture, reload it
 				{
 					auto matName = mat->GetName();
 					// A new material with a different extension may have just been
@@ -267,7 +278,7 @@ void ResourceWatcherManager::OnResourceChanged(const util::Path &rootPath, const
 		}
 	}
 	else if(rootPath == "scripts/localization/")
-		Locale::ReloadFiles();
+		pragma::locale::reload_files();
 }
 
 void ResourceWatcherManager::OnResourceChanged(const util::Path &rootPath, const util::Path &path)

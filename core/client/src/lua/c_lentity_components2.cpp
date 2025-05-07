@@ -18,7 +18,6 @@
 #include "pragma/entities/components/renderers/c_renderer_pp_fog_component.hpp"
 #include "pragma/entities/components/renderers/c_renderer_pp_dof_component.hpp"
 #include "pragma/entities/components/renderers/c_renderer_pp_bloom_component.hpp"
-#include "pragma/entities/components/renderers/c_renderer_pp_glow_component.hpp"
 #include "pragma/entities/components/renderers/c_renderer_pp_tone_mapping_component.hpp"
 #include "pragma/entities/components/renderers/c_renderer_pp_fxaa_component.hpp"
 #include "pragma/entities/components/renderers/c_renderer_pp_motion_blur_component.hpp"
@@ -32,6 +31,8 @@
 #include <pragma/lua/lua_util_component_stream.hpp>
 #include <pragma/lua/lua_util_class.hpp>
 // --template-include-location
+
+extern DLLCLIENT CGame *c_game;
 
 void RegisterLuaEntityComponents2_cl(lua_State *l, luabind::module_ &entsMod)
 {
@@ -143,15 +144,6 @@ void RegisterLuaEntityComponents2_cl(lua_State *l, luabind::module_ &entsMod)
 	defPpBloom.def("SetBlurAmount", &pragma::CRendererPpBloomComponent::SetBlurAmount);
 	entsMod[defPpBloom];
 
-	auto defPpGlow = pragma::lua::create_entity_component_class<pragma::CRendererPpGlowComponent, pragma::BaseEntityComponent>("RendererPpGlowComponent");
-	defPpGlow.def("SetBlurRadius", &pragma::CRendererPpGlowComponent::SetBlurRadius);
-	defPpGlow.def("SetBlurSigma", &pragma::CRendererPpGlowComponent::SetBlurSigma);
-	defPpGlow.def("GetBlurRadius", &pragma::CRendererPpGlowComponent::GetBlurRadius);
-	defPpGlow.def("GetBlurSigma", &pragma::CRendererPpGlowComponent::GetBlurSigma);
-	defPpGlow.def("GetBlurAmount", &pragma::CRendererPpGlowComponent::GetBlurAmount);
-	defPpGlow.def("SetBlurAmount", &pragma::CRendererPpGlowComponent::SetBlurAmount);
-	entsMod[defPpGlow];
-
 	auto defPpToneMapping = pragma::lua::create_entity_component_class<pragma::CRendererPpToneMappingComponent, pragma::BaseEntityComponent>("RendererPpToneMappingComponent");
 	defPpToneMapping.def("SetApplyToHdrImage", &pragma::CRendererPpToneMappingComponent::SetApplyToHdrImage);
 	entsMod[defPpToneMapping];
@@ -177,6 +169,8 @@ void RegisterLuaEntityComponents2_cl(lua_State *l, luabind::module_ &entsMod)
 	auto defMotionBlurData = pragma::lua::create_entity_component_class<pragma::CMotionBlurDataComponent, pragma::BaseEntityComponent>("MotionBlurDataComponent");
 	defMotionBlurData.def("UpdatePoses", &pragma::CMotionBlurDataComponent::UpdateEntityPoses);
 	entsMod[defMotionBlurData];
+
+	c_game->GetEntityComponentManager().RegisterLuaBindings(l, entsMod);
 
 	// --template-component-register-location
 }

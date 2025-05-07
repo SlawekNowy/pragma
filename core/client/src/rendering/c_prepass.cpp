@@ -6,6 +6,7 @@
  */
 
 #include "stdafx_client.h"
+#include "pragma/game/c_game.h"
 #include "pragma/rendering/c_prepass.hpp"
 #include "pragma/rendering/shaders/world/c_shader_prepass.hpp"
 #include "pragma/console/c_cvar_global_functions.h"
@@ -49,6 +50,11 @@ bool pragma::rendering::Prepass::Initialize(prosper::IPrContext &context, uint32
 	samplerCreateInfo.addressModeV = prosper::SamplerAddressMode::ClampToEdge;
 	samplerCreateInfo.addressModeW = prosper::SamplerAddressMode::ClampToEdge;
 	textureDepth = context.CreateTexture(texCreateInfo, *imgDepth, imgViewCreateInfo, samplerCreateInfo);
+
+#ifdef ENABLE_TRANSLUCENT_DEPTH_PREPASS
+	auto imgDepthTranslucent = context.CreateImage(imgCreateInfo);
+	textureDepthTranslucent = context.CreateTexture(texCreateInfo, *imgDepthTranslucent, imgViewCreateInfo, samplerCreateInfo);
+#endif
 
 	imgCreateInfo.usage = prosper::ImageUsageFlags::TransferDstBit | prosper::ImageUsageFlags::SampledBit;
 	imgCreateInfo.postCreateLayout = prosper::ImageLayout::ShaderReadOnlyOptimal;

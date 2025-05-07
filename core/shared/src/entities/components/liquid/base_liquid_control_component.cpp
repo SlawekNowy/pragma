@@ -10,6 +10,7 @@
 #include "pragma/entities/components/base_surface_component.hpp"
 #include "pragma/entities/entity_component_manager_t.hpp"
 #include "pragma/entities/baseentity_events.hpp"
+#include <material.h>
 
 using namespace pragma;
 
@@ -44,12 +45,9 @@ void BaseLiquidControlComponent::Initialize()
 	BindEventUnhandled(BaseSurfaceComponent::EVENT_ON_SURFACE_MESH_CHANGED, [this](std::reference_wrapper<pragma::ComponentEvent> evData) {
 		auto &data = static_cast<CEOnSurfaceMeshChanged &>(evData.get());
 		if(data.meshInfo.subMesh && m_kvSurfaceMaterial.empty() == true) {
-			auto &dataBlock = data.meshInfo.material->GetDataBlock();
-			if(dataBlock != nullptr) {
-				std::string surfaceMatIdentifier;
-				if(dataBlock->GetString("surfacematerial", &surfaceMatIdentifier) == true)
-					SetSurfaceMaterial(surfaceMatIdentifier);
-			}
+			std::string surfaceMatIdentifier;
+			if(data.meshInfo.material->GetProperty("surfacematerial", &surfaceMatIdentifier) == true)
+				SetSurfaceMaterial(surfaceMatIdentifier);
 		}
 	});
 }

@@ -6,6 +6,8 @@
  */
 
 #include "stdafx_client.h"
+#include "pragma/game/c_game.h"
+#include "pragma/clientstate/clientstate.h"
 #include "pragma/rendering/render_queue.hpp"
 #include "pragma/rendering/render_stats.hpp"
 #include "pragma/rendering/shaders/world/c_shader_textured.hpp"
@@ -172,16 +174,14 @@ void RenderQueue::Merge(const RenderQueue &other)
 
 void RenderQueue::Lock()
 {
-	m_threadWaitMutex.lock();
+	std::lock_guard<std::mutex> lock {m_threadWaitMutex};
 	m_locked = true;
-	m_threadWaitMutex.unlock();
 }
 void RenderQueue::Unlock()
 {
-	m_threadWaitMutex.lock();
+	std::lock_guard<std::mutex> lock {m_threadWaitMutex};
 	m_locked = false;
 	m_threadWaitCondition.notify_all();
-	m_threadWaitMutex.unlock();
 }
 bool RenderQueue::IsComplete() const { return !m_locked; }
 void RenderQueue::WaitForCompletion(RenderPassStats *optStats) const

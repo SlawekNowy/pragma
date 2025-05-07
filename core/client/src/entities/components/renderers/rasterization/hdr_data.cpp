@@ -6,6 +6,7 @@
  */
 
 #include "stdafx_client.h"
+#include "pragma/game/c_game.h"
 #include "pragma/console/c_cvar.h"
 #include "pragma/rendering/c_msaa.h"
 #include "pragma/rendering/renderers/rasterization_renderer.hpp"
@@ -430,12 +431,12 @@ bool HDRData::BlitMainDepthBufferToSamplableDepthBuffer(const util::DrawSceneInf
 
 prosper::RenderTarget &HDRData::GetRenderTarget(const util::DrawSceneInfo &drawSceneInfo) { return drawSceneInfo.renderTarget ? *drawSceneInfo.renderTarget : *sceneRenderTarget; }
 
-bool HDRData::BlitStagingRenderTargetToMainRenderTarget(const util::DrawSceneInfo &drawSceneInfo)
+bool HDRData::BlitStagingRenderTargetToMainRenderTarget(const util::DrawSceneInfo &drawSceneInfo, prosper::ImageLayout srcHdrLayout, prosper::ImageLayout dstHdrLayout)
 {
 	auto &rt = GetRenderTarget(drawSceneInfo);
 	auto &hdrTex = rt.GetTexture();
 	auto &cmdBuffer = *drawSceneInfo.commandBuffer;
-	auto b = cmdBuffer.RecordImageBarrier(hdrTex.GetImage(), prosper::ImageLayout::ShaderReadOnlyOptimal, prosper::ImageLayout::TransferDstOptimal);
+	auto b = cmdBuffer.RecordImageBarrier(hdrTex.GetImage(), srcHdrLayout, prosper::ImageLayout::TransferDstOptimal);
 	if(b == false)
 		return false;
 	b = cmdBuffer.RecordImageBarrier(hdrPostProcessingRenderTarget->GetTexture().GetImage(), prosper::ImageLayout::ColorAttachmentOptimal, prosper::ImageLayout::TransferSrcOptimal);
@@ -444,7 +445,7 @@ bool HDRData::BlitStagingRenderTargetToMainRenderTarget(const util::DrawSceneInf
 	b = cmdBuffer.RecordBlitTexture(hdrPostProcessingRenderTarget->GetTexture(), rt.GetTexture().GetImage());
 	if(b == false)
 		return false;
-	b = cmdBuffer.RecordImageBarrier(hdrTex.GetImage(), prosper::ImageLayout::TransferDstOptimal, prosper::ImageLayout::ColorAttachmentOptimal);
+	b = cmdBuffer.RecordImageBarrier(hdrTex.GetImage(), prosper::ImageLayout::TransferDstOptimal, dstHdrLayout);
 	if(b == false)
 		return false;
 	return cmdBuffer.RecordImageBarrier(hdrPostProcessingRenderTarget->GetTexture().GetImage(), prosper::ImageLayout::TransferSrcOptimal, prosper::ImageLayout::ColorAttachmentOptimal);

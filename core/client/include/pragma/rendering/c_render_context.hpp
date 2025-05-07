@@ -9,11 +9,13 @@
 #define __C_RENDER_CONTEXT_HPP__
 
 #include "pragma/c_enginedefinitions.h"
+#include <sharedutils/util_library.hpp>
 #include <prosper_context.hpp>
-#include <iglfw/glfw_window.h>
 #include <unordered_set>
 #include <memory>
 #include <optional>
+
+import pragma.platform;
 
 #undef CreateWindow
 
@@ -29,7 +31,11 @@ namespace prosper {
 namespace pragma {
 	class DLLCLIENT RenderContext {
 	  public:
-		enum class StateFlags : uint8_t { None = 0u, GfxAPIValidationEnabled = 1u };
+		enum class StateFlags : uint8_t {
+			None = 0u,
+			GfxAPIValidationEnabled = 1u,
+			GfxDiagnosticsModeEnabled = GfxAPIValidationEnabled << 1u,
+		};
 		RenderContext();
 		virtual ~RenderContext();
 
@@ -42,7 +48,7 @@ namespace pragma {
 		::util::WeakHandle<prosper::Shader> GetShader(const std::string &identifier) const;
 
 		prosper::Window &GetWindow();
-		GLFW::Window &GetGlfwWindow();
+		pragma::platform::Window &GetGlfwWindow();
 		const std::shared_ptr<prosper::IPrimaryCommandBuffer> &GetSetupCommandBuffer();
 		const std::shared_ptr<prosper::IPrimaryCommandBuffer> &GetDrawCommandBuffer() const;
 		const std::shared_ptr<prosper::IPrimaryCommandBuffer> &GetDrawCommandBuffer(uint32_t swapchainIdx) const;
@@ -53,6 +59,9 @@ namespace pragma {
 
 		void InitializeRenderAPI();
 		void SetGfxAPIValidationEnabled(bool b);
+		void SetGfxDiagnosticsModeEnabled(bool b);
+		bool IsGfxAPIValidationEnabled() const;
+		bool IsGfxDiagnosticsModeEnabled() const;
 		void SetRenderAPI(const std::string &renderAPI);
 		const std::string &GetRenderAPI() const;
 
@@ -69,8 +78,8 @@ namespace pragma {
 		std::shared_ptr<prosper::IPrContext> m_renderContext = nullptr;
 		std::unordered_set<std::string> m_disabledValidationErrors;
 		StateFlags m_stateFlags = StateFlags::None;
-		std::shared_ptr<util::Library> m_graphicsAPILib = nullptr;
-		std::unique_ptr<GLFW::Monitor> m_monitor = nullptr;
+		std::shared_ptr<::util::Library> m_graphicsAPILib = nullptr;
+		std::unique_ptr<pragma::platform::Monitor> m_monitor = nullptr;
 		std::string m_renderAPI;
 	};
 }

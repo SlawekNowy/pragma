@@ -6,6 +6,7 @@
  */
 
 #include "stdafx_client.h"
+#include "pragma/game/c_game.h"
 #include "pragma/rendering/c_forwardplus.hpp"
 #include "pragma/console/c_cvar_global_functions.h"
 #include "pragma/debug/c_debug_game_gui.h"
@@ -18,6 +19,7 @@
 #include "pragma/entities/components/renderers/c_rasterization_renderer_component.hpp"
 #include "pragma/entities/components/renderers/c_renderer_component.hpp"
 #include "pragma/entities/environment/lights/c_env_light.h"
+#include "pragma/game/game_limits.h"
 #include "pragma/console/c_cvar.h"
 #include <wgui/types/wirect.h>
 #include <prosper_util.hpp>
@@ -87,7 +89,7 @@ pragma::rendering::ForwardPlusInstance::ForwardPlusInstance(CRasterizationRender
 
 bool pragma::rendering::ForwardPlusInstance::Initialize(prosper::IPrContext &context, uint32_t width, uint32_t height, prosper::Texture &depthTexture)
 {
-	if(pragma::ShaderGameWorldLightingPass::DESCRIPTOR_SET_LIGHTS.IsValid() == false)
+	if(pragma::ShaderGameWorldLightingPass::DESCRIPTOR_SET_RENDERER.IsValid() == false)
 		return false;
 	auto workGroupCount = CalcWorkGroupCount(width, height);
 	m_workGroupCountX = workGroupCount.first;
@@ -114,7 +116,7 @@ bool pragma::rendering::ForwardPlusInstance::Initialize(prosper::IPrContext &con
 	m_bufVisLightIndex->SetPermanentlyMapped(true, prosper::IBuffer::MapFlags::ReadBit);
 	m_bufVisLightIndex->SetDebugName("vis_light_index_buf");
 
-	m_rasterizer.GetLightSourceDescriptorSet()->SetBindingStorageBuffer(*m_bufTileVisLightIndex, umath::to_integral(pragma::ShaderGameWorldLightingPass::LightBinding::TileVisLightIndexBuffer));
+	m_rasterizer.GetRendererDescriptorSet()->SetBindingStorageBuffer(*m_bufTileVisLightIndex, umath::to_integral(pragma::ShaderGameWorldLightingPass::RendererBinding::TileVisLightIndexBuffer));
 
 	auto &descSetCompute = *m_rasterizer.GetLightSourceDescriptorSetCompute();
 	descSetCompute.SetBindingStorageBuffer(*m_bufTileVisLightIndex, umath::to_integral(pragma::ShaderForwardPLightCulling::LightBinding::TileVisLightIndexBuffer));

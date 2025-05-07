@@ -6,6 +6,8 @@
  */
 
 #include "stdafx_client.h"
+#include "pragma/clientstate/clientstate.h"
+#include "pragma/game/c_game.h"
 #include "pragma/lua/classes/c_lmaterial.h"
 #include "luasystem.h"
 #include "cmaterialmanager.h"
@@ -52,12 +54,6 @@ void Lua::Material::Client::GetTexture(lua_State *l, ::Material *mat, const std:
 	if(tex == nullptr)
 		return;
 	Lua::Push<::TextureInfo *>(l, tex);
-}
-
-void Lua::Material::Client::GetData(lua_State *l, ::Material *mat)
-{
-	auto &data = mat->GetDataBlock();
-	Lua::Push<std::shared_ptr<ds::Block>>(l, data);
 }
 
 void Lua::Material::Client::InitializeShaderData(lua_State *l, ::Material *mat, bool reload)

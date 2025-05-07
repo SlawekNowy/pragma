@@ -31,6 +31,7 @@ namespace pragma::string {
 #include "pragma/rendering/c_sci_gpu_timer_manager.hpp"
 #include <pragma/rendering/scene/util_draw_scene_info.hpp>
 #include "pragma/rendering/shaders/world/c_shader_textured.hpp"
+#include "pragma/rendering/shader_graph/manager.hpp"
 #include <pragma/entities/environment/lights/c_env_light.h>
 #include <pragma/input/input_binding_layer.hpp>
 #include <pragma/lua/lua_error_handling.hpp>
@@ -57,7 +58,6 @@ namespace pragma::string {
 #include <pragma/entities/environment/effects/c_env_particle_system.h>
 #include <pragma/rendering/shaders/image/c_shader_clear_color.hpp>
 #include <pragma/rendering/shaders/image/c_shader_gradient.hpp>
-#include <pragma/localization.h>
 #include <pragma/logging.hpp>
 #include <wgui/types/wicontextmenu.hpp>
 #include <wgui/types/witext.h>
@@ -79,6 +79,8 @@ namespace pragma::string {
 #endif
 
 import util_zip;
+import pragma.shadergraph;
+import pragma.locale;
 
 extern "C" {
 void DLLCLIENT RunCEngine(int argc, char *argv[])
@@ -90,9 +92,6 @@ void DLLCLIENT RunCEngine(int argc, char *argv[])
 	en = nullptr;
 }
 }
-#ifdef PRAGMA_ENABLE_NSIGHT_AFTERMATH
-void enable_nsight_aftermath_crash_tracker();
-#endif
 
 DLLCLIENT CEngine *c_engine = NULL;
 extern DLLCLIENT ClientState *client;
@@ -103,15 +102,32 @@ decltype(CEngine::AXIS_PRESS_THRESHOLD) CEngine::AXIS_PRESS_THRESHOLD = 0.5f;
 // can be bound individually
 static const auto SEPARATE_JOYSTICK_AXES = true;
 
+#include "pragma/rendering/shader_graph/nodes/scene_output.hpp"
+#include "pragma/rendering/shader_graph/nodes/shader_material.hpp"
+#include "pragma/rendering/shader_graph/nodes/camera.hpp"
+#include "pragma/rendering/shader_graph/nodes/fog.hpp"
+#include "pragma/rendering/shader_graph/nodes/lightmap.hpp"
+#include "pragma/rendering/shader_graph/nodes/object.hpp"
+#include "pragma/rendering/shader_graph/nodes/time.hpp"
+#include "pragma/rendering/shader_graph/nodes/pbr.hpp"
+#include "pragma/rendering/shader_graph/nodes/toon.hpp"
+#include "pragma/rendering/shader_graph/nodes/image_texture.hpp"
+#include "pragma/rendering/shader_graph/nodes/texture_coordinate.hpp"
+#include "pragma/rendering/shader_graph/nodes/vector_transform.hpp"
+#include "pragma/rendering/shader_graph/nodes/geometry.hpp"
+#include "pragma/rendering/shader_graph/nodes/material_texture.hpp"
+#include "pragma/rendering/shader_graph/nodes/input_parameter.hpp"
+#include "pragma/rendering/shader_graph/modules/pbr.hpp"
+#include "pragma/rendering/shader_graph/modules/toon.hpp"
+#include "pragma/rendering/shader_graph/modules/image_texture.hpp"
+#include "pragma/rendering/shader_graph/modules/input_data.hpp"
+
 CEngine::CEngine(int argc, char *argv[])
     : Engine(argc, argv), pragma::RenderContext(), m_nearZ(pragma::BaseEnvCameraComponent::DEFAULT_NEAR_Z), //10.0f), //0.1f
       m_farZ(pragma::BaseEnvCameraComponent::DEFAULT_FAR_Z), m_fps(0), m_tFPSTime(0.f), m_tLastFrame(util::Clock::now()), m_tDeltaFrameTime(0), m_audioAPI {"fmod"}
 {
 	c_engine = this;
-#ifdef PRAGMA_ENABLE_NSIGHT_AFTERMATH
-	enable_nsight_aftermath_crash_tracker();
-#endif
-	RegisterCallback<void, std::reference_wrapper<const GLFW::Joystick>, bool>("OnJoystickStateChanged");
+	RegisterCallback<void, std::reference_wrapper<const pragma::platform::Joystick>, bool>("OnJoystickStateChanged");
 	RegisterCallback<void, std::reference_wrapper<std::shared_ptr<prosper::IPrimaryCommandBuffer>>>("DrawFrame");
 	RegisterCallback<void>("PreDrawGUI");
 	RegisterCallback<void>("PostDrawGUI");
@@ -119,12 +135,12 @@ CEngine::CEngine(int argc, char *argv[])
 	RegisterCallback<void>("PostRecordGUI");
 	RegisterCallback<void>("Draw");
 
-	RegisterCallbackWithOptionalReturn<bool, std::reference_wrapper<prosper::Window>, GLFW::MouseButton, GLFW::KeyState, GLFW::Modifier>("OnMouseInput");
-	RegisterCallbackWithOptionalReturn<bool, std::reference_wrapper<prosper::Window>, GLFW::Key, int, GLFW::KeyState, GLFW::Modifier, float>("OnKeyboardInput");
+	RegisterCallbackWithOptionalReturn<bool, std::reference_wrapper<prosper::Window>, pragma::platform::MouseButton, pragma::platform::KeyState, pragma::platform::Modifier>("OnMouseInput");
+	RegisterCallbackWithOptionalReturn<bool, std::reference_wrapper<prosper::Window>, pragma::platform::Key, int, pragma::platform::KeyState, pragma::platform::Modifier, float>("OnKeyboardInput");
 	RegisterCallbackWithOptionalReturn<bool, std::reference_wrapper<prosper::Window>, unsigned int>("OnCharInput");
 	RegisterCallbackWithOptionalReturn<bool, std::reference_wrapper<prosper::Window>, Vector2>("OnScrollInput");
-	RegisterCallbackWithOptionalReturn<bool, std::reference_wrapper<prosper::Window>, std::reference_wrapper<const GLFW::Joystick>, uint32_t, GLFW::KeyState>("OnJoystickButtonInput");
-	RegisterCallbackWithOptionalReturn<bool, std::reference_wrapper<prosper::Window>, std::reference_wrapper<const GLFW::Joystick>, uint32_t, GLFW::Modifier, float, float>("OnJoystickAxisInput");
+	RegisterCallbackWithOptionalReturn<bool, std::reference_wrapper<prosper::Window>, std::reference_wrapper<const pragma::platform::Joystick>, uint32_t, pragma::platform::KeyState>("OnJoystickButtonInput");
+	RegisterCallbackWithOptionalReturn<bool, std::reference_wrapper<prosper::Window>, std::reference_wrapper<const pragma::platform::Joystick>, uint32_t, pragma::platform::Modifier, float, float>("OnJoystickAxisInput");
 
 	AddProfilingHandler([this](bool profilingEnabled) {
 		if(profilingEnabled == false) {
@@ -260,35 +276,30 @@ void CEngine::DumpDebugInformation(uzip::ZIPFile &zip) const
 	engineInfo << "Render API: " << GetRenderAPI();
 	zip.AddFile("engine_cl.txt", engineInfo.str());
 
-#if 0
-	prosper::debug::dump_layers(c_engine->GetRenderContext(),ss);
-	zip.AddFile("vk_layers.txt",ss.str());
+	auto &context = c_engine->GetRenderContext();
+	auto layers = context.DumpLayers();
+	if(layers)
+		zip.AddFile("prosper_layers.txt", *layers);
 
-	ss.str(std::string());
-	ss.clear();
-	prosper::debug::dump_extensions(c_engine->GetRenderContext(),ss);
-	zip.AddFile("vk_extensions.txt",ss.str());
+	auto extensions = context.DumpExtensions();
+	if(extensions)
+		zip.AddFile("prosper_extensions.txt", *extensions);
 
-	ss.str(std::string());
-	ss.clear();
-	prosper::debug::dump_limits(c_engine->GetRenderContext(),ss);
-	zip.AddFile("vk_limits.txt",ss.str());
+	auto limits = context.DumpLimits();
+	if(limits)
+		zip.AddFile("prosper_limits.txt", *limits);
 
-	ss.str(std::string());
-	ss.clear();
-	prosper::debug::dump_features(c_engine->GetRenderContext(),ss);
-	zip.AddFile("vk_features.txt",ss.str());
+	auto features = context.DumpFeatures();
+	if(features)
+		zip.AddFile("prosper_features.txt", *features);
 
-	ss.str(std::string());
-	ss.clear();
-	prosper::debug::dump_image_format_properties(c_engine->GetRenderContext(),ss);
-	zip.AddFile("vk_image_format_properties.txt",ss.str());
+	auto imageFormatProperties = context.DumpImageFormatProperties();
+	if(imageFormatProperties)
+		zip.AddFile("prosper_image_format_properties.txt", *imageFormatProperties);
 
-	ss.str(std::string());
-	ss.clear();
-	prosper::debug::dump_format_properties(c_engine->GetRenderContext(),ss);
-	zip.AddFile("vk_format_properties.txt",ss.str());
-#endif
+	auto formatProperties = context.DumpFormatProperties();
+	if(formatProperties)
+		zip.AddFile("prosper_format_properties.txt", *formatProperties);
 }
 
 void CEngine::SetRenderResolution(std::optional<Vector2i> resolution)
@@ -337,41 +348,41 @@ void CEngine::EndGame()
 	Engine::EndGame();
 }
 
-void CEngine::Input(int key, GLFW::KeyState inputState, GLFW::KeyState pressState, GLFW::Modifier mods, float magnitude)
+void CEngine::Input(int key, pragma::platform::KeyState inputState, pragma::platform::KeyState pressState, pragma::platform::Modifier mods, float magnitude)
 {
-	if(inputState == GLFW::KeyState::Press || inputState == GLFW::KeyState::Release || inputState == GLFW::KeyState::Held) {
+	if(inputState == pragma::platform::KeyState::Press || inputState == pragma::platform::KeyState::Release || inputState == pragma::platform::KeyState::Held) {
 		auto &inputLayer = GetEffectiveInputBindingLayer();
 		auto &keyMappings = inputLayer.GetKeyMappings();
-		if((mods & GLFW::Modifier::AxisNegative) != GLFW::Modifier::None) {
+		if((mods & pragma::platform::Modifier::AxisNegative) != pragma::platform::Modifier::None) {
 			// We need to check if there are any keybindings with a command with the JoystickAxisSingle flag set,
 			// in which case that keybinding has priority
 			auto keyPositive = key - 1;
 			auto it = keyMappings.find(CInt16(keyPositive));
 			if(it != keyMappings.end() && const_cast<KeyBind &>(it->second).Execute(inputState, pressState, mods, magnitude) == true)
 				return;
-			mods &= ~GLFW::Modifier::AxisNegative;
+			mods &= ~pragma::platform::Modifier::AxisNegative;
 		}
 		auto it = keyMappings.find(CInt16(key));
 		if(it != keyMappings.end())
 			const_cast<KeyBind &>(it->second).Execute(inputState, pressState, mods, magnitude);
 	}
 }
-void CEngine::Input(int key, GLFW::KeyState state, GLFW::Modifier mods, float magnitude) { Input(key, state, state, mods, magnitude); }
-void CEngine::MouseInput(prosper::Window &window, GLFW::MouseButton button, GLFW::KeyState state, GLFW::Modifier mods)
+void CEngine::Input(int key, pragma::platform::KeyState state, pragma::platform::Modifier mods, float magnitude) { Input(key, state, state, mods, magnitude); }
+void CEngine::MouseInput(prosper::Window &window, pragma::platform::MouseButton button, pragma::platform::KeyState state, pragma::platform::Modifier mods)
 {
 	auto handled = false;
-	if(CallCallbacksWithOptionalReturn<bool, std::reference_wrapper<prosper::Window>, GLFW::MouseButton, GLFW::KeyState, GLFW::Modifier>("OnMouseInput", handled, window, button, state, mods) == CallbackReturnType::HasReturnValue && handled == true)
+	if(CallCallbacksWithOptionalReturn<bool, std::reference_wrapper<prosper::Window>, pragma::platform::MouseButton, pragma::platform::KeyState, pragma::platform::Modifier>("OnMouseInput", handled, window, button, state, mods) == CallbackReturnType::HasReturnValue && handled == true)
 		return;
 	if(client != nullptr && client->RawMouseInput(button, state, mods) == false)
 		return;
 	if(WGUI::GetInstance().HandleMouseInput(window, button, state, mods))
 		return;
-	button += static_cast<GLFW::MouseButton>(GLFW::Key::Last);
+	button += static_cast<pragma::platform::MouseButton>(pragma::platform::Key::Last);
 	if(client != nullptr && client->MouseInput(button, state, mods) == false)
 		return;
 	Input(static_cast<int>(button), state);
 }
-void CEngine::GetMappedKeys(const std::string &cvarName, std::vector<GLFW::Key> &keys, uint32_t maxKeys)
+void CEngine::GetMappedKeys(const std::string &cvarName, std::vector<pragma::platform::Key> &keys, uint32_t maxKeys)
 {
 	if(maxKeys != std::numeric_limits<uint32_t>::max())
 		keys.reserve(maxKeys);
@@ -406,44 +417,46 @@ void CEngine::GetMappedKeys(const std::string &cvarName, std::vector<GLFW::Key> 
 			if(bFoundCvar == true) {
 				if(keys.size() == keys.capacity())
 					keys.reserve(keys.size() + 10);
-				keys.push_back(static_cast<GLFW::Key>(pair.first));
+				keys.push_back(static_cast<pragma::platform::Key>(pair.first));
 				if(keys.size() == maxKeys)
 					break;
 			}
 		}
 	}
 }
-void CEngine::JoystickButtonInput(prosper::Window &window, const GLFW::Joystick &joystick, uint32_t key, GLFW::KeyState state)
+void CEngine::JoystickButtonInput(prosper::Window &window, const pragma::platform::Joystick &joystick, uint32_t key, pragma::platform::KeyState state)
 {
 	auto handled = false;
-	if(CallCallbacksWithOptionalReturn<bool, std::reference_wrapper<prosper::Window>, std::reference_wrapper<const GLFW::Joystick>, uint32_t, GLFW::KeyState>("OnJoystickButtonInput", handled, window, joystick, key, state) == CallbackReturnType::HasReturnValue && handled == true)
+	if(CallCallbacksWithOptionalReturn<bool, std::reference_wrapper<prosper::Window>, std::reference_wrapper<const pragma::platform::Joystick>, uint32_t, pragma::platform::KeyState>("OnJoystickButtonInput", handled, window, joystick, key, state) == CallbackReturnType::HasReturnValue
+	  && handled == true)
 		return;
-	KeyboardInput(window, static_cast<GLFW::Key>(key), -1, state, {});
+	KeyboardInput(window, static_cast<pragma::platform::Key>(key), -1, state, {});
 }
-void CEngine::JoystickAxisInput(prosper::Window &window, const GLFW::Joystick &joystick, uint32_t axis, GLFW::Modifier mods, float newVal, float deltaVal)
+void CEngine::JoystickAxisInput(prosper::Window &window, const pragma::platform::Joystick &joystick, uint32_t axis, pragma::platform::Modifier mods, float newVal, float deltaVal)
 {
 	auto handled = false;
-	if(CallCallbacksWithOptionalReturn<bool, std::reference_wrapper<prosper::Window>, std::reference_wrapper<const GLFW::Joystick>, uint32_t, GLFW::Modifier, float, float>("OnJoystickAxisInput", handled, window, joystick, axis, mods, newVal, deltaVal) == CallbackReturnType::HasReturnValue
+	if(CallCallbacksWithOptionalReturn<bool, std::reference_wrapper<prosper::Window>, std::reference_wrapper<const pragma::platform::Joystick>, uint32_t, pragma::platform::Modifier, float, float>("OnJoystickAxisInput", handled, window, joystick, axis, mods, newVal, deltaVal)
+	    == CallbackReturnType::HasReturnValue
 	  && handled == true)
 		return;
 	auto oldVal = newVal - deltaVal;
-	auto key = static_cast<GLFW::Key>(axis);
-	auto state = (IsValidAxisInput(newVal) == true) ? GLFW::KeyState::Press : GLFW::KeyState::Release;
+	auto key = static_cast<pragma::platform::Key>(axis);
+	auto state = (IsValidAxisInput(newVal) == true) ? pragma::platform::KeyState::Press : pragma::platform::KeyState::Release;
 	auto it = m_joystickKeyStates.find(key);
-	auto oldState = (it == m_joystickKeyStates.end()) ? GLFW::KeyState::Release : it->second;
-	if(state == GLFW::KeyState::Release && oldState == GLFW::KeyState::Release)
+	auto oldState = (it == m_joystickKeyStates.end()) ? pragma::platform::KeyState::Release : it->second;
+	if(state == pragma::platform::KeyState::Release && oldState == pragma::platform::KeyState::Release)
 		return;
-	if(state == GLFW::KeyState::Press && oldState == GLFW::KeyState::Press)
-		state = GLFW::KeyState::Held;
+	if(state == pragma::platform::KeyState::Press && oldState == pragma::platform::KeyState::Press)
+		state = pragma::platform::KeyState::Held;
 
 	m_joystickKeyStates[key] = state;
-	mods |= GLFW::Modifier::AxisInput;
+	mods |= pragma::platform::Modifier::AxisInput;
 	if(umath::abs(newVal) > AXIS_PRESS_THRESHOLD) {
 		if(umath::abs(oldVal) <= AXIS_PRESS_THRESHOLD)
-			mods |= GLFW::Modifier::AxisPress; // Axis represents actual button press
+			mods |= pragma::platform::Modifier::AxisPress; // Axis represents actual button press
 	}
 	else if(umath::abs(oldVal) > AXIS_PRESS_THRESHOLD)
-		mods |= GLFW::Modifier::AxisRelease; // Axis represents actual button release
+		mods |= pragma::platform::Modifier::AxisRelease; // Axis represents actual button release
 	KeyboardInput(window, key, -1, state, mods, newVal);
 }
 static auto cvAxisInputThreshold = GetClientConVar("cl_controller_axis_input_threshold");
@@ -454,47 +467,48 @@ bool CEngine::IsValidAxisInput(float axisInput) const
 	return (umath::abs(axisInput) > cvAxisInputThreshold->GetFloat()) ? true : false;
 }
 
-bool CEngine::GetInputButtonState(float axisInput, GLFW::Modifier mods, GLFW::KeyState &inOutState) const
+bool CEngine::GetInputButtonState(float axisInput, pragma::platform::Modifier mods, pragma::platform::KeyState &inOutState) const
 {
 	if(IsValidAxisInput(axisInput) == false) {
-		if((mods & GLFW::Modifier::AxisInput) != GLFW::Modifier::None) {
-			inOutState = GLFW::KeyState::Release;
+		if((mods & pragma::platform::Modifier::AxisInput) != pragma::platform::Modifier::None) {
+			inOutState = pragma::platform::KeyState::Release;
 			return true;
 		}
-		inOutState = GLFW::KeyState::Invalid;
+		inOutState = pragma::platform::KeyState::Invalid;
 		return false;
 	}
-	if((mods & GLFW::Modifier::AxisInput) == GLFW::Modifier::None)
+	if((mods & pragma::platform::Modifier::AxisInput) == pragma::platform::Modifier::None)
 		return true; // No need to change state
 
-	if((mods & GLFW::Modifier::AxisPress) != GLFW::Modifier::None)
-		inOutState = GLFW::KeyState::Press;
-	else if((mods & GLFW::Modifier::AxisRelease) != GLFW::Modifier::None)
-		inOutState = GLFW::KeyState::Release;
+	if((mods & pragma::platform::Modifier::AxisPress) != pragma::platform::Modifier::None)
+		inOutState = pragma::platform::KeyState::Press;
+	else if((mods & pragma::platform::Modifier::AxisRelease) != pragma::platform::Modifier::None)
+		inOutState = pragma::platform::KeyState::Release;
 	else {
-		inOutState = GLFW::KeyState::Invalid;
+		inOutState = pragma::platform::KeyState::Invalid;
 		return false; // Not an actual key press
 	}
 	return true;
 }
-void CEngine::KeyboardInput(prosper::Window &window, GLFW::Key key, int scanCode, GLFW::KeyState state, GLFW::Modifier mods, float magnitude)
+void CEngine::KeyboardInput(prosper::Window &window, pragma::platform::Key key, int scanCode, pragma::platform::KeyState state, pragma::platform::Modifier mods, float magnitude)
 {
 	auto handled = false;
-	if(CallCallbacksWithOptionalReturn<bool, std::reference_wrapper<prosper::Window>, GLFW::Key, int, GLFW::KeyState, GLFW::Modifier, float>("OnKeyboardInput", handled, window, key, scanCode, state, mods, magnitude) == CallbackReturnType::HasReturnValue && handled == true)
+	if(CallCallbacksWithOptionalReturn<bool, std::reference_wrapper<prosper::Window>, pragma::platform::Key, int, pragma::platform::KeyState, pragma::platform::Modifier, float>("OnKeyboardInput", handled, window, key, scanCode, state, mods, magnitude) == CallbackReturnType::HasReturnValue
+	  && handled == true)
 		return;
 	if(client != nullptr && client->RawKeyboardInput(key, scanCode, state, mods, magnitude) == false)
 		return;
-	if(key == GLFW::Key::Escape) // Escape key is hardcoded
+	if(key == pragma::platform::Key::Escape) // Escape key is hardcoded
 	{
 		if(client != nullptr) {
-			if(state == GLFW::KeyState::Press)
+			if(state == pragma::platform::KeyState::Press)
 				client->ToggleMainMenu();
 			return;
 		}
 	}
-	if(key == GLFW::Key::GraveAccent) {
-		if(mods == GLFW::Modifier::None) {
-			if(state == GLFW::KeyState::Press)
+	if(key == pragma::platform::Key::GraveAccent) {
+		if(mods == pragma::platform::Modifier::None) {
+			if(state == pragma::platform::KeyState::Press)
 				ToggleConsole();
 		}
 		return;
@@ -508,8 +522,8 @@ void CEngine::KeyboardInput(prosper::Window &window, GLFW::Key key, int scanCode
 	if(client != nullptr && client->KeyboardInput(key, scanCode, state, mods, magnitude) == false)
 		return;
 	auto ikey = umath::to_integral(key);
-	if(ikey >= umath::to_integral(GLFW::Key::A) && ikey <= umath::to_integral(GLFW::Key::Z))
-		key = static_cast<GLFW::Key>(std::tolower(ikey));
+	if(ikey >= umath::to_integral(pragma::platform::Key::A) && ikey <= umath::to_integral(pragma::platform::Key::Z))
+		key = static_cast<pragma::platform::Key>(std::tolower(ikey));
 	Input(umath::to_integral(key), state, buttonState, mods, magnitude);
 }
 void CEngine::CharInput(prosper::Window &window, unsigned int c)
@@ -536,12 +550,12 @@ void CEngine::ScrollInput(prosper::Window &window, Vector2 offset)
 	if(client != nullptr && client->ScrollInput(offset) == false)
 		return;
 	if(offset.y >= 0.f) {
-		Input(GLFW_CUSTOM_KEY_SCRL_UP, GLFW::KeyState::Press);
-		Input(GLFW_CUSTOM_KEY_SCRL_UP, GLFW::KeyState::Release);
+		Input(GLFW_CUSTOM_KEY_SCRL_UP, pragma::platform::KeyState::Press);
+		Input(GLFW_CUSTOM_KEY_SCRL_UP, pragma::platform::KeyState::Release);
 	}
 	else {
-		Input(GLFW_CUSTOM_KEY_SCRL_DOWN, GLFW::KeyState::Press);
-		Input(GLFW_CUSTOM_KEY_SCRL_DOWN, GLFW::KeyState::Release);
+		Input(GLFW_CUSTOM_KEY_SCRL_DOWN, pragma::platform::KeyState::Press);
+		Input(GLFW_CUSTOM_KEY_SCRL_DOWN, pragma::platform::KeyState::Release);
 	}
 }
 
@@ -676,8 +690,8 @@ void CEngine::HandleOpenGLFallback()
 	auto *cl = static_cast<ClientState *>(GetClientState());
 	if(!cl)
 		return;
-	auto msg = Locale::GetText("prompt_fallback_to_opengl");
-	if(pragma::debug::show_message_prompt(msg, pragma::debug::MessageBoxButtons::YesNo, util::get_program_name()) != pragma::debug::MessageBoxButton::Yes)
+	auto msg = pragma::locale::get_text("prompt_fallback_to_opengl");
+	if(util::debug::show_message_prompt(msg, util::debug::MessageBoxButtons::YesNo, util::get_program_name()) != util::debug::MessageBoxButton::Yes)
 		return;
 	cl->SetConVar("render_api", "opengl");
 	SaveClientConfig();
@@ -719,12 +733,14 @@ bool CEngine::Initialize(int argc, char *argv[])
 	contextCreateInfo.width = 1280;
 	contextCreateInfo.height = 1024;
 	contextCreateInfo.windowless = g_windowless;
+	contextCreateInfo.enableDiagnostics = IsGfxDiagnosticsModeEnabled();
 
 	std::shared_ptr<udm::Data> renderApiData {};
 	try {
 		renderApiData = udm::Data::Load("cfg/render_api.udm");
 	}
 	catch(const udm::Exception &e) {
+		Con::cwar << "Failed to load render API data: " << e.what() << Con::endl;
 	}
 	if(renderApiData) {
 		auto &renderAPI = GetRenderAPI();
@@ -734,11 +750,111 @@ bool CEngine::Initialize(int argc, char *argv[])
 			udm::to_enum_value<prosper::IPrContext::ExtensionAvailability>(pair.property, availability);
 			contextCreateInfo.extensions[std::string {pair.key}] = availability;
 		}
-		for(auto &pair : data[renderAPI]["extensions"].ElIt()) {
+		for(auto &[key, prop] : data[renderAPI]["extensions"].ElIt()) {
 			auto availability = prosper::IPrContext::ExtensionAvailability::EnableIfAvailable;
-			udm::to_enum_value<prosper::IPrContext::ExtensionAvailability>(pair.property, availability);
-			contextCreateInfo.extensions[std::string {pair.key}] = availability;
+			udm::to_enum_value<prosper::IPrContext::ExtensionAvailability>(prop, availability);
+			contextCreateInfo.extensions[std::string {key}] = availability;
 		}
+
+		std::vector<std::string> layers;
+		auto getLayerData = [&](udm::LinkedPropertyWrapper udmLayers) {
+			layers.reserve(layers.size() + udmLayers.GetSize());
+			for(auto &layer : udmLayers) {
+				std::string name;
+				layer["name"] >> name;
+				if(name.empty())
+					continue;
+				layers.push_back(name);
+				auto settings = layer["settings"];
+				contextCreateInfo.layerSettings.reserve(contextCreateInfo.layerSettings.size() + settings.GetSize());
+				for(auto &[key, prop] : settings.ElIt()) {
+					auto type = prop.GetType();
+					prosper::LayerSetting setting {};
+					setting.layerName = name;
+					setting.settingName = key;
+					if(type == udm::Type::Element) {
+						std::string settingType;
+						prop["type"] >> settingType;
+						auto udmValues = prop["values"];
+						if(udmValues) {
+							auto *a = udmValues.GetValuePtr<udm::Array>();
+							if(a) {
+								auto size = a->GetSize();
+								::udm::visit(a->GetValueType(), [a, size, &setting, &settingType](auto tag) {
+									using T = typename decltype(tag)::type;
+									if constexpr(std::is_same_v<T, udm::Boolean> || std::is_same_v<T, udm::Int32> || std::is_same_v<T, udm::Int64> || std::is_same_v<T, udm::UInt32> || std::is_same_v<T, udm::UInt64> || std::is_same_v<T, udm::Float> || std::is_same_v<T, udm::Double>) {
+										auto *values = new T[size];
+										for(size_t i = 0; i < size; ++i)
+											values[i] = a->GetValue<T>(i);
+										setting.SetValues(size, values);
+									}
+									else if constexpr(std::is_same_v<T, udm::String>) {
+										if(settingType == "file") {
+											auto *values = new const char *[size];
+											std::vector<util::Path> tmpPaths;
+											tmpPaths.reserve(size);
+											for(size_t i = 0; i < size; ++i) {
+												auto filePath = util::FilePath(util::get_program_path(), a->GetValue<std::string>(i));
+												tmpPaths.push_back(filePath);
+												values[i] = filePath.GetString().c_str();
+											}
+											// SetValues copies the strings, so we can safely delete the temporary paths
+											setting.SetValues(size, values);
+										}
+										else {
+											auto *values = new const char *[size];
+											for(size_t i = 0; i < size; ++i)
+												values[i] = a->GetValue<std::string>(i).c_str();
+											setting.SetValues(size, values);
+										}
+									}
+									else
+										throw std::invalid_argument {"Unsupported layer setting type " + std::string {magic_enum::enum_name(a->GetValueType())}};
+								});
+							}
+						}
+						else {
+							auto udmValue = prop["value"];
+							::udm::visit(udmValue.GetType(), [&udmValue, &setting, &settingType](auto tag) {
+								using T = typename decltype(tag)::type;
+								if constexpr(std::is_same_v<T, udm::Boolean> || std::is_same_v<T, udm::Int32> || std::is_same_v<T, udm::Int64> || std::is_same_v<T, udm::UInt32> || std::is_same_v<T, udm::UInt64> || std::is_same_v<T, udm::Float> || std::is_same_v<T, udm::Double>)
+									setting.SetValues(1, &udmValue.GetValue<T>());
+								else if constexpr(std::is_same_v<T, udm::String>) {
+									if(settingType == "file") {
+										auto filePath = util::FilePath(util::get_program_path(), udmValue.GetValue<T>());
+										auto *str = filePath.GetString().c_str();
+										setting.SetValues(1, &str);
+									}
+									else {
+										auto *str = udmValue.GetValue<T>().c_str();
+										setting.SetValues(1, &str);
+									}
+								}
+								else
+									throw std::invalid_argument {"Unsupported layer setting type " + std::string {magic_enum::enum_name(udmValue.GetType())}};
+							});
+						}
+					}
+					else {
+						::udm::visit(type, [&prop, &setting](auto tag) {
+							using T = typename decltype(tag)::type;
+							if constexpr(std::is_same_v<T, udm::Boolean> || std::is_same_v<T, udm::Int32> || std::is_same_v<T, udm::Int64> || std::is_same_v<T, udm::UInt32> || std::is_same_v<T, udm::UInt64> || std::is_same_v<T, udm::Float> || std::is_same_v<T, udm::Double>)
+								setting.SetValues(1, &prop.GetValue<T>());
+							else if constexpr(std::is_same_v<T, udm::String>) {
+								auto *str = prop.GetValue<T>().c_str();
+								setting.SetValues(1, &str);
+							}
+							else
+								throw std::invalid_argument {"Unsupported layer setting type " + std::string {magic_enum::enum_name(prop.GetType())}};
+						});
+					}
+					contextCreateInfo.layerSettings.push_back(setting);
+				}
+			}
+		};
+		getLayerData(data["all"]["layers"]);
+		getLayerData(data[renderAPI]["layers"]);
+		contextCreateInfo.layers = std::move(layers);
 	}
 
 	if(windowRes) {
@@ -762,11 +878,11 @@ bool CEngine::Initialize(int argc, char *argv[])
 	//
 
 	auto windowMode = findCmdArg("cl_render_window_mode");
-	int mode = 0;
+	int mode = 1;
 	if(windowMode)
 		mode = util::to_int(*windowMode);
 	auto &initialWindowSettings = GetRenderContext().GetInitialWindowSettings();
-	initialWindowSettings.windowedMode = (mode == 0);
+	initialWindowSettings.windowedMode = (mode != 0);
 	initialWindowSettings.decorated = ((mode == 2) ? false : true);
 
 	if(g_launchParamWindowedMode.has_value())
@@ -783,7 +899,7 @@ bool CEngine::Initialize(int argc, char *argv[])
 	auto renderMonitor = findCmdArg("cl_render_monitor");
 	if(renderMonitor) {
 		auto monitor = util::to_int(*renderMonitor);
-		auto monitors = GLFW::get_monitors();
+		auto monitors = pragma::platform::get_monitors();
 		if(monitor < monitors.size() && monitor > 0)
 			initialWindowSettings.monitor = monitors[monitor];
 	}
@@ -849,7 +965,7 @@ bool CEngine::Initialize(int argc, char *argv[])
 
 	// Initialize Client Instance
 	auto matManager = msys::CMaterialManager::Create(GetRenderContext());
-	matManager->SetImportDirectory("addons/converted/materials");
+	matManager->SetImportDirectory("addons/converted/");
 	InitializeAssetManager(*matManager);
 	pragma::asset::update_extension_cache(pragma::asset::Type::Material);
 
@@ -867,7 +983,7 @@ bool CEngine::Initialize(int argc, char *argv[])
 	LoadFontSets();
 	auto &defaultFontSet = m_defaultFontSet;
 	defaultFontSet = "dejavu";
-	auto *lanInfo = Locale::GetLanguageInfo();
+	auto *lanInfo = pragma::locale::get_language_info();
 	if(lanInfo && lanInfo->configData) {
 		std::vector<std::string> characterSetRequirements;
 		(*lanInfo->configData)["font"]["characterSetRequirements"](characterSetRequirements);
@@ -922,7 +1038,7 @@ bool CEngine::Initialize(int argc, char *argv[])
 		return false;
 	}
 	WIContextMenu::SetKeyBindHandler(
-	  [this](GLFW::Key key, const std::string &cmd) -> std::string {
+	  [this](pragma::platform::Key key, const std::string &cmd) -> std::string {
 		  std::string keyStr;
 		  auto b = KeyToText(umath::to_integral(key), &keyStr);
 		  short c;
@@ -935,7 +1051,7 @@ bool CEngine::Initialize(int argc, char *argv[])
 		  return keyStr;
 	  },
 	  [this](const std::string &cmd) -> std::optional<std::string> {
-		  std::vector<GLFW::Key> keys;
+		  std::vector<pragma::platform::Key> keys;
 		  GetMappedKeys(cmd, keys);
 		  if(keys.empty())
 			  return {};
@@ -997,9 +1113,117 @@ bool CEngine::Initialize(int argc, char *argv[])
 		if(r == IDCANCEL)
 			ShutDown();
 	}
+
 #endif
+
+	{
+		auto regBase = std::make_shared<pragma::shadergraph::NodeRegistry>();
+		//regBase->RegisterNode<pragma::shadergraph::BlackbodyNode>("blackbody");
+		regBase->RegisterNode<pragma::shadergraph::BrightContrastNode>("bright_contrast");
+		regBase->RegisterNode<pragma::shadergraph::ClampNode>("clamp");
+		//regBase->RegisterNode<pragma::shadergraph::ColorNode>("color");
+		regBase->RegisterNode<pragma::shadergraph::CombineXyzNode>("combine_xyz");
+		regBase->RegisterNode<pragma::shadergraph::GammaNode>("gamma");
+		//regBase->RegisterNode<pragma::shadergraph::GroupNode>("group");
+		regBase->RegisterNode<pragma::shadergraph::EmissionNode>("emission");
+		//regBase->RegisterNode<pragma::shadergraph::GroupInputNode>("group_input");
+		//regBase->RegisterNode<pragma::shadergraph::GroupOutputNode>("group_output");
+		regBase->RegisterNode<pragma::shadergraph::HsvNode>("hsv");
+		regBase->RegisterNode<pragma::shadergraph::InvertNode>("invert");
+		//regBase->RegisterNode<pragma::shadergraph::LightFalloffNode>("light_falloff");
+		regBase->RegisterNode<pragma::shadergraph::MapRangeNode>("map_range_node");
+		//regBase->RegisterNode<pragma::shadergraph::MappingNode>("mapping");
+		regBase->RegisterNode<pragma::shadergraph::MathNode>("math");
+		regBase->RegisterNode<pragma::shadergraph::MixNode>("mix");
+		//regBase->RegisterNode<pragma::shadergraph::RgbRampNode>("rgb_ramp");
+		regBase->RegisterNode<pragma::shadergraph::RgbToBwNode>("rgb_to_bw");
+		regBase->RegisterNode<pragma::shadergraph::SepiaToneNode>("sepia_tone");
+		regBase->RegisterNode<pragma::shadergraph::SeparateXyzNode>("separate_xyz");
+		regBase->RegisterNode<pragma::shadergraph::ValueNode>("value");
+		//regBase->RegisterNode<pragma::shadergraph::VectorDisplacementNode>("vector_displacement");
+		//regBase->RegisterNode<pragma::shadergraph::VectorMapRangeNode>("vector_map_range");
+		regBase->RegisterNode<pragma::shadergraph::VectorMathNode>("vector_math");
+		//regBase->RegisterNode<pragma::shadergraph::VectorRotateNode>("vector_rotate");
+		//regBase->RegisterNode<pragma::shadergraph::VectorTransformNode>("vector_transform");
+		//regBase->RegisterNode<pragma::shadergraph::WavelengthNode>("wavelength");
+
+		auto regScene = std::make_shared<pragma::shadergraph::NodeRegistry>();
+		regScene->RegisterNode<pragma::rendering::shader_graph::SceneOutputNode>("output");
+		regScene->RegisterNode<pragma::rendering::shader_graph::CameraNode>("camera");
+		regScene->RegisterNode<pragma::rendering::shader_graph::FogNode>("fog");
+		regScene->RegisterNode<pragma::rendering::shader_graph::LightmapNode>("lightmap");
+		regScene->RegisterNode<pragma::rendering::shader_graph::ObjectNode>("object");
+		regScene->RegisterNode<pragma::rendering::shader_graph::TimeNode>("time");
+		regScene->RegisterNode<pragma::rendering::shader_graph::PbrNode>("pbr");
+		regScene->RegisterNode<pragma::rendering::shader_graph::ToonNode>("toon");
+		regScene->RegisterNode<pragma::rendering::shader_graph::ImageTextureNode>("image_texture");
+		regScene->RegisterNode<pragma::rendering::shader_graph::MaterialTextureNode>("material_texture");
+		regScene->RegisterNode<pragma::rendering::shader_graph::TextureCoordinateNode>("texture_coordinate");
+		regScene->RegisterNode<pragma::rendering::shader_graph::VectorTransformNode>("vector_transform");
+		regScene->RegisterNode<pragma::rendering::shader_graph::GeometryNode>("geometry");
+		regScene->RegisterNode<pragma::rendering::shader_graph::InputParameterBooleanNode>("input_parameter_boolean");
+		regScene->RegisterNode<pragma::rendering::shader_graph::InputParameterIntNode>("input_parameter_int");
+		regScene->RegisterNode<pragma::rendering::shader_graph::InputParameterUIntNode>("input_parameter_uint");
+		regScene->RegisterNode<pragma::rendering::shader_graph::InputParameterUInt16Node>("input_parameter_uint16");
+		regScene->RegisterNode<pragma::rendering::shader_graph::InputParameterColorNode>("input_parameter_color");
+		regScene->RegisterNode<pragma::rendering::shader_graph::InputParameterVectorNode>("input_parameter_vector");
+		regScene->RegisterNode<pragma::rendering::shader_graph::InputParameterVector4Node>("input_parameter_vector4");
+		regScene->RegisterNode<pragma::rendering::shader_graph::InputParameterPointNode>("input_parameter_point");
+		regScene->RegisterNode<pragma::rendering::shader_graph::InputParameterNormalNode>("input_parameter_normal");
+		regScene->RegisterNode<pragma::rendering::shader_graph::InputParameterPoint2Node>("input_parameter_point2");
+		regScene->RegisterNode<pragma::rendering::shader_graph::InputParameterStringNode>("input_parameter_string");
+		regScene->RegisterNode<pragma::rendering::shader_graph::InputParameterTransformNode>("input_parameter_transform");
+		regScene->RegisterNode<pragma::rendering::shader_graph::InputParameterFloatNode>("input_parameter_float");
+		regScene->RegisterNode<pragma::rendering::shader_graph::InputParameterTextureNode>("input_parameter_texture");
+
+		std::vector<std::string> files;
+		filemanager::find_files("scripts/shader_data/materials/*.udm", &files, nullptr);
+		for(auto &f : files) {
+			ufile::remove_extension_from_filename(f);
+			pragma::rendering::shader_material::get_cache().Load(f);
+		}
+
+		auto &cache = pragma::rendering::shader_material::get_cache();
+		for(auto &[name, mat] : cache.GetShaderMaterials()) {
+			auto nodeName = name;
+			nodeName = "sm_" + nodeName;
+			auto node = std::make_shared<pragma::rendering::shader_graph::ShaderMaterialNode>(pragma::GString {nodeName}, *mat);
+			regScene->RegisterNode(node);
+		}
+
+		regScene->AddChildRegistry(regBase);
+
+		auto regPp = std::make_shared<pragma::shadergraph::NodeRegistry>();
+		regPp->AddChildRegistry(regBase);
+
+		m_shaderGraphManager = std::make_unique<pragma::rendering::ShaderGraphManager>();
+		m_shaderGraphManager->RegisterGraphTypeManager("post_processing", regPp);
+		m_shaderGraphManager->RegisterGraphTypeManager("object", regScene);
+		//m_shaderGraphManager->RegisterGraphTypeManager("group", regGroup);
+
+		m_shaderGraphManager->GetModuleManager().RegisterFactory("pbr", [](pragma::ShaderGraph &shader) -> std::unique_ptr<pragma::rendering::ShaderGraphModule> { return std::make_unique<pragma::rendering::shader_graph::PbrModule>(shader); });
+		m_shaderGraphManager->GetModuleManager().RegisterFactory("toon", [](pragma::ShaderGraph &shader) -> std::unique_ptr<pragma::rendering::ShaderGraphModule> { return std::make_unique<pragma::rendering::shader_graph::ToonModule>(shader); });
+		m_shaderGraphManager->GetModuleManager().RegisterFactory("image_texture", [](pragma::ShaderGraph &shader) -> std::unique_ptr<pragma::rendering::ShaderGraphModule> { return std::make_unique<pragma::rendering::shader_graph::ImageTextureModule>(shader); });
+		m_shaderGraphManager->GetModuleManager().RegisterFactory("input_data", [](pragma::ShaderGraph &shader) -> std::unique_ptr<pragma::rendering::ShaderGraphModule> { return std::make_unique<pragma::rendering::shader_graph::InputDataModule>(shader); });
+
+		// TODO: Load shader graphs from mounted addons
+		for(auto &[type, man] : m_shaderGraphManager->GetShaderGraphTypeManagers()) {
+			std::vector<std::string> sgFiles;
+			filemanager::find_files(pragma::rendering::ShaderGraphManager::ROOT_GRAPH_PATH + type + std::string {"/*."} + pragma::shadergraph::Graph::EXTENSION_BINARY, &sgFiles, nullptr);
+			filemanager::find_files(pragma::rendering::ShaderGraphManager::ROOT_GRAPH_PATH + type + std::string {"/*."} + pragma::shadergraph::Graph::EXTENSION_ASCII, &sgFiles, nullptr);
+			for(auto &f : sgFiles) {
+				ufile::remove_extension_from_filename(f, std::array<std::string, 2> {pragma::shadergraph::Graph::EXTENSION_BINARY, pragma::shadergraph::Graph::EXTENSION_ASCII});
+				std::string err;
+				auto graph = m_shaderGraphManager->LoadShader(f, err);
+				if(!graph)
+					spdlog::error("Failed to load shader graph '{}': {}", f, err);
+			}
+		}
+	}
+
 	return true;
 }
+
 const std::string &CEngine::GetDefaultFontSetName() const { return m_defaultFontSet; }
 const FontSet &CEngine::GetDefaultFontSet() const
 {
@@ -1183,7 +1407,7 @@ std::shared_ptr<prosper::Window> CEngine::CreateWindow(prosper::WindowSettings &
 
 	auto *pWindow = window.get();
 	pWindow->GetStagingRenderTarget(); // This will initialize the staging target immediately
-	(*pWindow)->SetWindowSizeCallback([pWindow](GLFW::Window &window, Vector2i size) {
+	(*pWindow)->SetWindowSizeCallback([pWindow](pragma::platform::Window &window, Vector2i size) {
 		pWindow->ReloadStagingRenderTarget();
 		auto *el = ::WGUI::GetInstance().GetBaseElement(pWindow);
 		if(el)
@@ -1195,16 +1419,16 @@ std::shared_ptr<prosper::Window> CEngine::CreateWindow(prosper::WindowSettings &
 }
 void CEngine::InitializeWindowInputCallbacks(prosper::Window &window)
 {
-	window->SetKeyCallback([this, &window](GLFW::Window &glfwWindow, GLFW::Key key, int scanCode, GLFW::KeyState state, GLFW::Modifier mods) mutable { KeyboardInput(window, key, scanCode, state, mods); });
-	window->SetMouseButtonCallback([this, &window](GLFW::Window &glfwWindow, GLFW::MouseButton button, GLFW::KeyState state, GLFW::Modifier mods) mutable { MouseInput(window, button, state, mods); });
-	window->SetCharCallback([this, &window](GLFW::Window &glfwWindow, unsigned int c) mutable { CharInput(window, c); });
-	window->SetScrollCallback([this, &window](GLFW::Window &glfwWindow, Vector2 offset) mutable { ScrollInput(window, offset); });
-	window->SetFocusCallback([this, &window](GLFW::Window &glfwWindow, bool bFocused) mutable { OnWindowFocusChanged(window, bFocused); });
-	window->SetDropCallback([this, &window](GLFW::Window &glfwWindow, std::vector<std::string> &files) mutable { OnFilesDropped(window, files); });
-	window->SetDragEnterCallback([this, &window](GLFW::Window &glfwWindow) mutable { OnDragEnter(window); });
-	window->SetDragExitCallback([this, &window](GLFW::Window &glfwWindow) mutable { OnDragExit(window); });
-	window->SetOnShouldCloseCallback([this, &window](GLFW::Window &glfwWindow) -> bool { return OnWindowShouldClose(window); });
-	window->SetPreeditCallback([this, &window](GLFW::Window &glfwWindow, int preedit_count, unsigned int *preedit_string, int block_count, int *block_sizes, int focused_block, int caret) {
+	window->SetKeyCallback([this, &window](pragma::platform::Window &glfwWindow, pragma::platform::Key key, int scanCode, pragma::platform::KeyState state, pragma::platform::Modifier mods) mutable { KeyboardInput(window, key, scanCode, state, mods); });
+	window->SetMouseButtonCallback([this, &window](pragma::platform::Window &glfwWindow, pragma::platform::MouseButton button, pragma::platform::KeyState state, pragma::platform::Modifier mods) mutable { MouseInput(window, button, state, mods); });
+	window->SetCharCallback([this, &window](pragma::platform::Window &glfwWindow, unsigned int c) mutable { CharInput(window, c); });
+	window->SetScrollCallback([this, &window](pragma::platform::Window &glfwWindow, Vector2 offset) mutable { ScrollInput(window, offset); });
+	window->SetFocusCallback([this, &window](pragma::platform::Window &glfwWindow, bool bFocused) mutable { OnWindowFocusChanged(window, bFocused); });
+	window->SetDropCallback([this, &window](pragma::platform::Window &glfwWindow, std::vector<std::string> &files) mutable { OnFilesDropped(window, files); });
+	window->SetDragEnterCallback([this, &window](pragma::platform::Window &glfwWindow) mutable { OnDragEnter(window); });
+	window->SetDragExitCallback([this, &window](pragma::platform::Window &glfwWindow) mutable { OnDragExit(window); });
+	window->SetOnShouldCloseCallback([this, &window](pragma::platform::Window &glfwWindow) -> bool { return OnWindowShouldClose(window); });
+	window->SetPreeditCallback([this, &window](pragma::platform::Window &glfwWindow, int preedit_count, unsigned int *preedit_string, int block_count, int *block_sizes, int focused_block, int caret) {
 		std::vector<int32_t> istr;
 		istr.resize(preedit_count);
 		for(auto i = decltype(preedit_count) {0u}; i < preedit_count; ++i)
@@ -1217,7 +1441,7 @@ void CEngine::InitializeWindowInputCallbacks(prosper::Window &window)
 			blockSizes.push_back(block_sizes[i]);
 		OnPreedit(window, preeditString, blockSizes, focused_block, caret);
 	});
-	window->SetIMEStatusCallback([this, &window](GLFW::Window &glfwWindow) { OnIMEStatusChanged(window, glfwWindow.IsIMEEnabled()); });
+	window->SetIMEStatusCallback([this, &window](pragma::platform::Window &glfwWindow) { OnIMEStatusChanged(window, glfwWindow.IsIMEEnabled()); });
 }
 void CEngine::OnWindowResized(prosper::Window &window, Vector2i size)
 {
@@ -1231,14 +1455,14 @@ void CEngine::OnWindowInitialized()
 	pragma::RenderContext::OnWindowInitialized();
 	auto &window = GetRenderContext().GetWindow();
 	InitializeWindowInputCallbacks(window);
-	window->SetWindowSizeCallback([this, &window](GLFW::Window &glfwWindow, Vector2i size) mutable { OnWindowResized(window, size); });
+	window->SetWindowSizeCallback([this, &window](pragma::platform::Window &glfwWindow, Vector2i size) mutable { OnWindowResized(window, size); });
 
 	if(g_customWindowIcon.has_value()) {
 		auto imgBuf = uimg::load_image(*g_customWindowIcon, uimg::PixelFormat::LDR);
 		if(imgBuf) {
 			imgBuf->ToLDRFormat(uimg::Format::RGBA32);
 			window->SetWindowIcon(imgBuf->GetWidth(), imgBuf->GetHeight(), static_cast<uint8_t *>(imgBuf->GetData()));
-			GLFW::poll_events();
+			pragma::platform::poll_events();
 		}
 	}
 }
@@ -1254,18 +1478,18 @@ void CEngine::SetControllersEnabled(bool b)
 		return;
 	umath::set_flag(m_stateFlags, StateFlags::ControllersEnabled, b);
 	if(b == false) {
-		GLFW::set_joysticks_enabled(false);
+		pragma::platform::set_joysticks_enabled(false);
 		return;
 	}
-	GLFW::set_joysticks_enabled(true);
-	GLFW::set_joystick_axis_threshold(0.01f);
-	GLFW::set_joystick_button_callback([this](const GLFW::Joystick &joystick, uint32_t key, GLFW::KeyState oldState, GLFW::KeyState newState) {
+	pragma::platform::set_joysticks_enabled(true);
+	pragma::platform::set_joystick_axis_threshold(0.01f);
+	pragma::platform::set_joystick_button_callback([this](const pragma::platform::Joystick &joystick, uint32_t key, pragma::platform::KeyState oldState, pragma::platform::KeyState newState) {
 		auto keyOffset = GLFW_CUSTOM_KEY_JOYSTICK_0_KEY_START + joystick.GetJoystickId() * GLFW_CUSTOM_KEY_JOYSTICK_CONTROL_COUNT;
 		JoystickButtonInput(GetWindow(), joystick, key + keyOffset, newState);
 	});
-	GLFW::set_joystick_axis_callback([this](const GLFW::Joystick &joystick, uint32_t axisId, float oldVal, float newVal) {
+	pragma::platform::set_joystick_axis_callback([this](const pragma::platform::Joystick &joystick, uint32_t axisId, float oldVal, float newVal) {
 		m_rawInputJoystickMagnitude = newVal;
-		auto mods = GLFW::Modifier::None;
+		auto mods = pragma::platform::Modifier::None;
 		auto axisOffset = GLFW_CUSTOM_KEY_JOYSTICK_0_AXIS_START + joystick.GetJoystickId() * GLFW_CUSTOM_KEY_JOYSTICK_CONTROL_COUNT;
 		if(SEPARATE_JOYSTICK_AXES == true) {
 			axisId *= 2;
@@ -1274,7 +1498,7 @@ void CEngine::SetControllersEnabled(bool b)
 				auto prevMods = mods;
 				if(oldVal < 0.f) {
 					++prevAxisId;
-					prevMods |= GLFW::Modifier::AxisNegative;
+					prevMods |= pragma::platform::Modifier::AxisNegative;
 				}
 				JoystickAxisInput(GetWindow(), joystick, prevAxisId + axisOffset, prevMods, 0.f, 0.f - oldVal);
 				oldVal = 0.f;
@@ -1283,12 +1507,12 @@ void CEngine::SetControllersEnabled(bool b)
 				oldVal = -oldVal;
 				newVal = -newVal;
 				++axisId;
-				mods |= GLFW::Modifier::AxisNegative;
+				mods |= pragma::platform::Modifier::AxisNegative;
 			}
 		}
 		JoystickAxisInput(GetWindow(), joystick, axisId + axisOffset, mods, newVal, newVal - oldVal);
 	});
-	GLFW::set_joystick_state_callback([this](const GLFW::Joystick &joystick, bool bConnected) { c_engine->CallCallbacks<void, std::reference_wrapper<const GLFW::Joystick>, bool>("OnJoystickStateChanged", std::ref(joystick), bConnected); });
+	pragma::platform::set_joystick_state_callback([this](const pragma::platform::Joystick &joystick, bool bConnected) { c_engine->CallCallbacks<void, std::reference_wrapper<const pragma::platform::Joystick>, bool>("OnJoystickStateChanged", std::ref(joystick), bConnected); });
 }
 REGISTER_CONVAR_CALLBACK_CL(cl_controller_enabled, [](NetworkState *state, const ConVar &cv, bool oldVal, bool newVal) { c_engine->SetControllersEnabled(newVal); });
 
@@ -1324,10 +1548,16 @@ Engine::StateInstance &CEngine::GetClientStateInstance() { return *m_clInstance;
 		return {};
 	}
 	spdlog::info("Reloading shader {}...", name);
+#ifdef PRAGMA_ENABLE_VTUNE_PROFILING
+	debug::get_domain().BeginTask("Reloading shader " + name);
+#endif
 	whShader.get()->Initialize(true);
 	auto nummPipelines = whShader->GetPipelineCount();
 	for(auto i = decltype(nummPipelines) {0u}; i < nummPipelines; ++i)
 		whShader->GetPipelineInfo(i); // Force immediate reload
+#ifdef PRAGMA_ENABLE_VTUNE_PROFILING
+	debug::get_domain().EndTask();
+#endif
 	return whShader;
 }
 void CEngine::ReloadShaderPipelines()
@@ -1716,7 +1946,7 @@ std::chrono::nanoseconds CEngine::GetGpuExecutionTime(uint32_t swapchainIdx, GPU
 #include <buffers/prosper_dynamic_resizable_buffer.hpp>
 void CEngine::Think()
 {
-	GLFW::poll_joystick_events();
+	pragma::platform::poll_joystick_events();
 
 	auto tNow = util::Clock::now();
 
@@ -1755,7 +1985,7 @@ void CEngine::Think()
 	pragma::RenderContext::DrawFrame();
 	CallCallbacks("Draw");
 	StopProfilingStage(); // DrawFrame
-	GLFW::poll_events();  // Needs to be called AFTER rendering!
+	pragma::platform::poll_events();  // Needs to be called AFTER rendering!
 	auto &windows = GetRenderContext().GetWindows();
 	for(auto it = windows.begin(); it != windows.end();) {
 		auto &window = *it;
@@ -1813,7 +2043,7 @@ void CEngine::Tick()
 		}
 	}
 
-	Locale::Poll();
+	pragma::locale::poll();
 	ProcessConsoleInput();
 	RunTickEvents();
 
@@ -1924,7 +2154,7 @@ CEngine::DroppedFile::DroppedFile(const std::string &rootPath, const std::string
 }
 
 REGISTER_CONVAR_CALLBACK_CL(cl_render_monitor, [](NetworkState *, const ConVar &, int32_t, int32_t monitor) {
-	auto monitors = GLFW::get_monitors();
+	auto monitors = pragma::platform::get_monitors();
 	if(monitor < monitors.size() && monitor >= 0)
 		c_engine->GetWindow().SetMonitor(monitors[monitor]);
 })

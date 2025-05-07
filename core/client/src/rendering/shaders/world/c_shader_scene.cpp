@@ -10,10 +10,12 @@
 #include "pragma/rendering/renderers/rasterization_renderer.hpp"
 #include "pragma/rendering/lighting/c_light_data_buffer_manager.hpp"
 #include "pragma/rendering/render_processor.hpp"
+#include "pragma/rendering/global_render_settings_buffer_data.hpp"
 #include "pragma/entities/entity_instance_index_buffer.hpp"
 #include "pragma/entities/environment/lights/c_env_shadow.hpp"
 #include "pragma/entities/components/renderers/c_renderer_component.hpp"
 #include "pragma/entities/components/renderers/c_rasterization_renderer_component.hpp"
+#include "pragma/game/game_limits.h"
 #include "pragma/model/c_modelmesh.h"
 #include "pragma/model/vk_mesh.h"
 #include "pragma/entities/components/c_render_component.hpp"
@@ -31,13 +33,16 @@ extern DLLCLIENT CEngine *c_engine;
 
 using namespace pragma;
 
-decltype(ShaderScene::DESCRIPTOR_SET_RENDER_SETTINGS) ShaderScene::DESCRIPTOR_SET_RENDER_SETTINGS = {
-  "RENDER_SETTINGS",
-  {prosper::DescriptorSetInfo::Binding {"DEBUG", prosper::DescriptorType::UniformBuffer, prosper::ShaderStageFlags::FragmentBit},
+decltype(ShaderScene::DESCRIPTOR_SET_RENDER_SETTINGS) ShaderScene::DESCRIPTOR_SET_RENDER_SETTINGS = {"RENDER_SETTINGS",
+  {
+    prosper::DescriptorSetInfo::Binding {"DEBUG", prosper::DescriptorType::UniformBuffer, prosper::ShaderStageFlags::FragmentBit},
     prosper::DescriptorSetInfo::Binding {"TIME", prosper::DescriptorType::UniformBuffer, prosper::ShaderStageFlags::FragmentBit | prosper::ShaderStageFlags::VertexBit},
     prosper::DescriptorSetInfo::Binding {"CSM_DATA", prosper::DescriptorType::UniformBuffer, prosper::ShaderStageFlags::FragmentBit},
-    prosper::DescriptorSetInfo::Binding {"GLOBAL_ENTITY_INSTANCE_DATA", prosper::DescriptorType::StorageBuffer, prosper::ShaderStageFlags::FragmentBit | prosper::ShaderStageFlags::VertexBit}},
-};
+    prosper::DescriptorSetInfo::Binding {"GLOBAL_ENTITY_INSTANCE_DATA", prosper::DescriptorType::StorageBuffer, prosper::ShaderStageFlags::FragmentBit | prosper::ShaderStageFlags::VertexBit},
+#ifdef PRAGMA_ENABLE_SHADER_DEBUG_PRINT
+    prosper::DescriptorSetInfo::Binding {"DEBUG_PRINT", prosper::DescriptorType::StorageBuffer, prosper::ShaderStageFlags::FragmentBit | prosper::ShaderStageFlags::VertexBit},
+#endif
+  }};
 decltype(ShaderScene::DESCRIPTOR_SET_SCENE) ShaderScene::DESCRIPTOR_SET_SCENE = {
   "SCENE",
   {prosper::DescriptorSetInfo::Binding {"CAMERA", prosper::DescriptorType::UniformBuffer, prosper::ShaderStageFlags::FragmentBit | prosper::ShaderStageFlags::VertexBit | prosper::ShaderStageFlags::GeometryBit},
@@ -46,6 +51,10 @@ decltype(ShaderScene::DESCRIPTOR_SET_SCENE) ShaderScene::DESCRIPTOR_SET_SCENE = 
 decltype(ShaderScene::DESCRIPTOR_SET_RENDERER) ShaderScene::DESCRIPTOR_SET_RENDERER = {
   "RENDERER",
   {prosper::DescriptorSetInfo::Binding {"RENDERER", prosper::DescriptorType::UniformBuffer, prosper::ShaderStageFlags::FragmentBit}, prosper::DescriptorSetInfo::Binding {"SSAO_MAP", prosper::DescriptorType::CombinedImageSampler, prosper::ShaderStageFlags::FragmentBit},
+    prosper::DescriptorSetInfo::Binding {"LIGHT_BUFFERS", LIGHT_SOURCE_BUFFER_TYPE, prosper::ShaderStageFlags::FragmentBit},
+    prosper::DescriptorSetInfo::Binding {"VISIBLE_LIGHT_TILE_INDEX_BUFFER", prosper::DescriptorType::StorageBuffer, prosper::ShaderStageFlags::FragmentBit | prosper::ShaderStageFlags::VertexBit},
+    prosper::DescriptorSetInfo::Binding {"SHADOW_BUFFERS", LIGHT_SOURCE_BUFFER_TYPE, prosper::ShaderStageFlags::FragmentBit},
+    prosper::DescriptorSetInfo::Binding {"CSM_MAPS", prosper::DescriptorType::CombinedImageSampler, prosper::ShaderStageFlags::FragmentBit, umath::to_integral(GameLimits::MaxCSMCascades)},
     prosper::DescriptorSetInfo::Binding {"LIGHTMAP", prosper::DescriptorType::CombinedImageSampler, prosper::ShaderStageFlags::FragmentBit}, prosper::DescriptorSetInfo::Binding {"INDIRECT_LIGHTMAP", prosper::DescriptorType::CombinedImageSampler, prosper::ShaderStageFlags::FragmentBit},
     prosper::DescriptorSetInfo::Binding {"DIRECTIONAL_LIGHTMAP", prosper::DescriptorType::CombinedImageSampler, prosper::ShaderStageFlags::FragmentBit}},
 };
@@ -56,6 +65,22 @@ void ShaderScene::SetRenderPassSampleCount(prosper::SampleCountFlags samples) { 
 ShaderScene::ShaderScene(prosper::IPrContext &context, const std::string &identifier, const std::string &vsShader, const std::string &fsShader, const std::string &gsShader) : Shader3DBase(context, identifier, vsShader, fsShader, gsShader)
 {
 	//SetPipelineCount(umath::to_integral(Pipeline::Count));
+}
+bool ShaderScene::IsDebugPrintEnabled() const
+{
+#ifdef PRAGMA_ENABLE_SHADER_DEBUG_PRINT
+	return true;
+#else
+	return false;
+#endif
+}
+std::optional<std::string> ShaderScene::GetGlslPrefixCode(prosper::ShaderStage stage) const
+{
+#ifdef PRAGMA_ENABLE_SHADER_DEBUG_PRINT
+	if(IsDebugPrintEnabled() && (stage == prosper::ShaderStage::Fragment || stage == prosper::ShaderStage::Vertex))
+		return "#include \"/debug/debug_print.glsl\"\n";
+#endif
+	return Shader3DBase::GetGlslPrefixCode(stage);
 }
 bool ShaderScene::ShouldInitializePipeline(uint32_t pipelineIdx)
 {
@@ -93,13 +118,6 @@ void ShaderScene::InitializeRenderPass(std::shared_ptr<prosper::IRenderPass> &ou
 
 /////////////////////
 
-decltype(ShaderSceneLit::DESCRIPTOR_SET_LIGHTS) ShaderSceneLit::DESCRIPTOR_SET_LIGHTS = {
-  "LIGHTS",
-  {prosper::DescriptorSetInfo::Binding {"LIGHT_BUFFERS", LIGHT_SOURCE_BUFFER_TYPE, prosper::ShaderStageFlags::FragmentBit},
-    prosper::DescriptorSetInfo::Binding {"VISIBLE_LIGHT_TILE_INDEX_BUFFER", prosper::DescriptorType::StorageBuffer, prosper::ShaderStageFlags::FragmentBit | prosper::ShaderStageFlags::VertexBit},
-    prosper::DescriptorSetInfo::Binding {"SHADOW_BUFFERS", LIGHT_SOURCE_BUFFER_TYPE, prosper::ShaderStageFlags::FragmentBit},
-    prosper::DescriptorSetInfo::Binding {"CSM_MAPS", prosper::DescriptorType::CombinedImageSampler, prosper::ShaderStageFlags::FragmentBit, umath::to_integral(GameLimits::MaxCSMCascades)}},
-};
 decltype(ShaderSceneLit::DESCRIPTOR_SET_SHADOWS) ShaderSceneLit::DESCRIPTOR_SET_SHADOWS = {
   "SHADOWS",
   {prosper::DescriptorSetInfo::Binding {"MAPS", prosper::DescriptorType::CombinedImageSampler, prosper::ShaderStageFlags::FragmentBit, umath::to_integral(GameLimits::MaxActiveShadowMaps)},

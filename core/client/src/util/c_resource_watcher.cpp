@@ -6,9 +6,12 @@
  */
 
 #include "stdafx_client.h"
+#include "pragma/c_engine.h"
+#include "pragma/game/c_game.h"
 #include "pragma/util/c_resource_watcher.hpp"
 #include "pragma/entities/components/c_model_component.hpp"
 #include "pragma/entities/environment/effects/c_env_particle_system.h"
+#include "pragma/rendering/shader_graph/manager.hpp"
 #include "pragma/console/c_cvar.h"
 #include <texture_load_flags.hpp>
 #include <sharedutils/util_file.h>
@@ -17,8 +20,11 @@
 #include <pragma/entities/entity_iterator.hpp>
 #include <pragma/asset/util_asset.hpp>
 #include <prosper_glsl.hpp>
+#include <material_property_block_view.hpp>
 #include <cmaterial_manager2.hpp>
 #include <cmaterial.h>
+
+import pragma.shadergraph;
 
 extern DLLCLIENT CEngine *c_engine;
 extern DLLCLIENT CGame *c_game;
@@ -27,6 +33,9 @@ decltype(ECResourceWatcherCallbackType::Shader) ECResourceWatcherCallbackType::S
 decltype(ECResourceWatcherCallbackType::ParticleSystem) ECResourceWatcherCallbackType::ParticleSystem = ECResourceWatcherCallbackType {umath::to_integral(E::ParticleSystem)};
 decltype(ECResourceWatcherCallbackType::Count) ECResourceWatcherCallbackType::Count = ECResourceWatcherCallbackType {umath::to_integral(E::Count)};
 static auto cvMatStreaming = GetClientConVar("cl_material_streaming_enabled");
+
+CResourceWatcherManager::CResourceWatcherManager(NetworkState *nw) : ResourceWatcherManager(nw) {}
+
 void CResourceWatcherManager::ReloadTexture(const std::string &path)
 {
 	auto *nw = m_networkState;
@@ -49,34 +58,34 @@ void CResourceWatcherManager::ReloadTexture(const std::string &path)
 		if(bExt)
 			ext = '.' + ext;
 		ufile::remove_extension_from_filename(pathNoExt);
-		std::function<void(ds::Block &, CMaterial &)> fLookForTextureAndUpdate = nullptr;
-		fLookForTextureAndUpdate = [&fLookForTextureAndUpdate, &pathNoExt, &ext](ds::Block &dataBlock, CMaterial &mat) {
-			auto *data = dataBlock.GetData();
-			if(data == nullptr)
-				return;
-			for(auto &pair : *data) {
-				auto &dataVal = pair.second;
-				if(dataVal == nullptr)
-					continue;
-				if(dataVal->IsBlock()) {
-					fLookForTextureAndUpdate(static_cast<ds::Block &>(*dataVal), mat);
-					continue;
-				}
-				auto *dsTex = dynamic_cast<ds::Texture *>(dataVal.get());
-				if(dsTex != nullptr) {
-					auto &texInfo = dsTex->GetValue();
-					if(texInfo.texture == nullptr)
-						continue;
-					auto texName = texInfo.name;
-					ufile::remove_extension_from_filename(texName);
-					if(FileManager::ComparePath(texName, pathNoExt) == false)
-						continue;
-					auto identifier = pair.first;
-					auto &texture = texInfo.texture;
-					mat.CallOnLoaded([&mat, identifier, texture]() {
-						auto &tex = *static_cast<Texture *>(texture.get());
-						mat.SetTexture(identifier, &tex);
-					});
+
+		std::function<void(CMaterial &, const util::Path &path)> fLookForTextureAndUpdate = nullptr;
+		fLookForTextureAndUpdate = [&fLookForTextureAndUpdate, &pathNoExt](CMaterial &mat, const util::Path &path) {
+			for(auto &name : msys::MaterialPropertyBlockView {mat, path}) {
+				auto propType = mat.GetPropertyType(name);
+				switch(propType) {
+				case msys::PropertyType::Block:
+					fLookForTextureAndUpdate(mat, util::FilePath(path, name));
+					break;
+				case msys::PropertyType::Texture:
+					{
+						std::string texName;
+						if(!mat.GetProperty(util::FilePath(path, name).GetString(), &texName))
+							continue;
+						auto *texInfo = mat.GetTextureInfo(name);
+						if(!texInfo)
+							continue;
+						ufile::remove_extension_from_filename(texName);
+						if(FileManager::ComparePath(texName, pathNoExt) == false)
+							continue;
+						auto &identifier = name;
+						auto &texture = texInfo->texture;
+						mat.CallOnLoaded([&mat, identifier, texture]() {
+							auto &tex = *static_cast<Texture *>(texture.get());
+							mat.SetTexture(std::string {identifier}, &tex);
+						});
+						break;
+					}
 				}
 			}
 		};
@@ -89,9 +98,7 @@ void CResourceWatcherManager::ReloadTexture(const std::string &path)
 			auto hMat = msys::CMaterialManager::GetAssetObject(*asset);
 			if(!hMat)
 				continue;
-			auto &data = hMat.get()->GetDataBlock();
-			if(data != nullptr)
-				fLookForTextureAndUpdate(*data, static_cast<CMaterial &>(*hMat.get()));
+			fLookForTextureAndUpdate(static_cast<CMaterial &>(*hMat.get()), {});
 		}
 	};
 	texManager.LoadAsset(path, std::move(loadInfo));
@@ -123,6 +130,7 @@ void CResourceWatcherManager::GetWatchPaths(std::vector<std::string> &paths)
 	paths.reserve(paths.size() + 2);
 	paths.push_back("shaders");
 	paths.push_back("particles");
+	paths.push_back("scripts/shader_data");
 }
 
 void CResourceWatcherManager::OnResourceChanged(const util::Path &rootPath, const util::Path &path, const std::string &ext)
@@ -171,5 +179,18 @@ void CResourceWatcherManager::OnResourceChanged(const util::Path &rootPath, cons
 			c_engine->ReloadShader(name);
 		}
 		CallChangeCallbacks(ECResourceWatcherCallbackType::Shader, strPath, ext);
+	}
+	else if(ext == pragma::shadergraph::Graph::EXTENSION_ASCII || ext == pragma::shadergraph::Graph::EXTENSION_BINARY) {
+		auto &graphManager = c_engine->GetShaderGraphManager();
+		std::string name {path.GetFileName()};
+		ufile::remove_extension_from_filename(name, std::array<std::string, 2> {pragma::shadergraph::Graph::EXTENSION_ASCII, pragma::shadergraph::Graph::EXTENSION_BINARY});
+		std::string err;
+		auto graph = graphManager.LoadShader(name, err, false /* reload */);
+		if(graph == nullptr) {
+#if RESOURCE_WATCHER_VERBOSE > 0
+			Con::cwar << "[ResourceWatcher] Failed to reload shader graph '" << name << "': " << err << Con::endl;
+#endif
+			return;
+		}
 	}
 }

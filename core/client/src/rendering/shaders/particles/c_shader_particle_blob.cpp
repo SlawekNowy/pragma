@@ -6,6 +6,8 @@
  */
 
 #include "stdafx_client.h"
+#include "pragma/c_engine.h"
+#include "pragma/game/c_game.h"
 #include "pragma/rendering/shaders/particles/c_shader_particle_blob.hpp"
 #include "pragma/rendering/shaders/particles/c_shader_particle.hpp"
 #include "pragma/rendering/shaders/world/c_shader_pbr.hpp"
@@ -31,7 +33,6 @@ decltype(ShaderParticleBlob::DESCRIPTOR_SET_PARTICLE_DATA) ShaderParticleBlob::D
 decltype(ShaderParticleBlob::DESCRIPTOR_SET_SCENE) ShaderParticleBlob::DESCRIPTOR_SET_SCENE = {&ShaderParticle2DBase::DESCRIPTOR_SET_SCENE};
 decltype(ShaderParticleBlob::DESCRIPTOR_SET_RENDERER) ShaderParticleBlob::DESCRIPTOR_SET_RENDERER = {&ShaderParticle2DBase::DESCRIPTOR_SET_RENDERER};
 decltype(ShaderParticleBlob::DESCRIPTOR_SET_RENDER_SETTINGS) ShaderParticleBlob::DESCRIPTOR_SET_RENDER_SETTINGS = {&ShaderParticle2DBase::DESCRIPTOR_SET_RENDER_SETTINGS};
-decltype(ShaderParticleBlob::DESCRIPTOR_SET_LIGHTS) ShaderParticleBlob::DESCRIPTOR_SET_LIGHTS = {&ShaderParticle2DBase::DESCRIPTOR_SET_LIGHTS};
 decltype(ShaderParticleBlob::DESCRIPTOR_SET_SHADOWS) ShaderParticleBlob::DESCRIPTOR_SET_SHADOWS = {&ShaderParticle2DBase::DESCRIPTOR_SET_SHADOWS};
 decltype(ShaderParticleBlob::DESCRIPTOR_SET_PBR) ShaderParticleBlob::DESCRIPTOR_SET_PBR = {&ShaderPBR::DESCRIPTOR_SET_PBR};
 
@@ -61,8 +62,8 @@ std::shared_ptr<prosper::IDescriptorSetGroup> ShaderParticleBlob::InitializeMate
 	auto descSetGroup = c_engine->GetRenderContext().CreateDescriptorSetGroup(*m_materialDescSetInfo);
 	if(!descSetGroup)
 		return nullptr;
-	pragma::rendering::shader_material::ShaderMaterialData materialData {*m_shaderMaterial};
-	materialData.PopulateFromMaterial(mat);
+	pragma::rendering::ShaderInputData materialData {*m_shaderMaterial};
+	pragma::rendering::shader_material::ShaderMaterial::PopulateShaderInputDataFromMaterial(materialData, mat);
 	if(!ShaderGameWorldLightingPass::InitializeMaterialBuffer(*descSetGroup->GetDescriptorSet(), mat, materialData, 0u))
 		return nullptr;
 	mat.SetDescriptorSetGroup(*this, descSetGroup);
@@ -101,7 +102,6 @@ void ShaderParticleBlob::InitializeShaderResources()
 	AddDescriptorSetGroup(DESCRIPTOR_SET_SCENE);
 	AddDescriptorSetGroup(DESCRIPTOR_SET_RENDERER);
 	AddDescriptorSetGroup(DESCRIPTOR_SET_RENDER_SETTINGS);
-	AddDescriptorSetGroup(DESCRIPTOR_SET_LIGHTS);
 	AddDescriptorSetGroup(DESCRIPTOR_SET_SHADOWS);
 	AddDescriptorSetGroup(DESCRIPTOR_SET_PBR);
 }
@@ -118,9 +118,9 @@ void ShaderParticleBlob::InitializeGfxPipeline(prosper::GraphicsPipelineCreateIn
 }
 
 bool ShaderParticleBlob::RecordBindScene(prosper::ICommandBuffer &cmd, const prosper::IShaderPipelineLayout &layout, const pragma::CSceneComponent &scene, const pragma::CRasterizationRendererComponent &renderer, prosper::IDescriptorSet &dsScene, prosper::IDescriptorSet &dsRenderer,
-  prosper::IDescriptorSet &dsRenderSettings, prosper::IDescriptorSet &dsLights, prosper::IDescriptorSet &dsShadows) const
+  prosper::IDescriptorSet &dsRenderSettings, prosper::IDescriptorSet &dsShadows) const
 {
-	return ShaderParticle2DBase::RecordBindScene(cmd, layout, scene, renderer, dsScene, dsRenderer, dsRenderSettings, dsLights, dsShadows);
+	return ShaderParticle2DBase::RecordBindScene(cmd, layout, scene, renderer, dsScene, dsRenderer, dsRenderSettings, dsShadows);
 }
 
 bool ShaderParticleBlob::RecordDraw(prosper::ShaderBindState &bindState, pragma::CSceneComponent &scene, const CRasterizationRendererComponent &renderer, const pragma::CParticleSystemComponent &ps, pragma::CParticleSystemComponent::OrientationType orientationType,
@@ -141,12 +141,9 @@ bool ShaderParticleBlob::RecordDraw(prosper::ShaderBindState &bindState, pragma:
 		auto &psColorFactor = ps.GetColorFactor();
 		colorFactor *= psColorFactor;
 		if(mat) {
-			auto &data = mat->GetDataBlock();
-			auto &dColorFactor = data->GetValue("color_factor");
-			if(dColorFactor != nullptr && typeid(*dColorFactor) == typeid(ds::Vector4)) {
-				auto &matColorFactor = static_cast<ds::Vector4 *>(dColorFactor.get())->GetValue();
+			Vector4 matColorFactor;
+			if(mat->GetProperty("color_factor", &matColorFactor))
 				colorFactor *= matColorFactor;
-			}
 		}
 	}
 

@@ -11,6 +11,7 @@
 #include "pragma/clientdefinitions.h"
 #include "pragma/entities/c_baseentity.h"
 #include "pragma/entities/components/c_entity_component.hpp"
+#include "sharedutils/util_parallel_job.hpp"
 #include <pragma/entities/components/base_entity_component.hpp>
 
 namespace prosper {
@@ -68,6 +69,8 @@ namespace pragma {
 		Material *LoadMaterial(bool &outIsDefault);
 
 		void InitializeDescriptorSet();
+		void ClearDescriptorSet();
+		void ClearIblData();
 		util::ParallelJob<uimg::ImageLayerSet> CaptureRaytracedIBLReflectionsFromScene(uint32_t width, uint32_t height, const Vector3 &camPos, const Quat &camRot, float nearZ, float farZ, umath::Degree fov, float exposure, const std::vector<BaseEntity *> *optEntityList = nullptr,
 		  bool renderJob = false);
 		bool FinalizeCubemap(prosper::IImage &imgCubemap);

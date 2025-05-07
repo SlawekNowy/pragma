@@ -6,6 +6,7 @@
  */
 
 #include "stdafx_client.h"
+#include "pragma/c_engine.h"
 #include "pragma/rendering/shaders/c_shader_forwardp_light_culling.hpp"
 #include "pragma/rendering/lighting/c_light_data_buffer_manager.hpp"
 #include <shader/prosper_pipeline_create_info.hpp>
@@ -16,8 +17,10 @@ using namespace pragma;
 extern DLLCLIENT CEngine *c_engine;
 
 uint32_t ShaderForwardPLightCulling::TILE_SIZE = 16u;
+// Note: We *have* to call this descriptor set "RENDERER" because that's the same used in the scene shader
+// and they have to match, otherwise the GLSL parser will not be able to resolve the descriptor set
 decltype(ShaderForwardPLightCulling::DESCRIPTOR_SET_LIGHTS) ShaderForwardPLightCulling::DESCRIPTOR_SET_LIGHTS = {
-  "LIGHTS",
+  "RENDERER",
   {prosper::DescriptorSetInfo::Binding {"LIGHT_BUFFERS", LIGHT_SOURCE_BUFFER_TYPE, prosper::ShaderStageFlags::ComputeBit}, prosper::DescriptorSetInfo::Binding {"VISIBLE_LIGHT_TILE_INDEX_BUFFER", prosper::DescriptorType::StorageBuffer, prosper::ShaderStageFlags::ComputeBit},
     prosper::DescriptorSetInfo::Binding {"SHADOW_BUFFERS", LIGHT_SOURCE_BUFFER_TYPE, prosper::ShaderStageFlags::ComputeBit}, prosper::DescriptorSetInfo::Binding {"VISIBLE_LIGHT_INDEX_BUFFER", prosper::DescriptorType::StorageBuffer, prosper::ShaderStageFlags::ComputeBit},
     prosper::DescriptorSetInfo::Binding {"DEPTH_MAP", prosper::DescriptorType::CombinedImageSampler, prosper::ShaderStageFlags::ComputeBit}},

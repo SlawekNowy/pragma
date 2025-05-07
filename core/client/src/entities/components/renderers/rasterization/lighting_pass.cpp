@@ -13,6 +13,7 @@
 #include "pragma/rendering/shaders/world/c_shader_prepass.hpp"
 #include "pragma/rendering/shaders/info/c_shader_velocity_buffer.hpp"
 #include "pragma/rendering/c_renderflags.h"
+#include "pragma/rendering/global_render_settings_buffer_data.hpp"
 #include "pragma/entities/environment/effects/c_env_particle_system.h"
 #include "pragma/entities/components/c_render_component.hpp"
 #include "pragma/entities/components/c_animated_component.hpp"
@@ -82,19 +83,19 @@ void pragma::CRasterizationRendererComponent::RecordPrepass(const util::DrawScen
 			if(drawSceneInfo.renderStats)
 				drawSceneInfo.renderStats->GetPassStats(RenderStats::RenderPass::Prepass)->SetTime(RenderPassStats::Timer::RenderThreadWait, std::chrono::steady_clock::now() - t);
 			for(auto i = decltype(worldRenderQueues.size()) {0u}; i < worldRenderQueues.size(); ++i)
-				rsys.Render(*worldRenderQueues.at(i), prepassStats, i);
+				rsys.Render(*worldRenderQueues.at(i), pragma::rendering::RenderPass::Prepass, prepassStats, i);
 		}
 
 		// Note: The non-translucent render queues also include transparent (alpha masked) objects.
 		// We don't care about translucent objects here.
 		if((renderPassDrawInfo.drawSceneInfo.renderFlags & RenderFlags::World) != RenderFlags::None) {
-			rsys.Render(*sceneRenderDesc.GetRenderQueue(pragma::rendering::SceneRenderPass::World, false /* translucent */), prepassStats);
+			rsys.Render(*sceneRenderDesc.GetRenderQueue(pragma::rendering::SceneRenderPass::World, false /* translucent */), pragma::rendering::RenderPass::Prepass, prepassStats);
 
 			auto &queueTranslucent = *sceneRenderDesc.GetRenderQueue(pragma::rendering::SceneRenderPass::World, true /* translucent */);
 			queueTranslucent.WaitForCompletion(prepassStats);
 			if(queueTranslucent.queue.empty() == false) {
 				// rsys.BindShader(shaderPrepass,umath::to_integral(pragma::ShaderPrepass::Pipeline::AlphaTest));
-				rsys.Render(queueTranslucent, prepassStats);
+				rsys.Render(queueTranslucent, pragma::rendering::RenderPass::Prepass, prepassStats);
 			}
 		}
 
@@ -106,7 +107,7 @@ void pragma::CRasterizationRendererComponent::RecordPrepass(const util::DrawScen
 				rsys.SetCameraType(pragma::rendering::BaseRenderProcessor::CameraType::View);
 				rsys.BindShader(shaderPrepass, umath::to_integral(pragma::ShaderPrepass::Pipeline::Opaque));
 				// rsys.BindShader(shaderPrepass,umath::to_integral(pragma::ShaderPrepass::Pipeline::Opaque));
-				rsys.Render(queue, prepassStats);
+				rsys.Render(queue, pragma::rendering::RenderPass::Prepass, prepassStats);
 			}
 		}
 		rsys.UnbindShader();
@@ -131,6 +132,9 @@ void pragma::CRasterizationRendererComponent::UpdatePrepassRenderBuffers(const u
 		CSceneComponent::UpdateRenderBuffers(drawCmd, *sceneRenderDesc.GetRenderQueue(pragma::rendering::SceneRenderPass::View, false /* translucent */), drawSceneInfo.renderStats ? &drawSceneInfo.renderStats->GetPassStats(RenderStats::RenderPass::Prepass) : nullptr);
 		CSceneComponent::UpdateRenderBuffers(drawCmd, *sceneRenderDesc.GetRenderQueue(pragma::rendering::SceneRenderPass::View, true /* translucent */), drawSceneInfo.renderStats ? &drawSceneInfo.renderStats->GetPassStats(RenderStats::RenderPass::Prepass) : nullptr);
 	}
+
+	CEUpdateRenderBuffers evData {drawSceneInfo};
+	InvokeEventCallbacks(EVENT_UPDATE_RENDER_BUFFERS, evData);
 
 	c_game->CallLuaCallbacks<void, const util::DrawSceneInfo *>("UpdateRenderBuffers", &drawSceneInfo);
 	//
@@ -316,7 +320,7 @@ void pragma::CRasterizationRendererComponent::RecordLightingPass(const util::Dra
 
 			InvokeEventCallbacks(EVENT_MT_END_RECORD_SKYBOX, evDataLightingStage);
 			c_game->StopGPUProfilingStage(); // Skybox
-			c_game->StopProfilingStage(); // Skybox
+			c_game->StopProfilingStage();    // Skybox
 		}
 
 		// Render static world geometry
@@ -352,7 +356,7 @@ void pragma::CRasterizationRendererComponent::RecordLightingPass(const util::Dra
 
 				InvokeEventCallbacks(EVENT_MT_END_RECORD_WORLD, evDataLightingStage);
 				c_game->StopGPUProfilingStage(); // World
-				c_game->StopProfilingStage(); // World
+				c_game->StopProfilingStage();    // World
 			}
 #if DEBUG_RENDER_PERFORMANCE_TEST_ENABLED == 1
 		}
@@ -518,7 +522,7 @@ void pragma::CRasterizationRendererComponent::RecordLightingPass(const util::Dra
 
 			InvokeEventCallbacks(EVENT_MT_END_RECORD_DEBUG, evDataLightingStage);
 			c_game->StopGPUProfilingStage(); // Debug
-			c_game->StopProfilingStage(); // Debug
+			c_game->StopProfilingStage();    // Debug
 		}
 
 		if((drawSceneInfo.renderFlags & RenderFlags::View) != RenderFlags::None) {
@@ -545,7 +549,7 @@ void pragma::CRasterizationRendererComponent::RecordLightingPass(const util::Dra
 
 			InvokeEventCallbacks(EVENT_MT_END_RECORD_VIEW, evDataLightingStage);
 			c_game->StopGPUProfilingStage(); // View
-			c_game->StopProfilingStage(); // View
+			c_game->StopProfilingStage();    // View
 		}
 		c_game->StopProfilingStage(); // RecordLightingPass
 	});

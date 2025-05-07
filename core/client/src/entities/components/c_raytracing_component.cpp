@@ -6,6 +6,8 @@
  */
 
 #include "stdafx_client.h"
+#include "pragma/game/c_game.h"
+#include "pragma/c_engine.h"
 #include "pragma/entities/components/c_raytracing_component.hpp"
 #include "pragma/entities/components/c_render_component.hpp"
 #include "pragma/entities/components/c_animated_component.hpp"
@@ -186,8 +188,8 @@ void CRaytracingComponent::UpdateBuffers(prosper::IPrimaryCommandBuffer &cmd)
 	if(umath::is_flag_set(m_stateFlags, StateFlags::RenderBufferDirty)) {
 		umath::set_flag(m_stateFlags, StateFlags::RenderBufferDirty, false);
 		auto &renderComponent = *whRenderComponent;
-		auto &wpRenderBuffer = renderComponent.GetRenderBuffer();
-		auto index = wpRenderBuffer.GetBaseIndex(); //wpRenderBuffer ? static_cast<prosper::IBuffer::SmallOffset>(wpRenderBuffer->GetBaseIndex()) : prosper::IBuffer::INVALID_SMALL_OFFSET;
+		auto *renderBuffer = renderComponent.GetRenderBuffer();
+		auto index = renderBuffer->GetBaseIndex(); //wpRenderBuffer ? static_cast<prosper::IBuffer::SmallOffset>(wpRenderBuffer->GetBaseIndex()) : prosper::IBuffer::INVALID_SMALL_OFFSET;
 		for(auto &buf : m_subMeshBuffers)
 			cmd.RecordUpdateGenericShaderReadBuffer(*buf, offsetof(SubMeshRenderInfoBufferData, entityBufferIndex), sizeof(index), &index);
 	}

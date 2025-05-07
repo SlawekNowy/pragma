@@ -18,6 +18,7 @@
 #include "pragma/entities/components/c_player_component.hpp"
 #include <wgui/wgui.h>
 #include "pragma/rendering/renderers/rasterization_renderer.hpp"
+#include "pragma/rendering/global_shader_input_manager.hpp"
 #include "pragma/console/c_cvar.h"
 #include "pragma/console/c_cvar_global_functions.h"
 #include "pragma/entities/components/c_vehicle_component.hpp"
@@ -31,6 +32,7 @@
 #include "pragma/rendering/rendersystem.h"
 #include "pragma/rendering/render_queue.hpp"
 #include "pragma/rendering/scene/util_draw_scene_info.hpp"
+#include "pragma/rendering/global_render_settings_buffer_data.hpp"
 #include "pragma/entities/baseentity.h"
 #include "pragma/entities/components/renderers/c_renderer_component.hpp"
 #include "pragma/entities/components/renderers/c_rasterization_renderer_component.hpp"
@@ -71,7 +73,7 @@ extern DLLCLIENT CEngine *c_engine;
 extern DLLCLIENT ClientState *client;
 extern DLLCLIENT CGame *c_game;
 
-static void CVAR_CALLBACK_render_vsync_enabled(NetworkState *, const ConVar &, int, int val) { glfwSwapInterval((val == 0) ? 0 : 1); }
+static void CVAR_CALLBACK_render_vsync_enabled(NetworkState *, const ConVar &, int, int val) { pragma::platform::set_swap_interval((val == 0) ? 0 : 1); }
 REGISTER_CONVAR_CALLBACK_CL(render_vsync_enabled, CVAR_CALLBACK_render_vsync_enabled);
 
 static CallbackHandle cbDrawPhysics;
@@ -345,6 +347,13 @@ static CVar cvClearSceneColor = GetClientConVar("render_clear_scene_color");
 static CVar cvParticleQuality = GetClientConVar("cl_render_particle_quality");
 void CGame::RenderScenes(util::DrawSceneInfo &drawSceneInfo)
 {
+#ifdef PRAGMA_ENABLE_SHADER_DEBUG_PRINT
+	GetGlobalRenderSettingsBufferData().EvaluateDebugPrint();
+#endif
+
+	auto &inputDataManager = GetGlobalShaderInputDataManager();
+	inputDataManager.UpdateBufferData(*drawSceneInfo.commandBuffer);
+
 	StartProfilingStage("RenderScenes");
 	util::ScopeGuard sg {[this]() {
 		StopProfilingStage(); // RenderScenes
@@ -573,9 +582,9 @@ void CGame::RenderScenes(const std::vector<util::DrawSceneInfo> &drawSceneInfos)
 			}
 
 			if(drawWorld == 2)
-				drawSceneInfo.renderFlags &= ~(RenderFlags::Shadows | RenderFlags::Glow);
+				drawSceneInfo.renderFlags &= ~(RenderFlags::Shadows);
 			else if(drawWorld == 0)
-				drawSceneInfo.renderFlags &= ~(RenderFlags::Shadows | RenderFlags::Glow | RenderFlags::View | RenderFlags::World | RenderFlags::Skybox);
+				drawSceneInfo.renderFlags &= ~(RenderFlags::Shadows | RenderFlags::View | RenderFlags::World | RenderFlags::Skybox);
 
 			if(cvDrawStatic->GetBool() == false)
 				drawSceneInfo.renderFlags &= ~RenderFlags::Static;

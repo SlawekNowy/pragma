@@ -23,7 +23,7 @@ function gui.WIFileDialog:OnInitialize()
 
 	local pButtonOpen = gui.create("WIButton", self)
 	pButtonOpen:AddCallback("OnPressed", function(pButton)
-		self:CallCallbacks("OnFileSelected", self:GetFilePath(true))
+		self:CallCallbacks("OnFileSelected", self:GetFilePath(false))
 		self:Close()
 	end)
 	self.m_pButtonOpen = pButtonOpen
@@ -165,13 +165,10 @@ function gui.WIFileDialog:GetFilePath(relativePath)
 		return ""
 	end
 	local path = relativePath and self.m_pFileList:GetPath() or self.m_pFileList:GetAbsolutePath()
-	if path == "/" then
-		path = ""
-	end
 	if util.is_valid(self.m_pFileName) == false then
 		return ""
 	end
-	return path .. self.m_pFileName:GetText()
+	return util.FilePath(path, self.m_pFileName:GetText()):GetString()
 end
 function gui.WIFileDialog:SetType(type)
 	self.m_type = type

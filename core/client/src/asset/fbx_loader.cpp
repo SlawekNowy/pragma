@@ -5,9 +5,11 @@
  * Copyright (c) 2024 Silverlan
  */
 
+#include <mathutil/umath.h>
+#include <glm/gtx/euler_angles.hpp>
 #include "asset/fbx_loader.hpp"
-#include <panima/animation.hpp>
-#include <panima/channel.hpp>
+#include "pragma/game/c_game.h"
+#include "pragma/clientstate/clientstate.h"
 #include <pragma/model/c_modelmesh.h>
 #include <pragma/model/c_model.h>
 #include <pragma/model/animation/bone.hpp>
@@ -26,6 +28,8 @@
 #include "pragma/asset/c_util_model.hpp"
 #include <cmaterial_manager2.hpp>
 #include <texturemanager/texture_manager2.hpp>
+
+import panima;
 
 using namespace pragma::asset::fbx;
 extern DLLCLIENT CGame *c_game;
@@ -201,8 +205,6 @@ std::optional<uint32_t> FbxImporter::LoadMaterial(const ofbx::Material &fbxMat, 
 	auto mat = client->CreateMaterial(relMatPath.GetString(), "pbr");
 	auto *cmat = static_cast<CMaterial *>(mat.get());
 
-	auto &dataBlock = mat->GetDataBlock();
-
 	auto importAndAssignTexture = [&importTexture, cmat](ofbx::Texture::TextureType etex, const std::string &matIdentifier) -> std::optional<std::string> {
 		auto texPath = importTexture(etex);
 		if(!texPath)
@@ -217,11 +219,11 @@ std::optional<uint32_t> FbxImporter::LoadMaterial(const ofbx::Material &fbxMat, 
 	importAndAssignTexture(ofbx::Texture::TextureType::NORMAL, Material::NORMAL_MAP_IDENTIFIER);
 	importAndAssignTexture(ofbx::Texture::TextureType::EMISSIVE, Material::EMISSION_MAP_IDENTIFIER);
 
-	auto applyColorFactor = [&fbxMat, &dataBlock](const ofbx::Color &fbxColor, double factor, const std::string &matProp) {
+	auto applyColorFactor = [&fbxMat, mat](const ofbx::Color &fbxColor, double factor, const std::string &matProp) {
 		Vector3 colorFactor {fbxColor.r, fbxColor.g, fbxColor.b};
 		colorFactor *= factor;
 		if(umath::abs(1.f - colorFactor.x) > 0.001f || umath::abs(1.f - colorFactor.y) > 0.001f || umath::abs(1.f - colorFactor.z) > 0.001f)
-			dataBlock->AddValue("vector", matProp, std::to_string(colorFactor.x) + ' ' + std::to_string(colorFactor.y) + ' ' + std::to_string(colorFactor.z));
+			mat->SetProperty(matProp, colorFactor);
 	};
 	applyColorFactor(fbxMat.getDiffuseColor(), fbxMat.getDiffuseFactor(), "color_factor");
 	applyColorFactor(fbxMat.getEmissiveColor(), fbxMat.getEmissiveFactor(), "emission_factor");
@@ -229,7 +231,6 @@ std::optional<uint32_t> FbxImporter::LoadMaterial(const ofbx::Material &fbxMat, 
 	// TODO
 	//dataBlock->AddValue("float", "roughness_factor", std::to_string(pbrMetallicRoughness.roughnessFactor));
 	//dataBlock->AddValue("float", "metalness_factor", std::to_string(pbrMetallicRoughness.metallicFactor));
-
 
 	auto *combine = static_cast<pragma::ShaderCombineImageChannels *>(c_engine->GetShader("combine_image_channels").get());
 	auto *rma = static_cast<pragma::ShaderSpecularGlossinessToMetalnessRoughness *>(c_engine->GetShader("specular_glossiness_to_metalness_roughness").get());
@@ -1067,7 +1068,7 @@ std::optional<pragma::asset::AssetImportResult> FbxImporter::Load(std::string &o
 	return result;
 }
 Vector3 FbxImporter::GetTranslation(const ofbx::DVec3 &o) { return {o.x, o.y, o.z}; }
-#include <glm/gtx/euler_angles.hpp>
+
 Quat FbxImporter::GetRotation(const ofbx::DVec3 &o, RotationOrder order)
 {
 	order = RotationOrder::Yxz;

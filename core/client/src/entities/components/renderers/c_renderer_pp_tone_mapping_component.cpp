@@ -6,6 +6,7 @@
  */
 
 #include "stdafx_client.h"
+#include "pragma/game/c_game.h"
 #include "pragma/entities/components/renderers/c_renderer_pp_tone_mapping_component.hpp"
 #include "pragma/entities/components/renderers/c_renderer_component.hpp"
 #include "pragma/entities/components/renderers/c_rasterization_renderer_component.hpp"
@@ -67,7 +68,6 @@ void CRendererPpToneMappingComponent::DoRenderEffect(const util::DrawSceneInfo &
 		prosper::ShaderBindState bindState {*drawCmd};
 		if(shaderPPHdr.RecordBeginDraw(bindState, umath::to_integral(pipeline)) == true) {
 			const float bloomAdditiveScale = 0.5f;
-			auto glowScale = 0.f; //(GetGlowInfo().bGlowScheduled == true) ? 1.f : 0.f;
 
 			rendering::ToneMapping toneMapping;
 			if(drawSceneInfo.toneMapping.has_value())
@@ -84,12 +84,12 @@ void CRendererPpToneMappingComponent::DoRenderEffect(const util::DrawSceneInfo &
 				}
 			}
 
-			shaderPPHdr.RecordDraw(bindState, descSetHdrResolve, toneMapping, m_renderer->GetHDRExposure(), bloomAdditiveScale, glowScale, umath::is_flag_set(drawSceneInfo.flags, util::DrawSceneInfo::Flags::FlipVertically));
+			shaderPPHdr.RecordDraw(bindState, descSetHdrResolve, toneMapping, m_renderer->GetHDRExposure(), bloomAdditiveScale, umath::is_flag_set(drawSceneInfo.flags, util::DrawSceneInfo::Flags::FlipVertically));
 			shaderPPHdr.RecordEndDraw(bindState);
 		}
 		drawCmd->RecordEndRenderPass();
 
-		drawCmd->RecordPostRenderPassImageBarrier(dstImgPostHdr, prosper::ImageLayout::ColorAttachmentOptimal, prosper::ImageLayout::TransferSrcOptimal);
+		drawCmd->RecordPostRenderPassImageBarrier(dstImgPostHdr, prosper::ImageLayout::ColorAttachmentOptimal, m_applyToHdrImage ? prosper::ImageLayout::ShaderReadOnlyOptimal : prosper::ImageLayout::TransferSrcOptimal);
 	}
 	if(m_renderer->IsMultiSampled() == false) {
 		drawCmd->RecordImageBarrier(*srcImg, prosper::ImageLayout::ShaderReadOnlyOptimal, prosper::ImageLayout::ColorAttachmentOptimal);
@@ -99,6 +99,6 @@ void CRendererPpToneMappingComponent::DoRenderEffect(const util::DrawSceneInfo &
 	}
 
 	if(m_applyToHdrImage)
-		hdrInfo.BlitStagingRenderTargetToMainRenderTarget(drawSceneInfo);
+		hdrInfo.BlitStagingRenderTargetToMainRenderTarget(drawSceneInfo, prosper::ImageLayout::ColorAttachmentOptimal);
 }
 void CRendererPpToneMappingComponent::InitializeLuaObject(lua_State *l) { return BaseEntityComponent::InitializeLuaObject<std::remove_reference_t<decltype(*this)>>(l); }

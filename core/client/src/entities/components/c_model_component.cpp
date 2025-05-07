@@ -6,6 +6,8 @@
  */
 
 #include "stdafx_client.h"
+#include "pragma/game/c_game.h"
+#include "pragma/clientstate/clientstate.h"
 #include "pragma/entities/components/c_model_component.hpp"
 #include "pragma/entities/components/c_render_component.hpp"
 #include "pragma/entities/components/c_color_component.hpp"
@@ -25,6 +27,8 @@
 #include <cmaterial_manager2.hpp>
 #include <cmaterial.h>
 
+import pragma.client.entities.components;
+
 using namespace pragma;
 
 extern DLLCLIENT CEngine *c_engine;
@@ -32,14 +36,12 @@ extern DLLCLIENT CGame *c_game;
 extern DLLCLIENT ClientState *client;
 
 ComponentEventId CModelComponent::EVENT_ON_RENDER_MESHES_UPDATED = INVALID_COMPONENT_ID;
-ComponentEventId CModelComponent::EVENT_ON_MATERIAL_OVERRIDES_CLEARED = INVALID_COMPONENT_ID;
 ComponentEventId CModelComponent::EVENT_ON_GAME_SHADER_SPECIALIZATION_CONSTANT_FLAGS_UPDATED = INVALID_COMPONENT_ID;
 void CModelComponent::InitializeLuaObject(lua_State *l) { return BaseEntityComponent::InitializeLuaObject<std::remove_reference_t<decltype(*this)>>(l); }
 void CModelComponent::RegisterEvents(pragma::EntityComponentManager &componentManager, TRegisterComponentEvent registerEvent)
 {
 	BaseModelComponent::RegisterEvents(componentManager, registerEvent);
 	EVENT_ON_RENDER_MESHES_UPDATED = registerEvent("EVENT_ON_RENDER_MESHES_UPDATED", ComponentEventInfo::Type::Explicit);
-	EVENT_ON_MATERIAL_OVERRIDES_CLEARED = registerEvent("EVENT_ON_MATERIAL_OVERRIDES_CLEARED", ComponentEventInfo::Type::Broadcast);
 	EVENT_ON_GAME_SHADER_SPECIALIZATION_CONSTANT_FLAGS_UPDATED = registerEvent("EVENT_ON_GAME_SHADER_SPECIALIZATION_CONSTANT_FLAGS_UPDATED", ComponentEventInfo::Type::Broadcast);
 }
 
@@ -88,39 +90,7 @@ void CModelComponent::UpdateBaseShaderSpecializationFlags()
 	InvokeEventCallbacks(EVENT_ON_GAME_SHADER_SPECIALIZATION_CONSTANT_FLAGS_UPDATED);
 }
 
-void CModelComponent::SetMaterialOverride(uint32_t idx, const std::string &matOverride)
-{
-	auto *mat = client->LoadMaterial(matOverride);
-	if(mat)
-		SetMaterialOverride(idx, static_cast<CMaterial &>(*mat));
-	else
-		ClearMaterialOverride(idx);
-}
-void CModelComponent::SetMaterialOverride(uint32_t idx, CMaterial &mat)
-{
-	if(idx >= m_materialOverrides.size())
-		m_materialOverrides.resize(idx + 1);
-	m_materialOverrides.at(idx) = mat.GetHandle();
-	umath::set_flag(m_stateFlags, StateFlags::RenderMeshUpdateRequired);
-	mat.UpdateTextures(); // Ensure all textures have been fully loaded
-}
-void CModelComponent::ClearMaterialOverride(uint32_t idx)
-{
-	if(idx >= m_materialOverrides.size())
-		return;
-	m_materialOverrides.at(idx) = {};
-	umath::set_flag(m_stateFlags, StateFlags::RenderMeshUpdateRequired);
-}
-void CModelComponent::ClearMaterialOverrides()
-{
-	if(m_materialOverrides.empty())
-		return;
-	m_materialOverrides.clear();
-	umath::set_flag(m_stateFlags, StateFlags::RenderMeshUpdateRequired);
-	BroadcastEvent(EVENT_ON_MATERIAL_OVERRIDES_CLEARED);
-}
-CMaterial *CModelComponent::GetMaterialOverride(uint32_t idx) const { return (idx < m_materialOverrides.size()) ? static_cast<CMaterial *>(m_materialOverrides.at(idx).get()) : nullptr; }
-const std::vector<msys::MaterialHandle> &CModelComponent::GetMaterialOverrides() const { return m_materialOverrides; }
+CMaterialOverrideComponent *CModelComponent::GetMaterialOverrideComponent() { return m_materialOverrideComponent; }
 
 CMaterial *CModelComponent::GetRenderMaterial(uint32_t idx, uint32_t skin) const
 {
@@ -134,9 +104,11 @@ CMaterial *CModelComponent::GetRenderMaterial(uint32_t idx, uint32_t skin) const
 	if(texGroup == nullptr || idx >= texGroup->textures.size())
 		return nullptr;
 	idx = texGroup->textures.at(idx);
-	auto *matOverride = GetMaterialOverride(idx);
-	if(matOverride)
-		return matOverride;
+	if(m_materialOverrideComponent) {
+		auto *matOverride = m_materialOverrideComponent->GetRenderMaterial(idx);
+		if(matOverride)
+			return matOverride;
+	}
 	auto *mat = static_cast<CMaterial *>(mdl->GetMaterial(idx));
 	return mat ? mat : static_cast<CMaterial *>(client->GetMaterialManager().GetErrorMaterial());
 }
@@ -297,7 +269,7 @@ void CModelComponent::UpdateRenderBufferList()
 		if(mat == nullptr || shader == nullptr)
 			continue;
 		renderBufferData.pipelineSpecializationFlags = shader->GetMaterialPipelineSpecializationRequirements(*mat);
-		if(mat->GetDataBlock()->GetBool("test_glow", false))
+		if(mat->GetProperty("test_glow", false))
 			umath::set_flag(renderBufferData.stateFlags, pragma::rendering::RenderBufferData::StateFlags::EnableGlowPass);
 	}
 }
@@ -312,6 +284,7 @@ void CModelComponent::UpdateRenderMeshes(bool requireBoundingVolumeUpdate)
 		Con::cwar << "Attempted to update render meshes from non-main thread, this is illegal!" << Con::endl;
 		return;
 	}
+	auto renderMeshesUpdated = false;
 	if(umath::is_flag_set(m_stateFlags, StateFlags::RenderMeshUpdateRequired)) {
 		umath::set_flag(m_stateFlags, StateFlags::RenderMeshUpdateRequired, false);
 		m_lodRenderMeshes.clear();
@@ -340,9 +313,12 @@ void CModelComponent::UpdateRenderMeshes(bool requireBoundingVolumeUpdate)
 				m_lodRenderMeshGroups[i] = {subMeshOffset, m_lodRenderMeshes.size() - subMeshOffset};
 			}
 		}
+
+		renderMeshesUpdated = true;
 	}
 	UpdateRenderBufferList();
-	BroadcastEvent(EVENT_ON_RENDER_MESHES_UPDATED, CEOnRenderMeshesUpdated {requireBoundingVolumeUpdate});
+	if(renderMeshesUpdated)
+		BroadcastEvent(EVENT_ON_RENDER_MESHES_UPDATED, CEOnRenderMeshesUpdated {requireBoundingVolumeUpdate});
 }
 
 void CModelComponent::UpdateLOD(UInt32 lod)
@@ -469,12 +445,16 @@ void CModelComponent::OnEntityComponentAdded(BaseEntityComponent &component)
 	BaseModelComponent::OnEntityComponentAdded(component);
 	if(typeid(component) == typeid(CBvhComponent))
 		m_bvhComponent = static_cast<CBvhComponent *>(&component);
+	else if(typeid(component) == typeid(CMaterialOverrideComponent))
+		m_materialOverrideComponent = static_cast<CMaterialOverrideComponent *>(&component);
 }
 void CModelComponent::OnEntityComponentRemoved(BaseEntityComponent &component)
 {
 	BaseModelComponent::OnEntityComponentRemoved(component);
 	if(typeid(component) == typeid(CBvhComponent))
 		m_bvhComponent = nullptr;
+	else if(typeid(component) == typeid(CMaterialOverrideComponent))
+		m_materialOverrideComponent = nullptr;
 }
 
 void CModelComponent::FlushRenderData()
@@ -484,6 +464,8 @@ void CModelComponent::FlushRenderData()
 	if(umath::is_flag_set(m_stateFlags, StateFlags::RenderBufferListUpdateRequired))
 		UpdateRenderBufferList();
 }
+
+void CModelComponent::SetRenderBufferListUpdateRequired() { umath::set_flag(m_stateFlags, StateFlags::RenderBufferListUpdateRequired); }
 
 void CModelComponent::OnTick(double tDelta)
 {
@@ -521,7 +503,6 @@ void CModelComponent::OnModelChanged(const std::shared_ptr<Model> &model)
 	m_lodRenderMeshGroups.clear();
 	m_lodRenderMeshGroups.push_back({0, 0});
 
-	m_materialOverrides.clear();
 	m_lightmapUvBuffers.clear();
 
 	SetRenderMeshesDirty();

@@ -13,8 +13,8 @@ parser = argparse.ArgumentParser(description='Pragma build script', allow_abbrev
 
 # See https://stackoverflow.com/a/43357954/1879228 for boolean args
 if platform == "linux":
-	parser.add_argument('--c-compiler', help='The C-compiler to use.', default='clang-19')
-	parser.add_argument('--cxx-compiler', help='The C++-compiler to use.', default='clang++-19')
+	parser.add_argument('--c-compiler', help='The C-compiler to use.', default='clang-20')
+	parser.add_argument('--cxx-compiler', help='The C++-compiler to use.', default='clang++-20')
 	defaultGenerator = "Ninja Multi-Config"
 else:
 	defaultGenerator = "Visual Studio 17 2022"
@@ -180,23 +180,24 @@ mkpath(build_dir)
 mkpath(deps_dir)
 mkpath(install_dir)
 mkpath(tools)
-########## clang-19 ##########
-# Due to a compiler bug with C++20 Modules in clang, we have to use clang-19 for now,
+
+########## clang-20 ##########
+# Due to a compiler bug with C++20 Modules in clang, we have to use clang-20 for now,
 # which is not available in package managers yet.
-# if platform == "linux" and (c_compiler == "clang-19" or c_compiler == "clang++-19"):
-# 	curDir = os.getcwd()
-# 	os.chdir(deps_dir)
-# 	clang19_root = os.getcwd() +"/LLVM-19.1.2-Linux-X64"
-# 	if not Path(clang19_root).is_dir():
-# 		print_msg("Downloading clang-19...")
-# 		http_extract("https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.2/LLVM-19.1.2-Linux-X64.tar.xz",format="tar.xz")
-# 	if c_compiler == "clang-19":
-# 		c_compiler = clang19_root +"/bin/clang"
-# 	if cxx_compiler == "clang++-19":
-# 		cxx_compiler = clang19_root +"/bin/clang++"
-# 	print_msg("Setting c_compiler override to '" +c_compiler +"'")
-# 	print_msg("Setting cxx_compiler override to '" +cxx_compiler +"'")
-# 	os.chdir(curDir)
+if platform == "linux" and (c_compiler == "clang-20" or c_compiler == "clang++-20"):
+	curDir = os.getcwd()
+	os.chdir(deps_dir)
+	clang20_root = os.getcwd() +"/LLVM-20.1.1-Linux-X64"
+	if not Path(clang20_root).is_dir():
+		print_msg("Downloading clang-20...")
+		http_extract("https://github.com/llvm/llvm-project/releases/download/llvmorg-20.1.1/LLVM-20.1.1-Linux-X64.tar.xz",format="tar.xz")
+	if c_compiler == "clang-20":
+		c_compiler = clang20_root +"/bin/clang"
+	if cxx_compiler == "clang++-20":
+		cxx_compiler = clang20_root +"/bin/clang++"
+	print_msg("Setting c_compiler override to '" +c_compiler +"'")
+	print_msg("Setting cxx_compiler override to '" +cxx_compiler +"'")
+	os.chdir(curDir)
 
 if platform == "linux":
 	os.environ["CC"] = c_compiler
@@ -237,6 +238,7 @@ def execscript(filepath):
 		"normalize_path": normalize_path,
 		"mkpath": mkpath,
 		"print_msg": print_msg,
+		"print_warning": print_warning,
 		"git_clone": git_clone,
 		"cmake_configure": cmake_configure,
 		"cmake_build": cmake_build,
@@ -493,21 +495,21 @@ os.chdir(deps_dir)
 if not Path(os.getcwd() +"/SPIRV-Tools").is_dir():
 	git_clone("https://github.com/KhronosGroup/SPIRV-Tools.git")
 os.chdir("SPIRV-Tools")
-
-# Note: When updating to a newer version, the SPIRV-Headers commit below has to match
-# the one defined in https://github.com/KhronosGroup/SPIRV-Tools/blob/master/DEPS for the
-# timestamp of this commit
-reset_to_commit("7826e19")
+# Note: See the branches on https://github.com/KhronosGroup/SPIRV-Tools to find the correct commit for
+# the target Vulkan SDK version.
+# When updating to a newer version, the SPIRV-Headers commit below has to match
+# the one defined in https://github.com/KhronosGroup/SPIRV-Tools/blob/<SHA>/DEPS
+reset_to_commit("4d2f0b4")
 os.chdir("../../")
 
 ########## SPIRV-Headers ##########
 print_msg("Downloading SPIRV-Headers...")
 os.chdir(deps_dir)
 os.chdir("SPIRV-Tools/external")
-if not Path(os.getcwd() +"/SPIRV-Headers").is_dir():
-	git_clone("https://github.com/KhronosGroup/SPIRV-Headers")
-os.chdir("SPIRV-Headers")
-reset_to_commit("4995a2f2723c401eb0ea3e10c81298906bf1422b")
+if not Path(os.getcwd() +"/spirv-headers").is_dir():
+	git_clone("https://github.com/KhronosGroup/SPIRV-Headers", "spirv-headers")
+os.chdir("spirv-headers")
+reset_to_commit("3f17b2af6784bfa2c5aa5dbb8e0e74a607dd8b3b")
 os.chdir("../../")
 os.chdir("../../")
 
@@ -603,6 +605,27 @@ else:
 	bit7z_lib_name = "bit7z.lib"
 cmake_args += ["-DDEPENDENCY_BIT7Z_INCLUDE=" +bit7z_root +"/include/", "-DDEPENDENCY_BIT7Z_LIBRARY=" +bit7z_root +"/lib/x64/Release/" +bit7z_lib_name]
 
+########## cpptrace ##########
+os.chdir(deps_dir)
+cpptrace_root = normalize_path(os.getcwd() +"/cpptrace")
+if not Path(cpptrace_root).is_dir():
+	print_msg("cpptrace not found. Downloading...")
+	git_clone("https://github.com/jeremy-rifkin/cpptrace.git")
+os.chdir("cpptrace")
+reset_to_commit("34ea957") # v0.8.0
+
+print_msg("Building cpptrace...")
+mkdir("build",cd=True)
+cpptrace_cmake_args = ["-DBUILD_SHARED_LIBS=ON"]
+cmake_configure("..",generator,cpptrace_cmake_args)
+cmake_build(build_config)
+if platform == "linux":
+	cpptrace_lib_name = "libcpptrace.so"
+else:
+	cpptrace_lib_name = "cpptrace.lib"
+cpptrace_bin_dir = cpptrace_root +"/build/" +build_config +"/"
+cmake_args += ["-DDEPENDENCY_CPPTRACE_INCLUDE=" +cpptrace_root +"/include/", "-DDEPENDENCY_CPPTRACE_LIBRARY=" +cpptrace_bin_dir +cpptrace_lib_name]
+
 ########## compressonator deps ##########
 #if platform == "linux":
 execfile(root+"/external_libs/util_image/third_party_libs/compressonator/build/fetch_dependencies.py")
@@ -629,6 +652,7 @@ if platform == "win32":
 		"-DCMAKE_DISABLE_FIND_PACKAGE_BZip2=TRUE",
 		"-DCMAKE_DISABLE_FIND_PACKAGE_PNG=TRUE"
 	]
+	freetype_cmake_args.append("-DCMAKE_POLICY_VERSION_MINIMUM=4.0")
 
 	print_msg("Building freetype...")
 	cmake_configure(freetype_root,generator,freetype_cmake_args)
@@ -751,6 +775,7 @@ def execbuildscript(filepath):
 		"normalize_path": normalize_path,
 		"mkpath": mkpath,
 		"print_msg": print_msg,
+		"print_warning": print_warning,
 		"git_clone": git_clone,
 		"git_clone_commit": git_clone_commit,
 		"cmake_configure": cmake_configure,
@@ -766,7 +791,8 @@ def execbuildscript(filepath):
 		"execbuildscript": execbuildscript,
 		"str2bool": str2bool,
 		"install_prebuilt_binaries": install_prebuilt_binaries,
-		"reset_to_commit": reset_to_commit
+		"reset_to_commit": reset_to_commit,
+		"add_pragma_module": add_pragma_module
 	}
 	if platform == "linux":
 		l["c_compiler"] = c_compiler
@@ -819,7 +845,7 @@ execfile(scripts_dir +"/user_modules.py",g,l)
 if with_essential_client_modules:
 	add_pragma_module(
 		name="pr_prosper_vulkan",
-		commitSha="9071ef182a9286369922fab76232267208027a93",
+		commitSha="3d33edfca536e57ceeb903aa44b68edcac716803",
 		repositoryUrl="https://github.com/Silverlan/pr_prosper_vulkan.git"
 	)
 
@@ -827,12 +853,12 @@ if with_essential_client_modules:
 if with_common_modules:
 	add_pragma_module(
 		name="pr_bullet",
-		commitSha="be622341b5890ae2f8f1c97481ff52ddbd351cf0",
+		commitSha="b4a0af6d3db48d322b63a757ba5574fda87b99d8",
 		repositoryUrl="https://github.com/Silverlan/pr_bullet.git"
 	)
 	add_pragma_module(
 		name="pr_audio_soloud",
-		commitSha="7d4361d289ff1527e4783cde65dd7e5852684975",
+		commitSha="ae89cb889a7fa89ca47cdf878cb7f91eef8ba0a3",
 		repositoryUrl="https://github.com/Silverlan/pr_soloud.git"
 	)
 	add_pragma_module(
@@ -842,7 +868,7 @@ if with_common_modules:
 	)
 	add_pragma_module(
 		name="pr_prosper_opengl",
-		commitSha="d73bf6dea11b1a79d5dc4715e224aa4cb15d0d48",
+		commitSha="e34cbca22a0a6ebd8a5d7f85c29f91e99555857a",
 		repositoryUrl="https://github.com/Silverlan/pr_prosper_opengl.git"
 	)
 	#sadd_pragma_module_prebuilt("Silverlan/pr_mount_external_prebuilt")
@@ -864,12 +890,12 @@ if with_pfm:
 	if with_all_pfm_modules:
 		add_pragma_module(
 			name="pr_chromium",
-			commitSha="707a428772cefddacea9b1fc99a405e95fed323c",
+			commitSha="d4e2edc58d2dc3cbc2799c60a16d2312be628b0f",
 			repositoryUrl="https://github.com/Silverlan/pr_chromium.git"
 		)
 		add_pragma_module(
 			name="pr_unirender",
-			commitSha="e44ff220a1aaa0a72ae3411dea8fbf30c4b98fe0",
+			commitSha="74994daddb320c9bc67aa60b6be660ec66501a13",
 			repositoryUrl="https://github.com/SlawekNowy/pr_cycles.git"
 		)
 		add_pragma_module(
@@ -891,21 +917,21 @@ if with_pfm:
 if with_pfm:
 	add_pragma_module(
 		name="pr_git",
-		commitSha="9a5c12b900de8ada6d22689a849ba2c01ba0e4dd",
+		commitSha="08b2d74f2c8641f791936a868d562e61423cc040",
 		repositoryUrl="https://github.com/Silverlan/pr_git.git"
 	)
 
 if with_vr:
 	add_pragma_module(
 		name="pr_openvr",
-		commitSha="2dd977344ebe8cd102cd24aa1ddcb34d696c7dda",
+		commitSha="7ac292bbc31727ab7fc7c2f4bea8a242ab39603d",
 		repositoryUrl="https://github.com/Silverlan/pr_openvr.git"
 	)
 
 if with_networking:
 	add_pragma_module(
 		name="pr_steam_networking_sockets",
-		commitSha="4890de55f2bfddbe8a8d838ab8ce12301e1647f9",
+		commitSha="ffef84e5bba8467370c7d447017ebf8e864c2a0f",
 		repositoryUrl="https://github.com/Silverlan/pr_steam_networking_sockets.git",
 		skipBuildTarget=True
 	)
@@ -914,7 +940,10 @@ if with_networking:
 # CMake configuration explicitly if they should be disabled.
 shippedModules = ["pr_audio_dummy","pr_prosper_opengl","pr_prosper_vulkan","pr_curl"]
 
-for module in module_info:
+index = 0
+# The module list can be modified during iteration, so we have to use a while loop here.
+while index < len(module_info):
+	module = module_info[index]
 	global moduleName
 	moduleName = module["name"]
 	moduleUrl = module["repositoryUrl"]
@@ -945,6 +974,7 @@ for module in module_info:
 
 	if not skipBuildTarget:
 		module_list.append(moduleName)
+	index += 1
 
 for module in shippedModules:
 	if module != "pr_curl": # Curl is currently required
@@ -1020,6 +1050,7 @@ if len(vtune_include_path) > 0 or len(vtune_library_path) > 0:
 		raise argparse.ArgumentError(None,"Both the --vtune-include-path and --vtune-library-path options have to be specified to enable VTune support!")
 
 cmake_args += additional_cmake_args
+cmake_args.append("-DCMAKE_POLICY_VERSION_MINIMUM=4.0")
 cmake_configure(root,generator,cmake_args)
 
 print_msg("Build files have been written to \"" +build_dir +"\".")
@@ -1058,6 +1089,16 @@ else:
 	subprocess.run(["make","-j","-f","../../cmpl_gcc.mak"],check=True)
 	mkpath(install_dir +"/bin")
 	cp(sevenz_so_path +"/b/g/7z.so",install_dir +"/bin/7z.so")
+
+########## install cpptrace ##########
+if platform == "win32":
+	mkpath(install_dir +"/bin/")
+	cp(cpptrace_bin_dir +"cpptrace.dll",install_dir +"/bin/cpptrace.dll")
+else:
+	mkpath(install_dir +"/lib/")
+	cp(cpptrace_bin_dir +"libcpptrace.so",install_dir +"/lib/libcpptrace.so")
+	cp(cpptrace_bin_dir +"libcpptrace.so.0",install_dir +"/lib/libcpptrace.so.0")
+	cp(cpptrace_bin_dir +"libcpptrace.so.0.8.0",install_dir +"/lib/libcpptrace.so.0.8.0")
 
 ########## Lua Extensions ##########
 lua_ext_dir = deps_dir +"/lua_extensions"
@@ -1136,16 +1177,16 @@ def download_addon(name,addonName,url,commitId=None):
 curDir = os.getcwd()
 if not skip_repository_updates:
 	if with_pfm:
-		download_addon("PFM","filmmaker","https://github.com/Silverlan/pfm.git","e7680ee941c9696c5277c98e5b1b7a3530f3bc8e")
-		download_addon("model editor","tool_model_editor","https://github.com/Silverlan/pragma_model_editor.git","bd4844c06b9a42bacd17bb7e52d3381c3fd119e4")
+		download_addon("PFM","filmmaker","https://github.com/Silverlan/pfm.git","d8f33ebeab3c597fc542e56413fc11ff14897572")
+		download_addon("model editor","tool_model_editor","https://github.com/Silverlan/pragma_model_editor.git","a9ea4820f03be250bdf1e6951dad313561b75b17")
 
 	if with_vr:
-		download_addon("VR","virtual_reality","https://github.com/Silverlan/PragmaVR.git","93fe4f849493651c14133ddf1963b0a8b719f836")
+		download_addon("VR","virtual_reality","https://github.com/Silverlan/PragmaVR.git","129db0e7642e9e1ec08a4b41860d95f97e55e2fa")
 
 	if with_pfm:
 		download_addon("PFM Living Room Demo","pfm_demo_living_room","https://github.com/Silverlan/pfm_demo_living_room.git","4cbecad4a2d6f502b6d9709178883678101f7e2c")
 		download_addon("PFM Bedroom Demo","pfm_demo_bedroom","https://github.com/Silverlan/pfm_demo_bedroom.git","0fed1d5b54a25c3ded2ce906e7da80ca8dd2fb0d")
-		download_addon("PFM Tutorials","pfm_tutorials","https://github.com/Silverlan/pfm_tutorials.git","377d0b94b37c2e369884a532c746dd7c128d9958")
+		download_addon("PFM Tutorials","pfm_tutorials","https://github.com/Silverlan/pfm_tutorials.git","6a410c53a99194ae3ed9fe740306fe27150bfcf5")
 
 	if with_common_entities:
 		download_addon("HL","pragma_hl","https://github.com/Silverlan/pragma_hl.git","7d146f517a9d514e9c22ca918460b85b27694155")

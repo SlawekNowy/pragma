@@ -31,7 +31,7 @@ class DLLCLIENT WITransformable : public WIBase {
 	bool IsDraggable();
 	bool IsResizable();
 	virtual void Think(const std::shared_ptr<prosper::IPrimaryCommandBuffer> &drawCmd) override;
-	virtual util::EventReply MouseCallback(GLFW::MouseButton button, GLFW::KeyState state, GLFW::Modifier mods) override;
+	virtual util::EventReply MouseCallback(pragma::platform::MouseButton button, pragma::platform::KeyState state, pragma::platform::Modifier mods) override;
 	virtual void OnCursorMoved(int x, int y) override;
 	void SetMinWidth(int w);
 	void SetMinHeight(int h);
@@ -61,6 +61,9 @@ class DLLCLIENT WITransformable : public WIBase {
 
 	void AddSnapTarget(WISnapArea &target);
 	void SetRemoveOnClose(bool remove);
+
+	void StartDrag();
+	void EndDrag();
   protected:
 	virtual void DoUpdate() override;
 	enum class ResizeMode { none = -1, ew = 1, we = 2, ns = 3, sn = 4, nwse = 5, nesw = 6, senw = 7, swne = 8 };
@@ -75,8 +78,6 @@ class DLLCLIENT WITransformable : public WIBase {
 	std::vector<WIHandle> m_snapTargets = {};
 	void InitializeSnapTargetGhost(WISnapArea &snapArea);
 	void DestroySnapTargetGhost();
-	void StartDrag();
-	void EndDrag();
 	void SetResizeMode(ResizeMode mode);
 	void StartResizing();
 	void EndResizing();
@@ -90,7 +91,7 @@ class DLLCLIENT WITransformable : public WIBase {
 
 	virtual void OnVisibilityChanged(bool bVisible) override;
 	Vector2i GetConfinedMousePos();
-	void OnTitleBarMouseEvent(GLFW::MouseButton button, GLFW::KeyState state, GLFW::Modifier mods);
+	void OnTitleBarMouseEvent(pragma::platform::MouseButton button, pragma::platform::KeyState state, pragma::platform::Modifier mods);
 	void OnCloseButtonPressed();
 	void UpdateResizeRect();
 	void UpdateResizeRectPos();

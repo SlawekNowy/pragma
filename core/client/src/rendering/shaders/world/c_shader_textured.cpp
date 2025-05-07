@@ -9,6 +9,7 @@
 #include "pragma/rendering/shaders/world/c_shader_textured.hpp"
 #include "pragma/rendering/shader_material/shader_material.hpp"
 #include "pragma/rendering/render_processor.hpp"
+#include "pragma/clientstate/clientstate.h"
 #include "pragma/entities/components/c_render_component.hpp"
 #include "pragma/entities/components/c_light_map_receiver_component.hpp"
 #include "pragma/console/c_cvar.h"
@@ -75,7 +76,6 @@ decltype(ShaderGameWorldLightingPass::DESCRIPTOR_SET_INSTANCE) ShaderGameWorldLi
 decltype(ShaderGameWorldLightingPass::DESCRIPTOR_SET_SCENE) ShaderGameWorldLightingPass::DESCRIPTOR_SET_SCENE = {&ShaderEntity::DESCRIPTOR_SET_SCENE};
 decltype(ShaderGameWorldLightingPass::DESCRIPTOR_SET_RENDERER) ShaderGameWorldLightingPass::DESCRIPTOR_SET_RENDERER = {&ShaderEntity::DESCRIPTOR_SET_RENDERER};
 decltype(ShaderGameWorldLightingPass::DESCRIPTOR_SET_RENDER_SETTINGS) ShaderGameWorldLightingPass::DESCRIPTOR_SET_RENDER_SETTINGS = {&ShaderEntity::DESCRIPTOR_SET_RENDER_SETTINGS};
-decltype(ShaderGameWorldLightingPass::DESCRIPTOR_SET_LIGHTS) ShaderGameWorldLightingPass::DESCRIPTOR_SET_LIGHTS = {&ShaderEntity::DESCRIPTOR_SET_LIGHTS};
 decltype(ShaderGameWorldLightingPass::DESCRIPTOR_SET_SHADOWS) ShaderGameWorldLightingPass::DESCRIPTOR_SET_SHADOWS = {&ShaderEntity::DESCRIPTOR_SET_SHADOWS};
 
 static std::shared_ptr<prosper::IUniformResizableBuffer> g_materialSettingsBuffer = nullptr;
@@ -160,6 +160,7 @@ GameShaderSpecializationConstantFlag ShaderGameWorldLightingPass::GetStaticSpeci
 	}
 	return staticFlags;
 }
+bool ShaderGameWorldLightingPass::IsTranslucentPipeline(uint32_t pipelineIdx) const { return IsSpecializationConstantSet(pipelineIdx, GameShaderSpecializationConstantFlag::EnableTranslucencyBit); }
 std::optional<uint32_t> ShaderGameWorldLightingPass::FindPipelineIndex(rendering::PassType passType, GameShaderSpecialization specialization, GameShaderSpecializationConstantFlag specializationFlags) const
 {
 	if(GetContext().IsValidationEnabled())
@@ -168,12 +169,10 @@ std::optional<uint32_t> ShaderGameWorldLightingPass::FindPipelineIndex(rendering
 }
 static std::optional<Vector3> get_emission_factor(CMaterial &mat)
 {
-	auto &data = mat.GetDataBlock();
-	auto &dbEmissionFactor = data->GetValue("emission_factor");
-	if(dbEmissionFactor == nullptr || typeid(*dbEmissionFactor) != typeid(ds::Vector))
+	Vector3 emissionFactor;
+	if(!mat.GetProperty("emission_factor", &emissionFactor))
 		return {};
-	auto emissionFactor = static_cast<ds::Vector *>(dbEmissionFactor.get())->GetValue();
-	emissionFactor *= data->GetFloat("emission_strength", 1.f);
+	emissionFactor *= mat.GetProperty("emission_strength", 1.f);
 	if(emissionFactor.r == 0.f && emissionFactor.g == 0.f && emissionFactor.b == 0.f)
 		return {};
 	return emissionFactor;
@@ -185,8 +184,7 @@ GameShaderSpecializationConstantFlag ShaderGameWorldLightingPass::GetMaterialPip
 	auto flags = GameShaderSpecializationConstantFlag::None;
 	auto hasEmission = (mat.GetTextureInfo(Material::EMISSION_MAP_IDENTIFIER) != nullptr);
 	if(!hasEmission) {
-		auto &data = mat.GetDataBlock();
-		if(data->HasValue("emission_factor"))
+		if(mat.GetPropertyValueType("emission_factor") != ds::ValueType::Invalid)
 			hasEmission = get_emission_factor(mat).has_value();
 	}
 	if(mat.GetAlphaMode() != AlphaMode::Opaque)
@@ -241,7 +239,6 @@ void ShaderGameWorldLightingPass::InitializeGfxPipelineDescriptorSets()
 	AddDescriptorSetGroup(DESCRIPTOR_SET_SCENE);
 	AddDescriptorSetGroup(DESCRIPTOR_SET_RENDERER);
 	AddDescriptorSetGroup(DESCRIPTOR_SET_RENDER_SETTINGS);
-	AddDescriptorSetGroup(DESCRIPTOR_SET_LIGHTS);
 	AddDescriptorSetGroup(DESCRIPTOR_SET_SHADOWS);
 }
 std::unique_ptr<prosper::DescriptorSetInfo> ShaderGameWorldLightingPass::CreateMaterialDescriptorSetInfo(const pragma::rendering::shader_material::ShaderMaterial &shaderMaterial)
@@ -360,7 +357,6 @@ uint32_t ShaderGameWorldLightingPass::GetCameraDescriptorSetIndex() const { retu
 uint32_t ShaderGameWorldLightingPass::GetRendererDescriptorSetIndex() const { return DESCRIPTOR_SET_RENDERER.setIndex; }
 uint32_t ShaderGameWorldLightingPass::GetInstanceDescriptorSetIndex() const { return DESCRIPTOR_SET_INSTANCE.setIndex; }
 uint32_t ShaderGameWorldLightingPass::GetRenderSettingsDescriptorSetIndex() const { return DESCRIPTOR_SET_RENDER_SETTINGS.setIndex; }
-uint32_t ShaderGameWorldLightingPass::GetLightDescriptorSetIndex() const { return DESCRIPTOR_SET_LIGHTS.setIndex; }
 void ShaderGameWorldLightingPass::GetVertexAnimationPushConstantInfo(uint32_t &offset) const { offset = offsetof(PushConstants, vertexAnimInfo); }
 bool ShaderGameWorldLightingPass::GetRenderBufferTargets(CModelSubMesh &mesh, uint32_t pipelineIdx, std::vector<prosper::IBuffer *> &outBuffers, std::vector<prosper::DeviceSize> &outOffsets, std::optional<prosper::IndexBufferInfo> &outIndexBufferInfo) const
 {
@@ -428,8 +424,18 @@ std::shared_ptr<prosper::IDescriptorSetGroup> ShaderGameWorldLightingPass::Initi
 			materialFlags |= pragma::rendering::shader_material::MaterialFlags::HasParallaxMap;
 			break;
 		case "emission_map"_:
-			materialFlags |= pragma::rendering::shader_material::MaterialFlags::HasEmissionMap;
-			break;
+			{
+				materialFlags |= pragma::rendering::shader_material::MaterialFlags::HasEmissionMap;
+				auto path = pragma::asset::get_normalized_path(texData->GetName(), pragma::asset::Type::Texture);
+				static const auto emissionNeutralMap = pragma::asset::get_normalized_path("black", pragma::asset::Type::Texture);
+				if(path == emissionNeutralMap) {
+					// If the material uses the neutral emission texture, we can completely ignore
+					// it for the shader and use the default values instead, which saves
+					// a lot of texture lookups.
+					materialFlags &= ~pragma::rendering::shader_material::MaterialFlags::HasEmissionMap;
+				}
+				break;
+			}
 		case "rma_map"_:
 			{
 				materialFlags |= pragma::rendering::shader_material::MaterialFlags::HasRmaMap;
@@ -452,21 +458,21 @@ std::shared_ptr<prosper::IDescriptorSetGroup> ShaderGameWorldLightingPass::Initi
 		++textureBinding;
 	}
 
-	pragma::rendering::shader_material::ShaderMaterialData materialData {*m_shaderMaterial};
-	materialData.PopulateFromMaterial(mat);
+	pragma::rendering::ShaderInputData materialData {*m_shaderMaterial};
+	pragma::rendering::shader_material::ShaderMaterial::PopulateShaderInputDataFromMaterial(materialData, mat);
 	InitializeMaterialData(mat, *m_shaderMaterial, materialData);
 
-	materialFlags |= materialData.GetFlags();
+	materialFlags |= pragma::rendering::shader_material::ShaderMaterial::GetFlagsFromShaderInputData(materialData);
 	auto alphaMode = materialData.GetValue<uint32_t>("alpha_mode");
 	if(alphaMode && static_cast<AlphaMode>(*alphaMode) != AlphaMode::Opaque)
 		materialFlags |= pragma::rendering::shader_material::MaterialFlags::Translucent;
 
-	materialData.SetFlags(materialFlags);
+	pragma::rendering::shader_material::ShaderMaterial::SetShaderInputDataFlags(materialData, materialFlags);
 	InitializeMaterialBuffer(descSet, mat, materialData);
 
 	return descSetGroup;
 }
-bool ShaderGameWorldLightingPass::InitializeMaterialBuffer(prosper::IDescriptorSet &descSet, CMaterial &mat, const pragma::rendering::shader_material::ShaderMaterialData &matData, uint32_t bindingIdx)
+bool ShaderGameWorldLightingPass::InitializeMaterialBuffer(prosper::IDescriptorSet &descSet, CMaterial &mat, const pragma::rendering::ShaderInputData &matData, uint32_t bindingIdx)
 {
 	auto settingsBuffer = mat.GetSettingsBuffer() ? mat.GetSettingsBuffer()->shared_from_this() : nullptr;
 	if(settingsBuffer == nullptr && g_materialSettingsBuffer)
@@ -477,11 +483,8 @@ bool ShaderGameWorldLightingPass::InitializeMaterialBuffer(prosper::IDescriptorS
 	mat.SetSettingsBuffer(*settingsBuffer);
 	return settingsBuffer->Write(0, matData.data.size(), matData.data.data());
 }
-void ShaderGameWorldLightingPass::InitializeMaterialData(const CMaterial &mat, const rendering::shader_material::ShaderMaterial &shaderMat, pragma::rendering::shader_material::ShaderMaterialData &inOutMatData) {}
-bool ShaderGameWorldLightingPass::InitializeMaterialBuffer(prosper::IDescriptorSet &descSet, CMaterial &mat, const pragma::rendering::shader_material::ShaderMaterialData &matData)
-{
-	return InitializeMaterialBuffer(descSet, mat, matData, umath::to_integral(MaterialBinding::MaterialSettings));
-}
+void ShaderGameWorldLightingPass::InitializeMaterialData(const CMaterial &mat, const rendering::shader_material::ShaderMaterial &shaderMat, pragma::rendering::ShaderInputData &inOutMatData) {}
+bool ShaderGameWorldLightingPass::InitializeMaterialBuffer(prosper::IDescriptorSet &descSet, CMaterial &mat, const pragma::rendering::ShaderInputData &matData) { return InitializeMaterialBuffer(descSet, mat, matData, umath::to_integral(MaterialBinding::MaterialSettings)); }
 std::shared_ptr<prosper::IDescriptorSetGroup> ShaderGameWorldLightingPass::InitializeMaterialDescriptorSet(CMaterial &mat) { return InitializeMaterialDescriptorSet(mat, GetMaterialDescriptorSetInfo()); }
 
 ////////
@@ -489,9 +492,9 @@ std::shared_ptr<prosper::IDescriptorSetGroup> ShaderGameWorldLightingPass::Initi
 GameShaderSpecializationConstantFlag ShaderGameWorldLightingPass::GetBaseSpecializationFlags() const { return GameShaderSpecializationConstantFlag::None; }
 
 void ShaderGameWorldLightingPass::RecordBindScene(rendering::ShaderProcessor &shaderProcessor, const pragma::CSceneComponent &scene, const pragma::CRasterizationRendererComponent &renderer, prosper::IDescriptorSet &dsScene, prosper::IDescriptorSet &dsRenderer,
-  prosper::IDescriptorSet &dsRenderSettings, prosper::IDescriptorSet &dsLights, prosper::IDescriptorSet &dsShadows, const Vector4 &drawOrigin, ShaderGameWorld::SceneFlags &inOutSceneFlags) const
+  prosper::IDescriptorSet &dsRenderSettings, prosper::IDescriptorSet &dsShadows, const Vector4 &drawOrigin, ShaderGameWorld::SceneFlags &inOutSceneFlags) const
 {
-	std::array<prosper::IDescriptorSet *, 5> descSets {descSets[1] = &dsScene, descSets[2] = &dsRenderer, descSets[3] = &dsRenderSettings, descSets[4] = &dsLights, descSets[5] = &dsShadows};
+	std::array<prosper::IDescriptorSet *, 4> descSets {descSets[1] = &dsScene, descSets[2] = &dsRenderer, descSets[3] = &dsRenderSettings, descSets[5] = &dsShadows};
 
 	RecordPushSceneConstants(shaderProcessor, scene, drawOrigin);
 	static const std::vector<uint32_t> dynamicOffsets {};
@@ -594,7 +597,7 @@ static void print_shader_material_data(CMaterial &mat)
 		Con::cwar << "Material '" << mat.GetName() << "' has no settings buffer!" << Con::endl;
 		return;
 	}
-	pragma::rendering::shader_material::ShaderMaterialData shaderMatData {*shaderMat};
+	pragma::rendering::ShaderInputData shaderMatData {*shaderMat};
 	if(!buf->Read(0, shaderMatData.data.size(), shaderMatData.data.data())) {
 		Con::cwar << "Failed to read settings buffer data of material '" << mat.GetName() << "'!" << Con::endl;
 		return;

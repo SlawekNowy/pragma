@@ -60,7 +60,7 @@ void WILuaBase::OnFirstThink()
 	CallLuaMember("OnFirstThink");
 }
 
-util::EventReply WILuaBase::MouseCallback(GLFW::MouseButton button, GLFW::KeyState state, GLFW::Modifier mods)
+util::EventReply WILuaBase::MouseCallback(pragma::platform::MouseButton button, pragma::platform::KeyState state, pragma::platform::Modifier mods)
 {
 	auto hThis = GetHandle();
 	if(WIBase::MouseCallback(button, state, mods) == util::EventReply::Handled)
@@ -71,7 +71,7 @@ util::EventReply WILuaBase::MouseCallback(GLFW::MouseButton button, GLFW::KeySta
 	CallLuaMember<uint32_t, int, int, int>("MouseCallback", &reply, static_cast<int>(button), static_cast<int>(state), static_cast<int>(mods));
 	return static_cast<util::EventReply>(reply);
 }
-util::EventReply WILuaBase::KeyboardCallback(GLFW::Key key, int scanCode, GLFW::KeyState state, GLFW::Modifier mods)
+util::EventReply WILuaBase::KeyboardCallback(pragma::platform::Key key, int scanCode, pragma::platform::KeyState state, pragma::platform::Modifier mods)
 {
 	auto hThis = GetHandle();
 	if(WIBase::KeyboardCallback(key, scanCode, state, mods) == util::EventReply::Handled)
@@ -82,7 +82,7 @@ util::EventReply WILuaBase::KeyboardCallback(GLFW::Key key, int scanCode, GLFW::
 	CallLuaMember<uint32_t, int, int, int, int>("KeyboardCallback", &reply, static_cast<int>(key), scanCode, static_cast<int>(state), static_cast<int>(mods));
 	return static_cast<util::EventReply>(reply);
 }
-util::EventReply WILuaBase::CharCallback(unsigned int c, GLFW::Modifier mods)
+util::EventReply WILuaBase::CharCallback(unsigned int c, pragma::platform::Modifier mods)
 {
 	auto hThis = GetHandle();
 	if(WIBase::CharCallback(c) == util::EventReply::Handled)
@@ -110,14 +110,21 @@ void WILuaBase::SetSize(int x, int y)
 	if(x == GetWidth() && y == GetHeight())
 		return;
 	WIBase::SetSize(x, y);
-	CallLuaMember<void, int, int>("OnSizeChanged", x, y);
+	// WIBase::SetSize may have called additional callbacks, which may have changed the size
+	// of this element before we got to call the "OnSizeChanged" callback below. In this case
+	// "OnSizeChanged" has already been called by one of the other callbacks, so we should skip it.
+	auto newW = GetWidth();
+	auto newH = GetHeight();
+	if(newW == x && newH == y)
+		CallLuaMember<void, int, int>("OnSizeChanged", x, y);
 }
 void WILuaBase::OnVisibilityChanged(bool bVisible)
 {
 	// if(bVisible == *GetVisibilityProperty())
 	// 	return;
 	WIBase::OnVisibilityChanged(bVisible);
-	CallLuaMember<void, bool>("OnVisibilityChanged", bVisible);
+	if(*GetVisibilityProperty() == bVisible) // See explanation in WILuaBase::SetSize
+		CallLuaMember<void, bool>("OnVisibilityChanged", bVisible);
 }
 void WILuaBase::DoUpdate()
 {
@@ -126,16 +133,22 @@ void WILuaBase::DoUpdate()
 }
 void WILuaBase::SetColor(float r, float g, float b, float a)
 {
-	// TODO: Check against current values?
+	auto newCol = Vector4 {r, g, b, a};
+	auto vCol = GetColor().ToVector4();
+	if(uvec::cmp(vCol, newCol))
+		return;
 	WIBase::SetColor(r, g, b, a);
-	CallLuaMember<void, float, float, float, float>("OnColorChanged", r, g, b, a);
+	vCol = GetColor().ToVector4();
+	if(uvec::cmp(vCol, newCol)) // See explanation in WILuaBase::SetSize
+		CallLuaMember<void, float, float, float, float>("OnColorChanged", r, g, b, a);
 }
 void WILuaBase::SetAlpha(float alpha)
 {
-	if(alpha == GetAlpha())
+	if(umath::equals(alpha, GetAlpha()))
 		return;
 	WIBase::SetAlpha(alpha);
-	CallLuaMember<void, float>("OnAlphaChanged", alpha);
+	if(umath::equals(alpha, GetAlpha())) // See explanation in WILuaBase::SetSize
+		CallLuaMember<void, float>("OnAlphaChanged", alpha);
 }
 bool WILuaBase::DoPosInBounds(const Vector2i &pos) const
 {
