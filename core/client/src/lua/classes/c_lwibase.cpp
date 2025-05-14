@@ -26,11 +26,6 @@
 #include "pragma/gui/wgui_luainterface.h"
 #include <pragma/lua/classes/ldef_vector.h>
 #include <pragma/lua/classes/lproperty.hpp>
-#include <pragma/lua/policies/property_policy.hpp>
-#include <pragma/lua/policies/optional_policy.hpp>
-#include <pragma/lua/policies/vector_policy.hpp>
-#include <pragma/lua/policies/string_view_policy.hpp>
-#include <pragma/lua/policies/pair_policy.hpp>
 #include <pragma/lua/policies/default_parameter_policy.hpp>
 #include <pragma/lua/policies/shared_from_this_policy.hpp>
 #include <pragma/lua/converters/pair_converter_t.hpp>
@@ -55,7 +50,7 @@ import pragma.string.unicode;
 
 extern DLLCLIENT CEngine *c_engine;
 extern DLLCLIENT CGame *c_game;
-
+#pragma optimize("", off)
 template<class TStream>
 static TStream &print_ui_element(TStream &os, const ::WIBase &handle)
 {
@@ -415,6 +410,7 @@ void Lua::WIBase::register_class(luabind::class_<::WIBase> &classDef)
 	classDef.def("Resize", &::WIBase::Resize);
 	classDef.def("ScheduleUpdate", &::WIBase::ScheduleUpdate);
 	classDef.def("SetSkin", &::WIBase::SetSkin);
+	classDef.def("GetSkinName", &::WIBase::GetSkinName);
 	classDef.def("ResetSkin", &::WIBase::ResetSkin);
 	classDef.def("GetStyleClasses", &::WIBase::GetStyleClasses);
 	classDef.def("AddStyleClass", &::WIBase::AddStyleClass);
@@ -437,6 +433,8 @@ void Lua::WIBase::register_class(luabind::class_<::WIBase> &classDef)
 	classDef.def("SetBackgroundElement", static_cast<void (*)(::WIBase &, bool)>([](::WIBase &el, bool backgroundElement) { el.SetBackgroundElement(backgroundElement); }));
 	classDef.def("SetBackgroundElement", static_cast<void (*)(::WIBase &)>([](::WIBase &el) { el.SetBackgroundElement(true); }));
 	classDef.def("IsBackgroundElement", &::WIBase::IsBackgroundElement);
+	classDef.def("SetBaseElement", &::WIBase::SetBaseElement);
+	classDef.def("IsBaseElement", &::WIBase::IsBaseElement);
 	classDef.def("FindDescendantByName", static_cast<::WIBase *(*)(lua_State *, ::WIBase &, const std::string &)>([](lua_State *l, ::WIBase &hPanel, const std::string &name) { return hPanel.FindDescendantByName(name); }));
 	classDef.def("FindDescendantsByName", static_cast<luabind::tableT<::WIBase> (*)(lua_State *, ::WIBase &, const std::string &)>([](lua_State *l, ::WIBase &hPanel, const std::string &name) -> luabind::tableT<::WIBase> {
 		std::vector<::WIHandle> children {};
