@@ -1,9 +1,9 @@
 [
     {
-        "name": "Local Clang 19.1.2",
+        "name": "Local Clang 20.1.1",
         "compilers": {
-            "CC": "${workspaceFolder}/deps/LLVM-19.1.2-Linux-X64/bin/clang",
-            "CXX": "${workspaceFolder}/deps/LLVM-19.1.2-Linux-X64/bin/clang++"
+            "CC": "${workspaceFolder}/deps/LLVM-20.1.1-Linux-X64/bin/clang",
+            "CXX": "${workspaceFolder}/deps/LLVM-20.1.1-Linux-X64/bin/clang++"
         }
     }
 ]
