@@ -60,7 +60,7 @@ class DLLCLIENT WIMainMenu : public WIBase {
 	WIHandle m_hActive;
 	char m_menuType;
 	void SetActiveMenu(WIHandle &hMenu);
-    virtual void OnVisibilityChanged(bool bVisible) override;
+	virtual void OnVisibilityChanged(bool bVisible) override;
 
 	// Blur
 	CallbackHandle m_cbBlur;

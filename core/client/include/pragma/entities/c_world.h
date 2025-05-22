@@ -73,8 +73,8 @@ class OcclusionOctree;
 class DLLCLIENT CWorld : public CBaseEntity {
   public:
 	virtual void Initialize() override;
-    virtual Con::c_cout &print(Con::c_cout &) override;
-    virtual std::ostream &print(std::ostream &) override;
+	virtual Con::c_cout &print(Con::c_cout &) override;
+	virtual std::ostream &print(std::ostream &) override;
 };
 
 #endif

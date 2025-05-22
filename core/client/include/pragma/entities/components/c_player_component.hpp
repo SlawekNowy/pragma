@@ -31,8 +31,8 @@ namespace pragma {
 	  public:
 		static unsigned int GetPlayerCount();
 		static const std::vector<CPlayerComponent *> &GetAll();
-        virtual Con::c_cout &print(Con::c_cout &) override;
-        virtual std::ostream &print(std::ostream &) override;
+		virtual Con::c_cout &print(Con::c_cout &) override;
+		virtual std::ostream &print(std::ostream &) override;
 		virtual void Initialize() override;
 		virtual void ReceiveData(NetPacket &packet) override;
 		virtual void OnTick(double tDelta) override;

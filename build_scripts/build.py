@@ -614,7 +614,7 @@ os.chdir("SPIRV-Tools")
 # the target Vulkan SDK version.
 # When updating to a newer version, the SPIRV-Headers commit below has to match
 # the one defined in https://github.com/KhronosGroup/SPIRV-Tools/blob/<SHA>/DEPS
-reset_to_commit("4d2f0b4")
+reset_to_commit("a62abcb")
 os.chdir("../../")
 
 ########## SPIRV-Headers ##########
@@ -624,7 +624,7 @@ os.chdir("SPIRV-Tools/external")
 if not Path(os.getcwd() +"/spirv-headers").is_dir():
 	git_clone("https://github.com/KhronosGroup/SPIRV-Headers", "spirv-headers")
 os.chdir("spirv-headers")
-reset_to_commit("3f17b2af6784bfa2c5aa5dbb8e0e74a607dd8b3b")
+reset_to_commit("aa6cef192b8e693916eb713e7a9ccadf06062ceb")
 os.chdir("../../")
 os.chdir("../../")
 
@@ -952,7 +952,7 @@ execfile(scripts_dir +"/user_modules.py",g,l)
 if with_essential_client_modules:
 	add_pragma_module(
 		name="pr_prosper_vulkan",
-		commitSha="d71e88cc072963c21f560d74dfb36e1cb28bce00",
+		commitSha="1e59eb873ef59b7456cb20e3dc5073f823de3fc9",
 		repositoryUrl="https://github.com/Silverlan/pr_prosper_vulkan.git"
 	)
 
@@ -997,12 +997,17 @@ if with_pfm:
 	if with_all_pfm_modules:
 		add_pragma_module(
 			name="pr_chromium",
+<<<<<<< HEAD
 			commitSha="d54955329479e16263b910fa78de9fc326b5973a",
 			repositoryUrl="https://github.com/Slaweknwoy/pr_chromium.git"
+=======
+			commitSha="6ab1bc749bc8c4f35701c75974e03bd4fe21d671",
+			repositoryUrl="https://github.com/Silverlan/pr_chromium.git"
+>>>>>>> upstream/main
 		)
 		add_pragma_module(
 			name="pr_unirender",
-			commitSha="14296c89b69c6a4debf3605b56a874e704347173",
+			commitSha="aeacaf521f67278056e5489d92be6229188100c5",
 			repositoryUrl="https://github.com/Silverlan/pr_cycles.git"
 		)
 		add_pragma_module(
@@ -1307,7 +1312,7 @@ def download_addon(name,addonName,url,commitId=None):
 curDir = os.getcwd()
 if not skip_repository_updates:
 	if with_pfm:
-		download_addon("PFM","filmmaker","https://github.com/Silverlan/pfm.git","ffc957cb83701f526a25f60e92ffe4d95c3fec47")
+		download_addon("PFM","filmmaker","https://github.com/Silverlan/pfm.git","59d8f017ad15c135a326d03aeda32d6d3820ed64")
 		download_addon("model editor","tool_model_editor","https://github.com/Silverlan/pragma_model_editor.git","a9ea4820f03be250bdf1e6951dad313561b75b17")
 
 	if with_vr:
