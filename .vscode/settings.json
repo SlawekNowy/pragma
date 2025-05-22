@@ -89,7 +89,13 @@
         "valarray": "cpp",
         "variant": "cpp",
         "ios": "cpp",
-        "rope": "cpp"
+        "rope": "cpp",
+        "__bit_reference": "cpp",
+        "__split_buffer": "cpp",
+        "execution": "cpp",
+        "locale": "cpp",
+        "queue": "cpp",
+        "text_encoding": "cpp"
     },
     "cmake.generator": "Ninja Multi-Config",
 }
