@@ -997,13 +997,8 @@ if with_pfm:
 	if with_all_pfm_modules:
 		add_pragma_module(
 			name="pr_chromium",
-<<<<<<< HEAD
-			commitSha="d54955329479e16263b910fa78de9fc326b5973a",
+			commitSha="86249f5fbc142411fc2044d91ed84c446235269b",
 			repositoryUrl="https://github.com/Slaweknwoy/pr_chromium.git"
-=======
-			commitSha="6ab1bc749bc8c4f35701c75974e03bd4fe21d671",
-			repositoryUrl="https://github.com/Silverlan/pr_chromium.git"
->>>>>>> upstream/main
 		)
 		add_pragma_module(
 			name="pr_unirender",
