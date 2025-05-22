@@ -1,0 +1,16 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "clang-format-everything",
+            "type": "shell",
+            "command": "clang-format",
+            "args": [
+                "-i",
+                "*"
+            ],
+            "isBackground": true,
+            "problemMatcher": []
+        }
+    ]
+}

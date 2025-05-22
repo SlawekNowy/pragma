@@ -302,7 +302,7 @@ void Engine::Close()
 #ifdef _WIN32
 		processPath = "bin/updater.exe";
 #else
-		processPath = "lib/updater";
+		processPath = "bin/updater";
 #endif
 		util::CommandInfo cmdInfo;
 		cmdInfo.command = processPath;

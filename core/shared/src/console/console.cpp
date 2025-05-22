@@ -65,6 +65,9 @@ void DebugConsole::open()
 		auto fontPath = util::get_program_path() + "\\fonts\\ubuntu\\UbuntuMono-R.ttf";
 		ustring::replace(fontPath, "/", "\\");
 		HANDLE m_stdOut = handleOut;
+		SetConsoleCP(65001);
+		SetConsoleOutputCP(65001);
+		//TODO: Consider using FR_PRIVATE. (Only the caller can use this.)
 		auto numFontsAdded = AddFontResourceEx(fontPath.c_str(), FR_NOT_ENUM, 0);
 		if(numFontsAdded > 0) {
 			SendNotifyMessage(HWND_BROADCAST, WM_FONTCHANGE, 0, 0);
@@ -94,7 +97,7 @@ void DebugConsole::open()
 	//this->_coutbuf = std::cout.rdbuf();
 	//this->_cerrbuf = std::cerr.rdbuf();
 #endif
-}
+};
 
 void DebugConsole::close()
 {
@@ -118,8 +121,11 @@ void DebugConsole::close()
 		fclose(stdin);
 		fclose(stdout);
 		fclose(stderr);
-		FreeConsole();
 	}
+		auto fontPath = util::get_program_path() + "\\fonts\\ubuntu\\UbuntuMono-R.ttf";
+		ustring::replace(fontPath, "/", "\\");
+		FreeConsole();
+		RemoveFontResourceEx(fontPath.c_str(), FR_NOT_ENUM, 0);
 #else
 	int flags = fcntl(0, F_GETFL, 0);
 	fcntl(0, F_SETFL, flags & ~O_NONBLOCK);
@@ -131,4 +137,4 @@ void DebugConsole::close()
 	//We have to fiddle with the owning pts directly.
 
 #endif
-}
+	}

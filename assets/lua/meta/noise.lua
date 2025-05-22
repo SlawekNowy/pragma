@@ -5,10 +5,6 @@ noise = {}
 
 --- 
 --- @return int ret0
-function noise.perlin() end
-
---- 
---- @return int ret0
 function noise.const() end
 
 --- 
@@ -18,5 +14,9 @@ function noise.voronoi() end
 --- 
 --- @return int ret0
 function noise.generate_height_map() end
+
+--- 
+--- @return int ret0
+function noise.perlin() end
 
 

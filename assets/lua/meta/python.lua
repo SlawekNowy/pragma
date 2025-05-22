@@ -4,11 +4,11 @@
 python = {}
 
 --- 
---- @return bool ret0
-function python.init_blender() end
+function python.reload() end
 
 --- 
-function python.reload() end
+--- @return bool ret0
+function python.init_blender() end
 
 --- 
 --- @param fileName string

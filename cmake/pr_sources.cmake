@@ -52,7 +52,6 @@ function(pr_add_headers TARGET_NAME HEADER_LOCATION)
     file(GLOB_RECURSE HEADER_LIST "${HEADER_LOCATION}/*.h" "${HEADER_LOCATION}/*.hpp")
     pr_add_header_list(${TARGET_NAME} "${HEADER_LIST}" "${BASE_DIRS}" BASE_DIRS "${PA_BASE_DIRS}")
 endfunction()
-
 function(pr_add_module_list TARGET_NAME FILE_SET_NAME)
     set(options LINK_ONLY PRIVATE PUBLIC)
     set(oneValueArgs)

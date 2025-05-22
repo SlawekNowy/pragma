@@ -27,8 +27,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(WIN32)
     set(BINARY_OUTPUT_DIR "bin")
     set(EXECUTABLE_OUTPUT_DIR "bin")
-
-    set(OS_LIB_BIN_EXT ".dll")
+	set(OS_LIB_BIN_EXT ".dll")
     set(OS_LIB_BIN_PRE "")
     set(OS_LIB_SHARED_EXT ".lib")
     set(OS_EXE_EXT ".exe")
@@ -195,6 +194,7 @@ pr_install_targets(pragma pragma_server INSTALL_DIR ".")
 if(WIN32)
     pr_install_targets(pragma_console INSTALL_DIR ".")
 endif()
+
 pr_install_targets(
     alsoundsystem
     client
@@ -308,3 +308,35 @@ endif()
 
 pr_set_target_folder(pragma-install core)
 pr_set_target_folder(pragma-install-full core)
+
+
+#Doxygen
+# Require dot, treat the other components as optional
+#TODO: demote find package to OPTIONAL and add check for Doxygen_FOUND
+find_package(Doxygen
+             OPTIONAL_COMPONENTS mscgen dia dot)
+
+if (Doxygen_FOUND)
+set(DOXYGEN_HTML_OUTPUT            ${CMAKE_INSTALL_PREFIX}/doc/doxygen)
+set(DOXYGEN_JAVADOC_AUTOBRIEF      YES)
+set(DOXYGEN_GENERATE_HTML          YES)
+set(DOXYGEN_HAVE_DOT               YES)
+set(DOXYGEN_EXCLUDE_PATTERNS
+"*/third_party_libs/*"
+"*/third_party/*"
+"*/external_libs/wgui/external_libs/*"
+"*/modules/pr_unirender/data/*") 
+set(DOXYGEN_LOOKUP_CACHE_SIZE 1)
+# other DOXYGEN_... options
+
+
+doxygen_add_docs(docs_target
+  ${CMAKE_SOURCE_DIR}/core/client
+  ${CMAKE_SOURCE_DIR}/core/server
+  ${CMAKE_SOURCE_DIR}/core/shared
+  ${CMAKE_SOURCE_DIR}/external_libs/
+  ${CMAKE_SOURCE_DIR}/modules/
+  ALL  # does not seem to work
+  COMMENT "Generate HTML documentation"
+)
+endif()

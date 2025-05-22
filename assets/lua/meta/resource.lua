@@ -10,12 +10,12 @@ resource = {}
 function resource.add_file(res) end
 
 --- 
+--- @return any ret0
+function resource.get_list() end
+
+--- 
 --- @param f string
 --- @return bool ret0
 function resource.add_lua_file(f) end
-
---- 
---- @return any ret0
-function resource.get_list() end
 
 

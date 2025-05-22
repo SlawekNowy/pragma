@@ -14,7 +14,6 @@ permissions:
   contents: write
 
 env:
-  # See https://github.com/git-lfs/git-lfs/issues/5749
   GIT_CLONE_PROTECTION_ACTIVE: 'false'
 
 jobs:
@@ -39,6 +38,20 @@ jobs:
         with:
           clone_url: "https://github.com/${{ github.repository }}.git"
 
+      - name: Clone pr_source repo
+        uses: GuillaumeFalourd/clone-github-repo-action@main
+        with:
+          owner: 'Slaweknowy'
+          branch: master
+          repository: 'pr_source'
+          submodule: true
+          access-token: ${{ secrets.PR_SOURCE_REPO_TOKEN }}
+      
+      - name: Move repo to target location
+        run: |
+            mv pr_source/ pr_mount_external/ && 
+            mv pr_mount_external ./pragma/modules/
+
       # We need the latest Windows SDK
       - uses: GuillaumeFalourd/setup-windows10-sdk-action@v1.11
         with:
@@ -48,7 +61,7 @@ jobs:
         uses: ./pragma/github_actions/build
         id: build-pragma
         with:
-          build-args: "--with-pfm --with-all-pfm-modules --with-vr --with-networking --with-lua-debugger=0 --with-swiftshader"
+          build-args: "--with-pfm --with-all-pfm-modules --with-vr --with-networking --with-lua-debugger=0 --with-swiftshader --access-token-fgd=${{secrets.PR_UTIL_FGD_ACCESS_TOKEN}}"
 
       - name: Create Release Archive
         shell: bash

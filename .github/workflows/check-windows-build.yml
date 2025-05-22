@@ -4,13 +4,15 @@ on:
     branches-ignore:
       - main
 
-concurrency:
-  group: check-build-win-${{ github.ref }}
-  cancel-in-progress: true
 
 env:
   # See https://github.com/git-lfs/git-lfs/issues/5749
   GIT_CLONE_PROTECTION_ACTIVE: 'false'
+
+concurrency:
+  group: check-build-win-${{ github.ref }}
+  cancel-in-progress: true
+
 
 jobs:
   build:

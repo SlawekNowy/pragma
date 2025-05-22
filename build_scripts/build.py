@@ -956,6 +956,7 @@ if with_essential_client_modules:
 		repositoryUrl="https://github.com/Silverlan/pr_prosper_vulkan.git"
 	)
 
+
 if with_common_modules:
 	add_pragma_module(
 		name="pr_bullet",
@@ -977,7 +978,7 @@ if with_common_modules:
 		commitSha="e34cbca22a0a6ebd8a5d7f85c29f91e99555857a",
 		repositoryUrl="https://github.com/Silverlan/pr_prosper_opengl.git"
 	)
-	add_pragma_module_prebuilt("Silverlan/pr_mount_external_prebuilt")
+	#sadd_pragma_module_prebuilt("Silverlan/pr_mount_external_prebuilt")
 	add_pragma_module_prebuilt("Silverlan/pr_rig_prebuilt")
 	add_pragma_module_prebuilt("Silverlan/pr_ik_prebuilt")
 
@@ -990,14 +991,19 @@ if with_pfm:
 		)
 		add_pragma_module(
 			name="pr_dmx",
-			commitSha="eb6b4c8e0cd45dc27cc7ed46ff50eb5a9cae1fba",
-			repositoryUrl="https://github.com/Silverlan/pr_dmx.git"
+			commitSha="beb8f7546e645680d0226de2f9de9699ee2bb095",
+			repositoryUrl="https://github.com/Slaweknowy/pr_dmx.git"
 		)
 	if with_all_pfm_modules:
 		add_pragma_module(
 			name="pr_chromium",
+<<<<<<< HEAD
+			commitSha="d54955329479e16263b910fa78de9fc326b5973a",
+			repositoryUrl="https://github.com/Slaweknwoy/pr_chromium.git"
+=======
 			commitSha="6ab1bc749bc8c4f35701c75974e03bd4fe21d671",
 			repositoryUrl="https://github.com/Silverlan/pr_chromium.git"
+>>>>>>> upstream/main
 		)
 		add_pragma_module(
 			name="pr_unirender",
@@ -1357,14 +1363,23 @@ if build:
 	print_msg("Building Pragma...")
 
 	os.chdir(build_dir)
-	targets = ["pragma-install-full"]
+
+    
+	print_msg("Running build command...")
+	cmake_build(build_config,["pragma-install-full"])
+	targets = []
 	if with_pfm:
 		targets.append("pfm")
 	targets += additional_build_targets
-	targets.append("pragma-install")
+	#targets.append("pragma-install")
 
-	print_msg("Running build command...")
 	cmake_build(build_config,targets)
+
+	cmake_build(build_config,["pragma-install"])
+
+
+
+
 
 	print_msg("Build Successful! Pragma has been installed to \"" +normalize_path(install_dir) +"\".")
 	print_msg("If you make any changes to the core source code, you can build the \"pragma-install\" target to compile the changes and re-install the binaries automatically.")

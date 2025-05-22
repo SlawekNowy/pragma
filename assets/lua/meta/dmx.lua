@@ -5,18 +5,52 @@ dmx = {}
 
 
 --- 
+--- @class dmx.Element
+dmx.Element = {}
+
+--- 
+--- @param name string
+function dmx.Element:Get(name) end
+
+--- 
+--- @param name string
+function dmx.Element:GetAttr(name) end
+
+--- 
+--- @param name string
+function dmx.Element:GetAttrV(name) end
+
+--- 
+--- @param id string
+function dmx.Element:GetAttributeValue(id) end
+
+--- 
+function dmx.Element:GetGUID() end
+
+--- 
+function dmx.Element:GetAttributes() end
+
+--- 
+--- @param id string
+function dmx.Element:GetAttribute(id) end
+
+--- 
+function dmx.Element:GetName() end
+
+--- 
+function dmx.Element:GetType() end
+
+--- 
+--- @param elOther dmx.Element
+function dmx.Element:__eq(elOther) end
+
+--- 
+function dmx.Element:__tostring() end
+
+
+--- 
 --- @class dmx.Attribute
 dmx.Attribute = {}
-
---- 
-function dmx.Attribute:GetValue() end
-
---- 
---- @param attrOther dmx.Attribute
-function dmx.Attribute:__eq(attrOther) end
-
---- 
-function dmx.Attribute:IsValid() end
 
 --- 
 --- @param val dmx.Attribute
@@ -37,7 +71,17 @@ function dmx.Attribute:GetType() end
 function dmx.Attribute:Get(name) end
 
 --- 
+function dmx.Attribute:GetValue() end
+
+--- 
 function dmx.Attribute:GetValueAsString() end
+
+--- 
+--- @param attrOther dmx.Attribute
+function dmx.Attribute:__eq(attrOther) end
+
+--- 
+function dmx.Attribute:IsValid() end
 
 
 --- @enum Type
@@ -79,60 +123,16 @@ dmx.Attribute = {
 }
 
 --- 
---- @class dmx.Element
-dmx.Element = {}
-
---- 
-function dmx.Element:GetAttributes() end
-
---- 
-function dmx.Element:GetGUID() end
-
---- 
---- @param name string
-function dmx.Element:GetAttrV(name) end
-
---- 
---- @param id string
-function dmx.Element:GetAttributeValue(id) end
-
---- 
---- @param name string
-function dmx.Element:GetAttr(name) end
-
---- 
---- @param elOther dmx.Element
-function dmx.Element:__eq(elOther) end
-
---- 
-function dmx.Element:GetType() end
-
---- 
---- @param name string
-function dmx.Element:Get(name) end
-
---- 
---- @param id string
-function dmx.Element:GetAttribute(id) end
-
---- 
-function dmx.Element:GetName() end
-
---- 
-function dmx.Element:__tostring() end
-
-
---- 
 --- @class dmx.Data
 dmx.Data = {}
+
+--- 
+function dmx.Data:GetElements() end
 
 --- 
 function dmx.Data:GetRootAttribute() end
 
 --- 
 function dmx.Data:__tostring() end
-
---- 
-function dmx.Data:GetElements() end
 
 
