@@ -75,6 +75,7 @@ namespace pragma {
 	};
 
 	template<typename... Args>
+
 #ifdef _WIN32
 
 #if __cpp_lib_format >= 202207L
@@ -86,6 +87,7 @@ namespace pragma {
 #else
 	using format_string_t = std::string_view;
 #endif
+
 
 	class DLLNETWORK BaseEntityComponent : public pragma::BaseLuaHandle, public std::enable_shared_from_this<BaseEntityComponent> {
 	  public:

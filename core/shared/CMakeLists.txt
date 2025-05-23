@@ -3,7 +3,9 @@ include(${CMAKE_SOURCE_DIR}/cmake/pr_common.cmake)
 option(CONFIG_BUILD_WITH_VTUNE_SUPPORT "Build with VTune profiler support?" OFF)
 
 set(PROJ_NAME shared)
+set(CMAKE_CXX_STANDARD 20)
 pr_add_library(${PROJ_NAME} SHARED)
+unset(CMAKE_CXX_STANDARD)
 pr_precompile_headers(${PROJ_NAME} "stdafx_shared.h")
 
 pr_add_dependency(${PROJ_NAME} panima TARGET PUBLIC)

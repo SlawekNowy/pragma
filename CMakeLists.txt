@@ -157,6 +157,7 @@ if(UNIX)
     pr_set_raw_library_path(boost_thread "${DEPENDENCY_BOOST_LIBRARY_LOCATION}/libboost_thread.a" FORCE)
 endif()
 
+
 message("Processing external libraries...")
 add_subdirectory(external_libs)
 pr_set_target_folder(wgui external_libs/wgui)
@@ -164,9 +165,9 @@ pr_set_target_folder(sample_application external_libs/wgui)
 target_include_directories(util_image PUBLIC ${DEPENDENCY_ZLIB_INCLUDE})
 target_include_directories(cmaterialsystem PUBLIC ${DEPENDENCY_ZLIB_INCLUDE})
 
+
 message("Processing core libraries...")
 add_subdirectory(core)
-
 message("Processing modules...")
 add_subdirectory(modules)
 
