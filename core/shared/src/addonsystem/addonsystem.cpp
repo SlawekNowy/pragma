@@ -12,9 +12,8 @@
 #include <fsys/filesystem.h>
 #include <sharedutils/util_file.h>
 #include <fsys/directory_watcher.h>
-#ifdef _WIN32
 #include <sharedutils/util_link.hpp>
-#endif
+
 
 import pragma.uva;
 import pragma.pad;
@@ -81,7 +80,6 @@ static bool is_addon_mounted(const std::string &addonPath, const std::vector<Add
 	return it != addons.end();
 }
 
-#ifdef _WIN32
 static bool mount_linked_addon(const std::string &pathLink, std::vector<AddonInfo> &outAddons, bool silent = true)
 {
 	if(is_addon_mounted(pathLink, outAddons))
@@ -100,7 +98,6 @@ static bool mount_linked_addon(const std::string &pathLink, std::vector<AddonInf
 		Con::cout << "Mounting linked addon '" << pathLink << "'..." << Con::endl;
 	return true;
 }
-#endif
 
 DirectoryWatcherCallback *AddonSystem::GetAddonWatcher() { return m_addonWatcher.get(); }
 
@@ -214,6 +211,8 @@ void AddonSystem::MountAddons()
 #ifdef _WIN32
 				  else if(ustring::compare<std::string>(ext, "lnk", false) == true)
 					  mount_linked_addon(fName, m_addons, false);
+#else
+				  //check if we're dealing with a symlink.
 #endif
 			  }
 			  else {
