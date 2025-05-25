@@ -18,6 +18,26 @@ pr_include_third_party_library(mpaheader)
 pr_set_target_folder(mpaheader third_party_libs)
 #
 
+# notify-cpp
+if(LINUX)
+set(ENABLE_STATIC_LIBS
+    ON
+    CACHE BOOL ON FORCE)
+set(ENABLE_SHARED_LIBS
+    OFF
+    CACHE BOOL OFF FORCE)
+set(CMAKE_CXX_STANDARD 20) # bump to c++23 after we change scope ops in luabind.
+pr_include_third_party_library(
+    notify-cpp
+    TARGET
+    notify-cpp-static
+    )
+pr_set_target_folder(inotify-cpp third_party_libs)
+unset(CMAKE_CXX_STANDARD)
+endif()
+
+#
+
 # VKVParser
 pr_include_third_party_library(
     vkv_parser

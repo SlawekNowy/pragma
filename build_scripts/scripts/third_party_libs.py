@@ -38,5 +38,7 @@ get_submodule("mpaheader","https://github.com/SlawekNowy/mpaheader.git","275d9d9
 get_submodule("vkvparser","https://github.com/Silverlan/VKVParser.git","5ffec9da2fc51288d0d77a99fcf173d6e9b91cdb")
 get_submodule("openfbx","https://github.com/nem0/OpenFBX.git","ea1af1d81cd04c603e65042c95385370274c61af")
 get_submodule("lunasvg","https://github.com/sammycage/lunasvg.git","84c71c5")
+if platform == "linux":
+    get_submodule("notify-cpp","https://github.com/sizeofvoid/notify-cpp.git","3157707534d815ef9956d5a0ecdd3ddaf5abf8e0")
 
 os.chdir(curDir)
