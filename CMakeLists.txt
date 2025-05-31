@@ -144,6 +144,8 @@ add_custom_target(pragma-install COMMAND "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMP
                                          "${CMAKE_BINARY_DIR}/cmake_install.cmake")
 add_custom_target(pragma-install-full COMMAND "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=${PRAGMA_INSTALL_COMPONENT_FULL} -DBUILD_TYPE=${CONFIG_BUILD_TYPE}
                                               -P "${CMAKE_BINARY_DIR}/cmake_install.cmake")
+add_custom_target(pragma-core)
+set_target_properties(pragma-core PROPERTIES FOLDER "Hidden")
 
 include(${CMAKE_SOURCE_DIR}/ThirdPartyLibs.cmake)
 
@@ -225,8 +227,8 @@ set(PRAGMA_INSTALL_DEPENDENCIES pragma pragma_server iclient iserver udm_convert
 if(WIN32)
     list(APPEND PRAGMA_INSTALL_DEPENDENCIES pragma_console)
 endif()
-add_dependencies(pragma-install ${PRAGMA_INSTALL_DEPENDENCIES})
-add_dependencies(pragma-install-full pragma iclient iserver)
+add_dependencies(pragma-core ${PRAGMA_INSTALL_DEPENDENCIES})
+add_dependencies(pragma-install-full pragma-install)
 
 pr_install_create_directory(modules)
 
@@ -251,6 +253,10 @@ endif()
 
 pr_install_files("${DEPENDENCY_ICU_ICUUC_BINARY}" "${DEPENDENCY_ICU_ICUDT_BINARY}")
 
+pr_install_component("core")
+message("Installing core components...")
+include("Install.cmake")
+
 # Modules
 file(GLOB PR_MODULES "modules/pr_*")
 foreach(MODULE_PATH ${PR_MODULES})
@@ -263,6 +269,7 @@ foreach(MODULE_PATH ${PR_MODULES})
         endif()
         if(EXISTS "${MODULE_PATH}/Install.cmake")
             message("Running install script for module '${MODULE_PATH}'...")
+	        pr_install_component(${MODULE_NAME})
             include("${MODULE_PATH}/Install.cmake" OPTIONAL)
         else()
             # Default behavior
@@ -283,8 +290,22 @@ foreach(MODULE_PATH ${PR_MODULES})
     get_filename_component(MODULE_NAME "${MODULE_PATH}" NAME)
     if(EXISTS "${MODULE_PATH}/Install.cmake")
         message("Running install script for tool '${MODULE_PATH}'...")
+	    pr_install_component(${MODULE_NAME})
         include("${MODULE_PATH}/Install.cmake" OPTIONAL)
     endif()
+endforeach()
+
+# Link components to pragma-install
+get_property(COMPONENT_LIST GLOBAL PROPERTY PRAGMA_INSTALL_COMPONENTS)
+foreach(_COMP IN LISTS COMPONENT_LIST)
+    add_custom_target(pragma-install-${_COMP} COMMAND "${CMAKE_COMMAND}" -DCMAKE_INSTALL_COMPONENT=${_COMP} -DBUILD_TYPE=${CONFIG_BUILD_TYPE} -P
+                                         "${CMAKE_BINARY_DIR}/cmake_install.cmake")
+    # We need to make sure all build-targets run first, before any install targets
+    add_dependencies(pragma-install-${_COMP} pragma-core)
+
+    add_dependencies(pragma-install pragma-install-${_COMP})
+
+    set_target_properties(pragma-install-${_COMP} PROPERTIES FOLDER "Hidden/Install")
 endforeach()
 
 # Install assets

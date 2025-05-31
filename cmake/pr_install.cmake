@@ -1,4 +1,11 @@
+function(pr_install_component NAME)
+    message("Registering install component '${NAME}'...")
+    set_property(GLOBAL PROPERTY PRAGMA_INSTALL_COMPONENT_PART "${NAME}")
 
+    get_property(_parts GLOBAL PROPERTY PRAGMA_INSTALL_COMPONENTS)
+    list(APPEND _parts ${NAME})
+    set_property(GLOBAL PROPERTY PRAGMA_INSTALL_COMPONENTS "${_parts}")
+endfunction(pr_install_component)
 function(pr_install_files)
     set(options)
     set(oneValueArgs INSTALL_DIR)
@@ -9,6 +16,10 @@ function(pr_install_files)
         set(PA_INSTALL_DIR "${BINARY_OUTPUT_DIR}")
     endif()
 
+    get_property(part GLOBAL PROPERTY PRAGMA_INSTALL_COMPONENT_PART)
+    if(NOT part)
+        set(part "${PRAGMA_INSTALL_COMPONENT}")
+    endif()
     foreach(FILE_PATH ${PA_UNPARSED_ARGUMENTS})
         string(REPLACE "\\" "/" FILE_PATH ${FILE_PATH})
         message("Adding install rule for \"${FILE_PATH}\" to \"${PA_INSTALL_DIR}\"...")
@@ -22,7 +33,7 @@ function(pr_install_files)
                 FILES "${FILE_PATH}"
                 DESTINATION "${PA_INSTALL_DIR}"
                 OPTIONAL
-                COMPONENT ${PRAGMA_INSTALL_COMPONENT}
+                COMPONENT ${part}
             )
         else()
             # If the file is a symlink, install both the symlink and the real file
@@ -33,7 +44,7 @@ function(pr_install_files)
                 FILES "${REAL_FILE_PATH}"
                 DESTINATION "${PA_INSTALL_DIR}"
                 OPTIONAL
-                COMPONENT ${PRAGMA_INSTALL_COMPONENT}
+                COMPONENT ${part}
             )
 
             # Install the symlink itself
@@ -41,7 +52,7 @@ function(pr_install_files)
                 FILES "${FILE_PATH}"
                 DESTINATION "${PA_INSTALL_DIR}"
                 OPTIONAL
-                COMPONENT ${PRAGMA_INSTALL_COMPONENT}
+                COMPONENT ${part}
             )
         endif()
     endforeach()
@@ -57,28 +68,25 @@ function(pr_install_libraries)
         set(PA_INSTALL_DIR "${BINARY_OUTPUT_DIR}")
     endif()
 
+    get_property(part GLOBAL PROPERTY PRAGMA_INSTALL_COMPONENT_PART)
+    if(NOT part)
+        set(part "${PRAGMA_INSTALL_COMPONENT}")
+    endif()
     foreach(TARGET ${PA_UNPARSED_ARGUMENTS})
         pr_get_normalized_identifier_name(${TARGET})
         set(FILE_PATH "${DEPENDENCY_${NORMALIZED_IDENTIFIER}_LIBRARY}")
         string(REPLACE "\\" "/" FILE_PATH ${FILE_PATH})
         message("Adding install rule for library \"${TARGET}\" (\"${FILE_PATH}\") to \"${PA_INSTALL_DIR}\"...")
-        # install(
-            # FILES "${FILE_PATH}"
-            # DESTINATION "${PA_INSTALL_DIR}"
-            # OPTIONAL
-            # COMPONENT ${PRAGMA_INSTALL_COMPONENT})
-			
 		install(
 			TARGETS "${TARGET}"
 			OPTIONAL
-			COMPONENT ${PRAGMA_INSTALL_COMPONENT}
+			COMPONENT ${part}
 			RUNTIME DESTINATION "${PA_INSTALL_DIR}")
         if(UNIX)
             install(
                 TARGETS "${TARGET}"
                 OPTIONAL
-                COMPONENT ${PRAGMA_INSTALL_COMPONENT}
-                LIBRARY DESTINATION "${PA_INSTALL_DIR}")
+                COMPONENT ${part})
         endif()
     endforeach()
 endfunction(pr_install_libraries)
@@ -93,6 +101,10 @@ function(pr_install_targets)
         set(PA_INSTALL_DIR "${BINARY_OUTPUT_DIR}")
     endif()
 
+    get_property(part GLOBAL PROPERTY PRAGMA_INSTALL_COMPONENT_PART)
+    if(NOT part)
+        set(part "${PRAGMA_INSTALL_COMPONENT}")
+    endif()
     foreach(TARGET ${PA_UNPARSED_ARGUMENTS})
 
 
@@ -108,23 +120,28 @@ function(pr_install_targets)
         # if(UNIX)
 		#Note to self: Do read a documentation.
             install(
-			TARGETS "${TARGET}"
-			RUNTIME DESTINATION "${PA_INSTALL_DIR}"
-			OPTIONAL
-			COMPONENT ${PRAGMA_INSTALL_COMPONENT})
-        if(UNIX)
+                PROGRAMS
+                $<TARGET_FILE:${TARGET}>
+                DESTINATION "${PA_INSTALL_DIR}"
+                OPTIONAL
+                COMPONENT ${part}
+            )
+        else()
+            set(FILE_PATH "$<TARGET_FILE:${TARGET}>")
+            string(REPLACE "\\" "/" FILE_PATH ${FILE_PATH})
+            message("Adding install rule for target \"${TARGET}\" (\"${FILE_PATH}\") to \"${PA_INSTALL_DIR}\"...")
             install(
                 TARGETS "${TARGET}"
                 LIBRARY DESTINATION "${PA_INSTALL_DIR}"
                 OPTIONAL
-                COMPONENT ${PRAGMA_INSTALL_COMPONENT})
+                COMPONENT ${part})
             if(UNIX)
                 install(
                     TARGETS "${TARGET}"
                     RUNTIME DESTINATION "${PA_INSTALL_DIR}"
                     LIBRARY DESTINATION "${PA_INSTALL_DIR}"
                     OPTIONAL
-                    COMPONENT ${PRAGMA_INSTALL_COMPONENT})
+                    COMPONENT ${part})
             endif()
         endif()
         # endif()
@@ -143,11 +160,23 @@ function(pr_install_directory FILE_PATH)
 
     string(REPLACE "\\" "/" FILE_PATH ${FILE_PATH})
     message("Adding install rule for \"${FILE_PATH}\" to \"${PA_INSTALL_DIR}\"...")
+
+    # if the caller passed any PATTERN or EXCLUDE, prepend FILES_MATCHING
+    list(FIND PA_UNPARSED_ARGUMENTS "PATTERN" _hasPattern)
+    list(FIND PA_UNPARSED_ARGUMENTS "EXCLUDE" _hasExclude)
+    if(_hasPattern GREATER -1 OR _hasExclude GREATER -1)
+        list(INSERT PA_UNPARSED_ARGUMENTS 0 FILES_MATCHING)
+    endif()
+
+    get_property(part GLOBAL PROPERTY PRAGMA_INSTALL_COMPONENT_PART)
+    if(NOT part)
+        set(part "${PRAGMA_INSTALL_COMPONENT}")
+    endif()
     install(
         DIRECTORY "${FILE_PATH}"
         DESTINATION "${PA_INSTALL_DIR}"
         OPTIONAL
-        COMPONENT ${PRAGMA_INSTALL_COMPONENT} ${PA_UNPARSED_ARGUMENTS})
+        COMPONENT ${part} ${PA_UNPARSED_ARGUMENTS})
 endfunction(pr_install_directory)
 
 function(pr_install_create_directory DIR_NAME)

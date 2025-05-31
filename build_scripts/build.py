@@ -604,6 +604,30 @@ os.chdir("GeometricTools")
 reset_to_commit("bd7a27d18ac9f31641b4e1246764fe30816fae74")
 os.chdir("../../")
 
+########## OpenCV ##########
+os.chdir(deps_dir)
+opencv_root = deps_dir +"/opencv"
+if not Path(opencv_root).is_dir():
+    print_msg("opencv not found. Downloading...")
+    git_clone("https://github.com/opencv/opencv.git")
+
+os.chdir(opencv_root)
+reset_to_commit("31b0eee") # v4.11.0
+
+print_msg("Build opencv")
+mkdir("build",cd=True)
+
+cmake_configure("..",generator)
+cmake_build("Release",["opencv_imgproc","opencv_imgcodecs"])
+
+cmake_args.append("-DDEPENDENCY_OPENCV_INCLUDE=" +opencv_root +"/include")
+cmake_args.append("-DDEPENDENCY_OPENCV_MODULE_LOCATION=" +opencv_root +"/modules")
+cmake_args.append("-DDEPENDENCY_OPENCV_BUILD_INCLUDE=" +opencv_root +"/build")
+cmake_args.append("-DDEPENDENCY_OPENCV_LIBRARY_LOCATION=" +opencv_root +"/build")
+cmake_args.append("-DOpenCV_DIR=" +opencv_root +"/build")
+
+os.environ["OPENCV_DIR"] = os.path.join(opencv_root, "build")
+
 ########## SPIRV-Tools ##########
 print_msg("Downloading SPIRV-Tools...")
 os.chdir(deps_dir)
@@ -729,9 +753,37 @@ else:
 cpptrace_bin_dir = cpptrace_root +"/build/" +build_config +"/"
 cmake_args += ["-DDEPENDENCY_CPPTRACE_INCLUDE=" +cpptrace_root +"/include/", "-DDEPENDENCY_CPPTRACE_LIBRARY=" +cpptrace_bin_dir +cpptrace_lib_name]
 
-########## compressonator deps ##########
-os.chdir(root+"/external_libs/util_image/third_party_libs/compressonator")
-execfile(root+"/external_libs/util_image/third_party_libs/compressonator/build/fetch_dependencies.py")
+########## compressonator ##########
+os.chdir(deps_dir)
+compressonator_root = normalize_path(os.getcwd() +"/compressonator")
+if not Path(compressonator_root).is_dir():
+	print_msg("compressonator not found. Downloading...")
+	git_clone("https://github.com/Silverlan/compressonator.git")
+os.chdir("compressonator")
+reset_to_commit("9e09840e88d85995cb4a5fde2ae891a6c2d1cc45")
+
+print_msg("Fetching compressonator dependencies...")
+execfile(compressonator_root +"/build/fetch_dependencies.py")
+
+print_msg("Building compressonator...")
+mkdir("cmbuild",cd=True)
+cmake_configure_def_toolset("..",generator,["-DOpenCV_DIR=" +opencv_root +"/build", "-DOPTION_ENABLE_ALL_APPS=OFF", "-DOPTION_BUILD_CMP_SDK=ON", "-DOPTION_CMP_OPENCV=ON", "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"])
+
+compressonator_targets = ["Image_DDS", "Image_KTX", "Image_TGA", "CMP_Compressonator", "CMP_Framework", "CMP_Common", "CMP_Core"]
+if platform == "win32":
+	compressonator_targets.append("Image_EXR")
+cmake_build("Release", compressonator_targets)
+
+cmake_args += [
+	"-DDEPENDENCY_COMPRESSONATOR_SOURCE_DIR=" +compressonator_root,
+	"-DDEPENDENCY_COMPRESSONATOR_LIBRARY_DIR=" +compressonator_root +"/cmbuild/lib/Release",
+	"-DDEPENDENCY_COMPRESSONATOR_COMMON_DIR=" +deps_dir +"/common",
+	"-DUSE_COMPRESSONATOR=ON"
+]
+if platform == "win32":
+	cmake_args.append("-DDEPENDENCY_COMPRESSONATOR_BINARY_DIR=" +compressonator_root +"/cmbuild/bin/Release")
+else:
+	cmake_args.append("-DDEPENDENCY_COMPRESSONATOR_BINARY_DIR=" +compressonator_root +"/cmbuild/lib/Release")
 
 ########## freetype (built in win32, sys in linux (set in cmake)) ##########
 freetype_include_dir = ""
@@ -952,7 +1004,7 @@ execfile(scripts_dir +"/user_modules.py",g,l)
 if with_essential_client_modules:
 	add_pragma_module(
 		name="pr_prosper_vulkan",
-		commitSha="14288810ebe5695ca8ef30d6e02e0ce6ace624d2",
+		commitSha="aa91acce8a2e84d8601ccf1afa97446a8e72a0dd",
 		repositoryUrl="https://github.com/Silverlan/pr_prosper_vulkan.git"
 	)
 
@@ -997,12 +1049,12 @@ if with_pfm:
 	if with_all_pfm_modules:
 		add_pragma_module(
 			name="pr_chromium",
-			commitSha="79df5221c64b90ae29b044fdc483b48e3bec6965",
+			commitSha="998a9a2b8a735a803ef0c062b6457db001978997",
 			repositoryUrl="https://github.com/Silverlan/pr_chromium.git"
 		)
 		add_pragma_module(
 			name="pr_unirender",
-			commitSha="ee75b1c4d98a29b231a1bb97458cb2c1b1fe0d5d",
+			commitSha="ad67c597a25d36ddcf8a3ec6da11cc561ef267b1",
 			repositoryUrl="https://github.com/Silverlan/pr_cycles.git"
 		)
 		add_pragma_module(
@@ -1094,6 +1146,9 @@ os.chdir(install_dir)
 for url in modules_prebuilt:
 	print_msg("Downloading prebuilt binaries for module '" +url +"'...")
 	install_prebuilt_binaries(url)
+
+if with_pfm:
+	additional_build_targets.append("pfm")
 
 cmake_args.append("-DPRAGMA_INSTALL_CUSTOM_TARGETS=" +";".join(module_list +additional_build_targets))
 
@@ -1358,15 +1413,7 @@ if build:
 	print_msg("Building Pragma...")
 
 	os.chdir(build_dir)
-
-    
-	print_msg("Running build command...")
-	cmake_build(build_config,["pragma-install-full"])
-	targets = []
-	if with_pfm:
-		targets.append("pfm")
-	targets += additional_build_targets
-	#targets.append("pragma-install")
+	targets = ["pragma-install-full"]
 
 	cmake_build(build_config,targets)
 
