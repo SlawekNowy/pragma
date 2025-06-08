@@ -80,6 +80,9 @@ function(pr_finalize TARGET_NAME)
     set(multiValueArgs)
     cmake_parse_arguments(PARSE_ARGV 1 PA "${options}" "${oneValueArgs}" "${multiValueArgs}")
 
+    find_package(Threads REQUIRED)
+    #we need this to shut pch generation up. For MSVC and gcc this emits a warning, but for clang an error.
+    target_link_libraries(${TARGET_NAME} PRIVATE Threads::Threads)
     if(DEFINED PA_FOLDER)
         set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "${PA_FOLDER}")
         set_property(GLOBAL PROPERTY PRAGMA_MODULE_SKIP_TARGET_PROPERTY_FOLDER 1)

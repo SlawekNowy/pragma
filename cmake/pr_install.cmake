@@ -117,7 +117,7 @@ function(pr_install_targets)
             # DESTINATION "${PA_INSTALL_DIR}"
             # OPTIONAL
             # COMPONENT ${PRAGMA_INSTALL_COMPONENT})
-        # if(UNIX)
+        if(UNIX)
 		#Note to self: Do read a documentation.
             install(
                 PROGRAMS

@@ -609,10 +609,10 @@ os.chdir(deps_dir)
 opencv_root = deps_dir +"/opencv"
 if not Path(opencv_root).is_dir():
     print_msg("opencv not found. Downloading...")
-    git_clone("https://github.com/opencv/opencv.git")
+    git_clone("https://github.com/Slaweknowy/opencv.git")
 
 os.chdir(opencv_root)
-reset_to_commit("31b0eee") # v4.11.0
+reset_to_commit("c734b8cea0daced534223f02ecadb68fde23ca81") # v4.11.0
 
 print_msg("Build opencv")
 mkdir("build",cd=True)
@@ -758,9 +758,9 @@ os.chdir(deps_dir)
 compressonator_root = normalize_path(os.getcwd() +"/compressonator")
 if not Path(compressonator_root).is_dir():
 	print_msg("compressonator not found. Downloading...")
-	git_clone("https://github.com/Silverlan/compressonator.git")
+	git_clone("https://github.com/Slaweknowy/compressonator.git")
 os.chdir("compressonator")
-reset_to_commit("9e09840e88d85995cb4a5fde2ae891a6c2d1cc45")
+reset_to_commit("1574fc2d551032d81b2e1b8d2c5bfa4ddd5622bb")
 
 print_msg("Fetching compressonator dependencies...")
 execfile(compressonator_root +"/build/fetch_dependencies.py")
